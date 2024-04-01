@@ -20,17 +20,11 @@ bot.init = function()
   })
 end
 
-Handlers.add(
-  "updatePrice",
-  function(msg)
-    return "continue"
-  end,
-  function(msg)
-    if msg.From == Pool and msg.Price ~= nil then
-      LatestPrice = msg.Price
-    end
+bot.updatePrice = function(msg)
+  if msg.From == Pool and msg.Price ~= nil then
+    LatestPrice = msg.Price
   end
-)
+end
 
 SwapInit = function()
   -- send the transfer

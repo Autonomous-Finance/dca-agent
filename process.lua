@@ -1,4 +1,6 @@
 -- A DCA bot that swaps TargetToken for BaseToken at regular intervals
+-- works in conjunction with 2 Cron process proxies
+-- (1 for triggering the swap, 1 for updating the price)
 
 -- direct interaction with pool, no router
 -- single owner (initially the deployment signer, but can be changed),
@@ -11,12 +13,6 @@
 -- target token, slippage, swapAmount are configured only once @ initialization
 -- base token can't be configured
 
--- DEPLOYMENT FLOW
--- 1. user deploys this bot
--- 2. user initializes the bot with target token, slippage, swap amount
--- 3. cron process is started upon initialization confirmation
-
-
 
 local bot = require ".bot.bot"
 local ownership = require ".ownership.ownership"
@@ -27,19 +23,10 @@ Owner = Owner or ao.Process.env.Owner
 LatestTargetTokenBal = LatestTargetTokenBal or nil
 LatestBaseTokenBal = LatestBaseTokenBal or nil
 
--- Ownership
-
-Handlers.add(
-  "UpdateOwner",
-  Handlers.utils.hasMatchingTag("Action", "UpdateOwner"),
-  function(msg)
-    assert(msg.From == Owner, 'Only the owner can update the owner!')
-    assert(msg.Tags.Owner ~= nil and type(msg.Tags.Owner) == 'string', 'Owner is required!')
-    Owner = msg.Tags.Owner
-  end
-)
 
 -- CONFIG
+
+-- TODO ensure initialized before any handler is triggered (catch-all handler)
 
 Handlers.add(
   "initialize",
@@ -56,11 +43,31 @@ Handlers.add(
   end
 )
 
--- DCA
+-- OWNERSHIP
 
 Handlers.add(
-  "CronTick",
-  Handlers.utils.hasMatchingTag("Action", "Cron"),
+  "updateOwner",
+  Handlers.utils.hasMatchingTag("Action", "UpdateOwner"),
+  function(msg)
+    assert(msg.From == Owner, 'Only the owner can update the owner!')
+    assert(msg.Tags.Owner ~= nil and type(msg.Tags.Owner) == 'string', 'Owner is required!')
+    Owner = msg.Tags.Owner
+  end
+)
+
+-- DCA
+
+-- to be riggered by dedicated cron
+Handlers.add(
+  "updatePrice",
+  Handlers.utils.hasMatchingTag("Action", "UpdatePrice"),
+  bot.updatePrice()
+)
+
+-- to be triggered by dedicated cron proxy
+Handlers.add(
+  "triggerBuy",
+  Handlers.utils.hasMatchingTag("Action", "TriggerBuy"),
   function(msg)
     -- TODO access control -> can this be trusted? or do we need additional checks
     -- like "has the expected time passed, since the last cron tick"
