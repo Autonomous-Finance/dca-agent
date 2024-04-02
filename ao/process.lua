@@ -1,22 +1,6 @@
--- A DCA bot that swaps TargetToken for BaseToken at regular intervals
--- works in conjunction with 2 Cron process proxies
--- (1 for triggering the swap, 1 for updating the price)
-
--- direct interaction with pool, no router
--- single owner (initially the deployment signer, but can be changed),
--- single currency pair
-
--- allows loading up with base token
--- allows withdrawals of base or target token
--- allow for total liquidation (return all in base token)
-
--- target token, slippage, swapAmount are configured only once @ initialization
--- base token can't be configured
-
-
-local bot = require ".bot.bot"
-local ownership = require ".ownership.ownership"
-local validations = require ".validations.validations"
+local bot = require "bot.bot"
+local ownership = require "ownershipp.ownership"
+local validations = require "validationss.validations"
 
 -- bot deployment triggered by user from browser => browser wallet owner == process owner
 Owner = Owner or ao.Process.env.Owner
