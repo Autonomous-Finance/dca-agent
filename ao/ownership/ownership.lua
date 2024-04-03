@@ -1,8 +1,10 @@
 local mod = {}
 
+-- messages that are to pass this access control check
+-- should be sent by a wallet (entity), not by another process
+
 mod.onlyOwner = function(msg)
-  -- TODO msg.From may be another process, while Owner is an entity -> account for these cases
-  assert(msg.From == Owner, "Only the owner can withdraw")
+  assert(msg.From == Owner, "Only the owner is allowed")
 end
 
 return mod

@@ -7,16 +7,23 @@ Owner = Owner or ao.Process.env.Owner
 LatestTargetTokenBal = LatestTargetTokenBal or nil
 LatestBaseTokenBal = LatestBaseTokenBal or nil
 
+Initialized = Initialized or false
 
--- CONFIG
+-- INIT & CONFIG
 
--- TODO ensure initialized before any handler is triggered (catch-all handler)
+Handlers.add(
+  "initStatus",
+  Handlers.utils.hasMatchingTag("Action", "InitStatus"),
+  function(msg)
+    Handlers.utils.reply('Initialized: ' .. tostring(Initialized))(msg)
+  end
+)
 
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
-    assert(msg.From == Owner, 'Only the owner can set the Token!')
+    ownership.onlyOwner(msg)
     assert(type(msg.Tags.TargetToken) == 'string', 'Target Token is required!')
     assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
     assert(type(msg.Tags.SwapAmount) == 'string', 'SwapAmount is required!')
@@ -24,8 +31,24 @@ Handlers.add(
     TargetToken = msg.Tags.TargetToken
     SwapInAmount = msg.Tags.SwapAmount
     Slippage = msg.Tags.Slippage
+    Initialized = true
   end
 )
+
+-- every handler below this one in the Handlers.list is gated by the Initialized check
+
+Handlers.add(
+  "checkInit",
+  function(msg)
+    return not Initialized
+  end,
+  function(msg)
+    error({
+      message = "error - process is not initialized"
+    })
+  end
+)
+
 
 -- OWNERSHIP
 
