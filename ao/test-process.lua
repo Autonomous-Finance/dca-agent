@@ -1,5 +1,7 @@
 local ownership = require "ownership.ownership"
 
+local json = require "json"
+
 -- bot deployment triggered by user from browser
 --  => browser wallet owner == process owner
 Owner = Owner or ao.Process.env.Owner
@@ -37,14 +39,26 @@ Handlers.add(
   end
 )
 
+-- Handlers.add(
+--   "setConfig",
+--   Handlers.utils.hasMatchingTag("Action", "SetConfig"),
+--   function(msg)
+--     ownership.onlyOwner(msg)
+--     assert(type(msg.Tags.TargetToken) == 'string', 'Target Token is required!')
+--     TargetToken = msg.Tags.TargetToken
+--   end
+-- )
+
+-- Handlers.add(
+--   "getConfig",
+--   Handlers.utils.hasMatchingTag("Action", "GetConfig"),
+--   function(msg)
+--     ownership.onlyOwner(msg)
+--     local config = json.encode({
+--       TargetToken = TargetToken,
+--     })
+--     Handlers.utils.reply(config)(msg)
+--   end
+-- )
 
 -- FEATURES
-
-Handlers.add(
-  "name",
-  Handlers.utils.hasMatchingTag("Action", "Name"),
-  function(msg)
-    ownership.onlyOwner(msg)
-    Handlers.utils.reply("My Name is P")(msg)
-  end
-)
