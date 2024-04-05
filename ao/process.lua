@@ -1,6 +1,7 @@
 local bot = require "bot.bot"
 local ownership = require "ownershipp.ownership"
 local validations = require "validationss.validations"
+local json = require "json"
 
 -- bot deployment triggered by user from browser => browser wallet owner == process owner
 Owner = Owner or ao.Process.env.Owner
@@ -12,10 +13,20 @@ Initialized = Initialized or false
 -- INIT & CONFIG
 
 Handlers.add(
-  "initStatus",
-  Handlers.utils.hasMatchingTag("Action", "InitStatus"),
+  "status",
+  Handlers.utils.hasMatchingTag("Action", "Status"),
   function(msg)
-    Handlers.utils.reply('Initialized: ' .. tostring(Initialized))(msg)
+    if not Initialized then
+      Handlers.utils.reply(json.encode({ Initialized = false }))(msg)
+      return
+    end
+
+    -- initialized => reply with complete config
+    local config = json.encode({
+      Initialized = true,
+      TargetToken = TargetToken,
+    })
+    Handlers.utils.reply(config)(msg)
   end
 )
 
