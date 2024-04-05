@@ -24,8 +24,16 @@ It works in conjunction with 2 Cron process proxies
 - base token can't be configured
 
 
-# Deployment
+# Bot Deployment
 
+## Prepare Lua code
+Put all lua code into a single file using amalg - builds a single amalgamation file.
+https://luarocks.org/modules/siffiejoe/amalg
+
+To build on osx:
+`/opt/homebrew/bin/amalg.lua -s process.lua -o build/output.lua ownership.ownership bot.bot validations.validations`
+
+## In App
 *swuw* == "signed with user wallet"
 
 1. user configures the bot with target token, slippage, swap amount
@@ -38,7 +46,7 @@ It works in conjunction with 2 Cron process proxies
       2. spawn process B, load `trigger-swap.lua`, `"Initialize"` (*swuw*)
 
 
-# Requirements
+# TODO Requirements
 
 Clarify: what constitutes a bot status ?
   - bot process state 
@@ -46,7 +54,15 @@ Clarify: what constitutes a bot status ?
   - peripheral info additional storage on arweave
 
 
+# Dev Plan
 
+Create working version for each iteration
+
+1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Bot can only be configured in terms of currency. Should list past processes in the table.
+2. Fully fledged dca bot with automation, includes state display of the active bot.
+3. Add metrics for bot performance
+5. Prettify UI, add animated stepper for deployment progress display
+6. Reconsider bot design for blueprint-grade code quality (especially names & convenience functions)
 
 
 

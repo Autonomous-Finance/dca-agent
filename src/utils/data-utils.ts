@@ -38,3 +38,19 @@ export const TYPE_PATH_MAP: Record<string, string> = {
   Block: "block",
   Entity: "entity",
 }
+
+export const TARGET_CURRENCIES = ["BRKTST", "TRUNK", "0RBT"] as const
+export type TargetToken = typeof TARGET_CURRENCIES[number]
+export const CURRENCY_PROCESS_MAP: Record<TargetToken, string> = {
+  BRKTST: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
+  TRUNK: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
+  '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"
+}
+
+export const INTERVAL_TYPES = ["Minutes", "Hours", "Days"] as const
+export type IntervalType = typeof INTERVAL_TYPES[number]
+
+
+export const findCurrencyById = (id: string) => {
+  return Object.entries(CURRENCY_PROCESS_MAP).find(([_, value]) => value === id)?.[0]
+}

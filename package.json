@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build-lua": "chmod +x lua-source.sh && ./lua-source.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

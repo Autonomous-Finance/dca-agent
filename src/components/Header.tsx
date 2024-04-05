@@ -16,9 +16,14 @@ import Link from "next/link"
 
 import { AccBalance } from "./AccBalance"
 import { MonoFontFF } from "./RootLayout/fonts"
+import { Logo } from "./Logo"
+import React, { useEffect } from "react"
+import { usePathname } from "next/navigation"
 
 const Header = () => {
   const { mode = "dark", setMode } = useColorScheme()
+
+  const pathname = usePathname();
 
   return (
     <AppBar
@@ -46,12 +51,32 @@ const Header = () => {
               sx={{ marginLeft: -1 }}
             >
               <Stack direction="row" gap={2} alignItems="center">
-                {/* <Logo color="var(--mui-palette-text-primary)" /> */}
-                <Typography variant="h6" fontFamily={MonoFontFF}>
-                  AF DCA Bot
+                <Logo color="var(--mui-palette-text-primary)" mode={mode}/>
+                <Typography variant="h6" color="var(--mui-palette-text-primary)" fontFamily={MonoFontFF}>
+                  DCA Bot
                 </Typography>
               </Stack>
             </Button>
+            <Stack direction="row" gap={2} alignItems="center">
+              {/* TODO highlight underline for active link */}
+
+              <Button component={Link} href="/" size="large"
+                sx={theme => ({
+                  fontSize: '1.25rem', 
+                  color: pathname === '/' ? '#030303': theme.palette.primary.main,
+                  textTransform: pathname === '/' ? 'underline uppercase' : 'uppercase'
+                })}>
+                Dashboard
+              </Button>
+              <Button component={Link} href="/history" size="large"
+                sx={theme => ({
+                  fontSize: '1.25rem', 
+                  color: pathname === '/history' ? '#030303': theme.palette.primary.main,
+                  textTransform: pathname === '/history' ? 'underline uppercase' : 'uppercase'
+                })}>
+                History
+              </Button>
+            </Stack>
             <Stack direction="row" gap={2} alignItems="center">
               <IconButton
                 size="medium"

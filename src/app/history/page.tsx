@@ -1,4 +1,6 @@
-export function BotHistory() {
+'use client'
+
+export default function BotHistory() {
   return (
     <div>
       <hr/>

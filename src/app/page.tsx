@@ -1,34 +1,67 @@
+'use client'
+
 export const dynamic = "force-dynamic"
 
-import { DeployContract } from "./DeployContract"
-import { Grid } from "@mui/material"
+import { Box, Button } from "@mui/material"
 
-import { LaunchBot } from "./LaunchBot"
-import { BotHistory } from "./BotHistory"
-import { BotStatus, readBotStatus } from "@/api/dca-bot"
+import { CreateBot } from "./CreateBot"
 import { ActiveBot } from "./ActiveBot"
+import React, { useEffect } from "react"
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import { BotStatus, BotStatusNonInit, readBotStatus } from "@/utils/bot-utils"
+import LoadingHome from "@/components/LoadingHome"
 
-
-export default async function HomePageServer() {
+export default function HomePageServer() {
   // return <DeployContract />
 
-  const botStatus: BotStatus | null = await readBotStatus()
+  const [botStatus, setBotStatus] = React.useState<BotStatus | BotStatusNonInit | null>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  useEffect(() => {
+    readBotStatus().then((resp) => {
+      setBotStatus(resp)
+      setLoading(false)
+    })
+  }, []);
+
+  const updateStatus = async () => {
+    setLoading(true)
+    const status = await readBotStatus()
+    setBotStatus(status)
+    setLoading(false)
+  }
+
+  const cleanupForNewBot = () => {
+    window.localStorage.setItem('botProcess', '')
+    window.location.reload()
+  }
+
+  if (botStatus && !botStatus.initialized) {
+    cleanupForNewBot()
+  }
 
   return (
-    <Grid container spacing={3}>
-      {!botStatus && (
-        <Grid item xs={12} lg={6}>
-          <LaunchBot/>
-        </Grid>
-      )}
-      {/* {botStatus && ( */}
-        <Grid item xs={12} lg={6}>
-          <ActiveBot initialBotStatus={botStatus!} />
-        </Grid>
-      {/* )} */}
-      <Grid item xs={12}>
-        <BotHistory />
-      </Grid>
-    </Grid>
+    <>
+      <Box margin={'6rem auto 0'} maxWidth={600}>
+        {loading && <LoadingHome/>}
+        {!loading && !botStatus && (
+            <CreateBot checkOutDeployedBot={updateStatus}/>
+        )}
+        {!loading && botStatus && botStatus.initialized && (
+            <ActiveBot initialBotStatus={botStatus} />
+        )} 
+      </Box>
+
+      {/* for debugging while wip */}
+      <Box position={'fixed'} right={'2rem'} bottom={'2rem'}>
+        <Button onClick={cleanupForNewBot}
+          variant='outlined'
+          color="primary"
+          startIcon={<CleaningServicesIcon />}
+          >
+          Clear Bot
+        </Button>
+      </Box>
+    </>
   )
 }

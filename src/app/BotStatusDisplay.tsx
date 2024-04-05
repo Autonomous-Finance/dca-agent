@@ -1,11 +1,10 @@
 "use client"
 
-import { Pause, PlayArrow } from "@mui/icons-material"
+import { BotStatus, readBotStatus } from "@/utils/bot-utils"
+import { Pause, PlayArrow, Warning } from "@mui/icons-material"
 import { Chip, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
-
-import { readBotStatus } from "@/api/dca-bot"
-import type { BotStatus } from "@/api/dca-bot"
+import { findCurrencyById } from '../utils/data-utils';
 
 export function BotStatusDisplay(props: { initialBotStatus: BotStatus }) {
   const { initialBotStatus } = props
@@ -16,7 +15,13 @@ export function BotStatusDisplay(props: { initialBotStatus: BotStatus }) {
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      readBotStatus().then(setBotStatus)
+      const update = async () => {
+        const status = await readBotStatus()
+        if (status?.initialized) {
+          setBotStatus(status)
+        }
+      }
+      update();
     }, 1000)
 
     return () => clearInterval(interval)
@@ -24,35 +29,29 @@ export function BotStatusDisplay(props: { initialBotStatus: BotStatus }) {
 
   return (
     <Stack gap={4} alignItems="flex-start">
-      <Typography variant="h6">Active Bot</Typography>
+      <Typography variant="h4">DCA Bot</Typography>
       {botStatus !== null && (
         <>
         {/* TODO handle states properly */}
-          {botStatus.type === "Active" ? (
-            <>
-              <Chip label="Active" color="success" icon={<PlayArrow />} />
-              <Stack gap={0.5}>
-                <Typography>
-                  <Typography color="text.secondary" component="span">
-                    Next BUY:{" "}
-                  </Typography>
-                  {botStatus.nextBuy.toString()}
-                  {/* TODO format time */}
+          <>
+            {/* display chip according to balance */}
+            <Chip label="No Funds" color="warning" icon={<Pause />} />
+            {/* <Chip label="Active" color="success" icon={<PlayArrow />} /> */}
+            <Stack gap={0.5}>
+              <Typography>
+                <Typography color="text.secondary" component="span">
+                  Target Token:{" "}
                 </Typography>
-                <Typography>
-                  <Typography color="text.secondary" component="span">
-                    Base Token Reserves:{" "}
-                  </Typography>
-                  {botStatus.baseTokenBalance.toString()}
-                  {/* TODO format currency */}
+                {findCurrencyById(botStatus?.targetToken)}
+              </Typography>
+              {/* <Typography>
+                <Typography color="text.secondary" component="span">
+                  Base Token Reserves:{" "}
                 </Typography>
-              </Stack>
-            </>
-          ) : (
-            <>
-              <Chip label="Paused" color="warning" icon={<Pause />} />
-            </>
-          )}
+                {botStatus.baseTokenBalance.toString()}
+              </Typography> */}
+            </Stack>
+          </>
         </>
       )}
     </Stack>
