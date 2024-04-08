@@ -29,7 +29,7 @@ export function AgentPanel() {
   const credBalance = status.baseTokenBalance || '-';
 
   const addToLog = (entry: LogEntry, error?: string) => {
-    if (error && entry.hasLink && isLocalDev()) {
+    if (error && isLocalDev()) {
       entry.text = `${entry.text} - ${error}`
     }
     setActionLog((log) => [...log, entry])

@@ -184,7 +184,10 @@ export const transferOwnership = async (id: string): Promise<Receipt<string>> =>
   
     const msgId = await ao.message({
       process: agent,
-      tags: [{ name: "Action", value: "TransferOwnership" }],
+      tags: [
+        { name: "Action", value: "TransferOwnership" },
+        { name: "NewOwner", value: id }
+      ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
     console.log("Message sent: ", msgId)

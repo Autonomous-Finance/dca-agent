@@ -4,6 +4,7 @@
 ## Ownership
 - check via process owner, not message owner
 - for ownership transfer or renounciation, keep in mind that ao.env.Process.Owner will not update
+- it's not possible to use a custom tag "Owner" when sending a message
 
 ## Safe Initialization (+ ownership + config)
 

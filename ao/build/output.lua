@@ -122,9 +122,8 @@ Handlers.add(
   "transferOwnership",
   Handlers.utils.hasMatchingTag("Action", "TransferOwnership"),
   function(msg)
-    assert(msg.From == Owner, 'Only the owner can update the owner!')
-    assert(msg.Tags.Owner ~= nil and type(msg.Tags.Owner) == 'string', 'Owner is required!')
-    Owner = msg.Tags.Owner
+    assert(msg.Tags.NewOwner ~= nil and type(msg.Tags.NewOwner) == 'string', 'Owner is required!')
+    Owner = msg.Tags.NewOwner
     Handlers.utils.reply({
       ["Response-For"] = "TransferOwnership",
       Data = "Success"
