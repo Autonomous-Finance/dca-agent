@@ -54,12 +54,23 @@ LatestBaseTokenBal = LatestBaseTokenBal or "0"
 -- INIT & CONFIG
 
 Handlers.add(
-  "status",
-  Handlers.utils.hasMatchingTag("Action", "Status"),
+  "getOwner",
+  Handlers.utils.hasMatchingTag("Action", "GetOwner"),
+  function(msg)
+    Handlers.utils.reply({
+      ["Response-For"] = "GetOwner",
+      Data = Owner
+    })(msg)
+  end
+)
+
+Handlers.add(
+  "getStatus",
+  Handlers.utils.hasMatchingTag("Action", "GetStatus"),
   function(msg)
     if not Initialized then
       Handlers.utils.reply({
-        ["Response-For"] = "Status",
+        ["Response-For"] = "GetStatus",
         Data = json.encode({ initialized = false })
       })(msg)
       return
@@ -72,7 +83,7 @@ Handlers.add(
       baseTokenBalance = LatestBaseTokenBal
     })
     Handlers.utils.reply({
-      ["Response-For"] = "Status",
+      ["Response-For"] = "GetStatus",
       Data = config
     })(msg)
   end

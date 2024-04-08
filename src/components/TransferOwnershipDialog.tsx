@@ -49,12 +49,12 @@ export default function TransferOwnershipDialog(props: {loading: boolean, btnWid
           },
         }}
       >
-        <DialogTitle>Transfer Bot Ownership</DialogTitle>
+        <DialogTitle>Transfer Agent Ownership</DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
-              <Typography color="text.primary">To transfer your bot, please enter a valid AO account ID below.</Typography>
-              <Typography color="error">By submitting, you renounce control of your BOT and the ASSETS it manages.</Typography>
+              <Typography color="text.primary">To transfer your agent, please enter a valid AO account ID below.</Typography>
+              <Typography color="error">By submitting, you renounce control of your AGENT and the ASSETS it manages.</Typography>
             </Stack>
           </DialogContentText>
           <TextField

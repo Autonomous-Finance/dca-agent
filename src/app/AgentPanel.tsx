@@ -4,54 +4,60 @@ import { Box, Divider, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
 
 import { credSymbol } from "@/api/testnet-cred"
-import { BotStatusDisplay } from "./BotStatusDisplay"
-import { BotStatus, depositToBot, transferOwnership, withdrawBase } from "@/utils/bot-utils"
+import { AgentStatusDisplay } from "./AgentStatusDisplay"
+import { depositToAgent, transferOwnership, withdrawBase } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
 import WithdrawBaseDialog from "@/components/WithdrawBaseDialog"
-import { useIdentifiedBot } from "./hooks/useCheckBot"
+import { useIdentifiedAgent } from "./hooks/useCheckAgent"
+import { isLocalDev } from "@/utils/debug-utils"
 
-export function BotPanel() {
+export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
   
   const [loadingTopUp, setLoadingTopUp] = React.useState(false)
   const [loadingWithdrawBase, setLoadingWithdrawBase] = React.useState(false)
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
 
-  const bot = useIdentifiedBot()
+  const agent = useIdentifiedAgent()
 
-  if (!bot) return <></>
+  if (!agent) return <></>
   
-  const {status} = bot
+  const {status} = agent
 
   const credBalance = status.baseTokenBalance || '-';
 
-  const addToLog = (entry: LogEntry) => setActionLog((log) => [...log, entry]);
+  const addToLog = (entry: LogEntry, error?: string) => {
+    if (error && entry.hasLink && isLocalDev()) {
+      entry.text = `${entry.text} - ${error}`
+    }
+    setActionLog((log) => [...log, entry])
+  }
 
   const handleDeposit = async (amount: string) => {
     setLoadingTopUp(true)
-    addToLog(`Depositing ${amount} ${credSymbol} to bot`)
-    const msgId = await depositToBot(amount)
+    addToLog({text: `Depositing ${amount} ${credSymbol} to agent`, hasLink: false})
+    const depositResult = await depositToAgent(amount)
     setLoadingTopUp(false)
-    if (msgId) {
-      addToLog({ text: 'Deposit successful. MessageID', linkId: msgId})
+    if (depositResult?.type === "Success") {
+      const msgId = depositResult.result
+      addToLog({ text: 'Deposit successful. MessageID', hasLink: true, linkId: msgId, isMessage: true})
     } else {
-      // TODO make this more nuanced, depending on what went wrong
-      addToLog(`Failed to deposit ${credSymbol}. Please try again.`)
+      addToLog({text: `Failed to deposit ${credSymbol}. Please try again.`, hasLink: false, isError: true}, depositResult.result)
     }
   }
 
   const handleWithdrawBase = async (amount: string) => {
     setLoadingWithdrawBase(true)
-    addToLog(`Withdrawing ${amount} ${credSymbol} from bot`)
-    const msgId = await withdrawBase(amount)
+    addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent`, hasLink: false})
+    const withdrawResult = await withdrawBase(amount)
     setLoadingWithdrawBase(false)
-    if (msgId) {
-      addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId})
+    if (withdrawResult?.type === "Success") {
+      const msgId = withdrawResult.result
+      addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
-      // TODO make this more nuanced, depending on what went wrong
-      addToLog(`Failed to withdraw ${credSymbol}. Please try again.`)
+      addToLog({ text: `Failed to withdraw ${credSymbol}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
   }
 
@@ -81,14 +87,14 @@ export function BotPanel() {
 
   const handleTransferOwnership = async (id: string) => {
     setLoadingTransferOwnership(true)
-    addToLog(`Transferring ownership to ${id}`)
-    const msgId = await transferOwnership(id)
+    addToLog({text: `Transferring ownership to ${id}`, hasLink: false})
     setLoadingTransferOwnership(false)
-    if (msgId) {
-      addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId})
+    const transferResult = await transferOwnership(id)
+    if (transferResult.type === "Success") {
+      const msgId = transferResult.result
+      addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
     } else {
-      // TODO make this more nuanced, depending on what went wrong
-      addToLog(`Failed to transfer ownership to ${id}. Please try again.`)
+      addToLog({text: `Failed to transfer ownership to ${id}. Please try again.`, hasLink: false, isError: true}, transferResult.result)
     }
   }
 
@@ -110,7 +116,7 @@ export function BotPanel() {
       <Paper variant="outlined" sx={{ padding: 4 }}>
         <Stack direction={'row'} gap={4} height={600}>
           <Stack gap={4} width={540}>
-            <BotStatusDisplay />
+            <AgentStatusDisplay />
             <Divider />
             <Stack>
               <Typography variant="h6">

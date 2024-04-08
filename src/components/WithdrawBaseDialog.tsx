@@ -68,7 +68,7 @@ export default function WithdrawBaseDialog(props: {
                 To withdraw base token, please enter an amount below.
               </Typography>
               <Typography color="text.primary">
-                Your bot will be debited with this amount.
+                Your agent will be debited with this amount.
               </Typography>
             </Stack>
           </DialogContentText>
@@ -93,7 +93,7 @@ export default function WithdrawBaseDialog(props: {
           </Box>
           <Typography variant="body1" color="text.primary" width={FORM_WIDTH}
             display={'flex'} justifyContent={'space-between'}>
-            Bot Balance: {" "}
+            Agent Balance: {" "}
             <Typography component='span'>
               <Typography component='span' fontWeight={'bold'} color="text.primary">{tokenBalance}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>

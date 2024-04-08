@@ -4,23 +4,22 @@ export const dynamic = "force-dynamic"
 
 import { Box, Button } from "@mui/material"
 
-import { CreateBot } from "./CreateBot"
-import { BotPanel } from "./BotPanel"
+import { CreateAgent } from "./CreateAgent"
+import { AgentPanel } from "./AgentPanel"
 import React from "react"
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import LoadingHome from "@/components/LoadingHome"
-import { IdentifiedBotContext, useCheckBot } from "./hooks/useCheckBot"
+import { IdentifiedAgentContext, useCheckAgent } from "./hooks/useCheckAgent"
 
 export default function HomePageServer() {
-  const latestBot = useCheckBot();
+  const latestBot = useCheckAgent();
 
   if (!latestBot) return <></>
 
   const {status, loading} = latestBot;
 
-
   const cleanupForNewBot = () => {
-    window.localStorage.setItem('botProcess', '')
+    window.localStorage.setItem('agentProcess', '')
     window.location.reload()
   }
 
@@ -30,11 +29,11 @@ export default function HomePageServer() {
         {loading && <LoadingHome/>}
         {!loading && (
           <>
-            {!status && ( <CreateBot checkOutDeployedBot={latestBot.updateStatus}/> )}
+            {!status && ( <CreateAgent checkOutDeployedAgent={latestBot.updateStatus}/> )}
             {status && (
-              <IdentifiedBotContext.Provider value={latestBot}>
-                <BotPanel />
-              </IdentifiedBotContext.Provider>
+              <IdentifiedAgentContext.Provider value={latestBot}>
+                <AgentPanel />
+              </IdentifiedAgentContext.Provider>
             )} 
           </>
         )}
@@ -47,7 +46,7 @@ export default function HomePageServer() {
           color="primary"
           startIcon={<CleaningServicesIcon />}
           >
-          Clear Bot
+          Clear Agent
         </Button>
       </Box>
     </>

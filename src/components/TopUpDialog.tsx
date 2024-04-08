@@ -74,7 +74,7 @@ export default function TopUpDialog(props: {
                   color="var(--mui-palette-success-main)" 
                   fontWeight={'bold'}
                 >
-                  Your bot will own this deposit </Typography> and use it to regularly buy target token.
+                  Your agent will own this deposit </Typography> and use it to regularly buy target token.
               </Typography>
             </Stack>
           </DialogContentText>
@@ -99,7 +99,7 @@ export default function TopUpDialog(props: {
           </Box>
           <Typography variant="body1" color="text.primary" width={FORM_WIDTH}
             display={'flex'} justifyContent={'space-between'}>
-            Bot Balance: {" "}
+            Agent Balance: {" "}
             <Typography component='span'>
               <Typography component='span' fontWeight={'bold'} color="text.primary">{tokenBalance}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>

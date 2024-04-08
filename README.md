@@ -1,6 +1,6 @@
-# Simple DCA Bot on AO
+# Simple DCA Agent on AO
 
-A DCA bot that swaps TargetToken for BaseToken at regular intervals. 
+A DCA agent that swaps TargetToken for BaseToken at regular intervals. 
 
 
 It works in conjunction with 2 Cron process proxies
@@ -12,7 +12,7 @@ It works in conjunction with 2 Cron process proxies
 - direct interaction with pool, no router
 - single owner (initially the deployment signer, but can be changed),
 - single currency pair
-- bot is supposed to be owned / controlled by user with an arweave wallet, not by another bot (msg.From vs. Owner)
+- agent is supposed to be owned / controlled by user with an arweave wallet, not by another Agent (msg.From vs. Owner)
 
 ### Operate
 - allows loading up with base token
@@ -24,7 +24,7 @@ It works in conjunction with 2 Cron process proxies
 - base token can't be configured
 
 
-# Bot Deployment
+# Agent Deployment
 
 ## Prepare Lua code
 Put all lua code into a single file using amalg - builds a single amalgamation file.
@@ -36,9 +36,9 @@ To build on osx:
 ## In App
 *swuw* == "signed with user wallet"
 
-1. user configures the bot with target token, slippage, swap amount
+1. user configures the agent with target token, slippage, swap amount
 2. user confirms deployment
-   1. create main bot process (*swuw*)
+   1. create main agent process (*swuw*)
    2. upon deployment confirmation, load `process.lua` 
    3. upon eval confirmation, `"Initialize"` (*swuw*)
    4. upon initialization confirmation, spawn cron proxy processes
@@ -48,8 +48,8 @@ To build on osx:
 
 # TODO Requirements
 
-Clarify: what constitutes a bot status ?
-  - bot process state 
+Clarify: what constitutes a agent status ?
+  - agent process state 
   - cron proxy processes state
   - peripheral info additional storage on arweave
 
@@ -58,12 +58,12 @@ Clarify: what constitutes a bot status ?
 
 Create working version for each iteration
 
-1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Bot can only be configured in terms of currency. Should list past processes in the table.
-   1. store latest bot id in localstorage
-   2. query historic data and latest bot owned by current user - via graphql
+1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Agent can only be configured in terms of currency. Should list past processes in the table.
+   1. store latest agent id in localstorage
+   2. query historic data and latest agent owned by current user - via graphql
    3. check that changing the owner works
-2. Fully fledged dca bot with automation, includes state display of the active bot.
-3. Add metrics for bot performance
+2. Fully fledged dca agent with automation, includes state display of the active agent.
+3. Add metrics for agent performance
 4. Finesse for UX
    1. Prettify UI, 
    2. responsive to suit smaller devices
@@ -72,7 +72,7 @@ Create working version for each iteration
       2. slider for 0% - 100% of available balance to input amount etc.
       3. Assist user in keeping track of all messages sent within the app (wallet doesn't help with that - central place for in-app logs)
    4. add animated stepper for deployment progress display
-5. Reconsider bot design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
+5. Reconsider agent design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
 
 
 

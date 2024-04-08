@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import RootLayoutUI from "../components/RootLayout/RootLayoutUI"
 
 export const metadata: Metadata = {
-  title: "AF DCA Bot",
+  title: "AF DCA Agent",
   icons: {
     icon: "/ao.svg",
   },

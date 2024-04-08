@@ -19,7 +19,7 @@ import React from "react"
 
 
 import { IntervalType, TARGET_CURRENCIES, INTERVAL_TYPES, TargetToken, TYPE_ICON_MAP } from '@/utils/data-utils';
-import BotCodeModalButton from "@/components/BotCodeModalButton"
+import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
 
@@ -37,7 +37,7 @@ import { shortenId } from "@/utils/ao-utils"
 import Log, { LogEntry } from "@/components/Log";
 
 
-export function CreateBot(props: {checkOutDeployedBot: () => void}) {
+export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
   const [loading, setLoading] = React.useState(false)
   const [deployed, setDeployed] = React.useState(false)
 
@@ -70,7 +70,7 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
     try {
       setLoading(true);
 
-      addToLog('Creating Bot Process on AO...')
+      addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
 
       const processId = await spawn({
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
@@ -79,7 +79,7 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
       })
       console.log("📜 LOG > processId:", processId)
 
-      addToLog('Installing handlers...')
+      addToLog({text: 'Installing handlers...', hasLink: false})
 
       // This is required because the processId above is available and 
       // returned here before the SU has completed the process registration
@@ -117,32 +117,38 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
       const status = await dryrun({
         process: processId,
         data: "",
-        tags: [{ name: "Action", value: "Status" }],
+        tags: [{ name: "Action", value: "GetStatus" }],
       })
       console.log("📜 LOG > dryRun Status:", status)
 
-      addToLog("Successfully deployed and initalized.")
+      addToLog({text: "Successfully deployed and initalized.", hasLink: false})
       
       const logEntries: LogEntry[] = [
         {
-          text: 'Bot process',
-          linkId: processId
+          text: 'Agent process',
+          hasLink: true,
+          linkId: processId,
+          isMessage: false
         },
         {
           text: 'Handlers installation',
-          linkId: evalMsgId!
+          hasLink: true,
+          linkId: evalMsgId!,
+          isMessage: true
         },
         {
           text: 'Initialization',
-          linkId: initMsgId
+          hasLink: true,
+          linkId: initMsgId,
+          isMessage: true
         }
       ];
       logEntries.forEach((item: LogEntry) => addToLog(item));
       setDeployed(true)
-      window.localStorage.setItem("botProcess", processId)
+      window.localStorage.setItem("agentProcess", processId)
     } catch (e) {
       console.error(e)
-      "Failed to deploy DCA bot. Please try again."
+      addToLog({text: "Failed to deploy DCA agent. Please try again.", isError: true, hasLink: false})
       setLoading(false);
     } finally {
       setLoading(false);
@@ -154,7 +160,7 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4}}>
         <Stack gap={4} alignItems={'stretch'} width={600}>
-          <Typography variant="h6">Create New Bot</Typography>
+          <Typography variant="h6">Create New Agent</Typography>
 
           <Stack direction="row" gap={2} alignItems="stretch">
             <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
@@ -248,7 +254,7 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
                   color="success"
                   onClick={handleDeploy}
                 >
-                  Deploy DCA Bot
+                  Deploy DCA Agent
                 </Button>
               </Stack>
             </Stack>
@@ -268,12 +274,12 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
               >
 
                 <Typography paragraph>
-                  Deployment will create a bot process as configured.
+                  Deployment will create an agent process as configured.
                 </Typography>
                 <Typography paragraph>
-                  You own and control this bot via your connected AR wallet account.
+                  You own and control this agent via your connected AR wallet account.
                 </Typography>
-                <BotCodeModalButton />
+                <AgentCodeModalButton />
               </Box>
             </Box>
           </Stack>
@@ -288,9 +294,9 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
               endIcon={<MemoryIcon/>}
               variant="contained"
               color="primary"
-              onClick={props.checkOutDeployedBot}
+              onClick={props.checkOutDeployedAgent}
             >
-              Bot Dashboard
+              Agent Dashboard
             </Button>
           )}
 

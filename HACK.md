@@ -10,14 +10,14 @@
 Send an initialization message and handle as if constructor in Solidity.
 
 Handler Setup: Before process is initialized, only allow 
-- 1 handler to publicly query init status
+- 1 handler to publicly query init status and ownership
 - 1 handler to initialize (only owner allowed)
 - 1 handler to match & error as long as not initialized  ==> all subsequent handlers remain unavailable until initlization
 
 ## Respond to a message
 Data contains the response (json.encoded)
 Add Tag to response message accordingly: 
-  e.g. `["Response-For"] : "Status"` if the request message had `m.Tags.Action == "Status"`
+  e.g. `["Response-For"] : "GetStatus"` if the request message had `m.Tags.Action == "GetStatus"`
 
 ## My Latest Balance
 

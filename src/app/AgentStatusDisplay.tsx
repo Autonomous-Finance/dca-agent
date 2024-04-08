@@ -4,22 +4,22 @@ import { Pause, PlayArrow } from "@mui/icons-material"
 import { Chip, Stack, Typography } from "@mui/material"
 import React from "react"
 import { findCurrencyById } from '../utils/data-utils';
-import { useIdentifiedBot } from "./hooks/useCheckBot"
+import { useIdentifiedAgent } from "./hooks/useCheckAgent"
 
-export function BotStatusDisplay() {
+export function AgentStatusDisplay() {
 
-  const bot = useIdentifiedBot();
+  const agent = useIdentifiedAgent();
 
-  if (!bot) return <></>
+  if (!agent) return <></>
 
-  const { status } = bot
+  const { status } = agent
   
   const hasFunds = Number.parseInt(status.baseTokenBalance) > 0
 
   return (
     <Stack gap={4} alignItems="flex-start">
-      <Typography variant="h4">DCA Bot</Typography>
-      {bot !== null && (
+      <Typography variant="h4">DCA Agent</Typography>
+      {agent !== null && (
         <>
         {/* TODO handle states properly */}
           <>

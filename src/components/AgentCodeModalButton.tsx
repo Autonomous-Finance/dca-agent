@@ -5,7 +5,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { BOT_SOURCE } from '@/lua/bot-source';
 
-function BotCodeModalButton() {
+function AgentCodeModalButton() {
   const [open, setOpen] = useState(false);
   const [snackOpen, setSnackOpen] = useState(false);
 
@@ -49,7 +49,7 @@ function BotCodeModalButton() {
         <Stack sx={style} gap={1}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
             <Typography id="modal-modal-title" variant="h5" component="h2">
-              DCA Bot Source Code
+              DCA Agent Source Code
             </Typography>
             <Stack direction={'row'} gap={0.5} alignItems={'center'} mb={1}
               sx={[
@@ -103,4 +103,4 @@ function BotCodeModalButton() {
   )
 }
 
-export default BotCodeModalButton
+export default AgentCodeModalButton

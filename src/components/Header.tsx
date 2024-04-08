@@ -55,7 +55,7 @@ const Header = () => {
               <Stack direction="row" gap={2} alignItems="center">
                 <Logo color="var(--mui-palette-text-primary)" mode={mode}/>
                 <Typography variant="h6" color="var(--mui-palette-text-primary)" fontFamily={MonoFontFF}>
-                  DCA Bot
+                  DCA Agent
                 </Typography>
               </Stack>
             </Button>
