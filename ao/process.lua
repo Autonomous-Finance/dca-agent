@@ -5,8 +5,10 @@ local json = require "json"
 
 -- bot deployment triggered by user from browser => browser wallet owner == process owner
 Owner = Owner or ao.Process.env.Owner
-LatestTargetTokenBal = LatestTargetTokenBal or nil
-LatestBaseTokenBal = LatestBaseTokenBal or nil
+-- TODO relatively safe to assume initial balances are 0, but worth discussing :
+-- "can ids of not-yet-spawned processes be known in advance and credited?" (for whatever reason)
+LatestTargetTokenBal = LatestTargetTokenBal or 0
+LatestBaseTokenBal = LatestBaseTokenBal or 0
 
 Initialized = Initialized or false
 
@@ -64,8 +66,8 @@ Handlers.add(
 -- OWNERSHIP
 
 Handlers.add(
-  "updateOwner",
-  Handlers.utils.hasMatchingTag("Action", "UpdateOwner"),
+  "transferOwnership",
+  Handlers.utils.hasMatchingTag("Action", "TransferOwnership"),
   function(msg)
     assert(msg.From == Owner, 'Only the owner can update the owner!')
     assert(msg.Tags.Owner ~= nil and type(msg.Tags.Owner) == 'string', 'Owner is required!')
@@ -126,8 +128,9 @@ Handlers.add(
   end
 )
 
+-- response to the balance request
 Handlers.add(
-  "LatestBalanceUpdate",
+  "latestBalanceUpdateTargetToken",
   function(m)
     local isMatch = m.Tags.Balance ~= nil
         and m.From == TargetToken
@@ -135,7 +138,7 @@ Handlers.add(
     return isMatch and -1 or 0
   end,
   function(m)
-    LatestBarkBalance = m.Balance
+    LatestTargetTokenBal = m.Balance
   end
 )
 
@@ -159,8 +162,9 @@ Handlers.add(
   end
 )
 
+-- response to the balance request
 Handlers.add(
-  "LatestBalanceUpdate",
+  "latestBalanceUpdateBaseToken",
   function(m)
     local isMatch = m.Tags.Balance ~= nil
         and m.From == BaseToken
@@ -168,7 +172,7 @@ Handlers.add(
     return isMatch and -1 or 0
   end,
   function(m)
-    LatestAoCredBalance = m.Balance
+    LatestBaseTokenBal = m.Balance
   end
 )
 
@@ -197,12 +201,12 @@ Handlers.add(
 -- Withdrawals
 
 Handlers.add(
-  "WithdrawBark",
-  Handlers.utils.hasMatchingTag("Action", "Withdraw"),
+  "withdrawTargetToken",
+  Handlers.utils.hasMatchingTag("Action", "WithdrawTargetToken"),
   function(msg)
     ownership.onlyOwner(msg)
     ownership.optionalQuantity(msg)
-    local quantity = msg.Tags.Quantity or LatestBarkBalance
+    local quantity = msg.Tags.Quantity or LatestTargetTokenBal
     ao.send({
       Target = TargetToken,
       Action = "Transfer",
@@ -213,12 +217,12 @@ Handlers.add(
 )
 
 Handlers.add(
-  "WithdrawAoCred",
-  Handlers.utils.hasMatchingTag("Action", "Withdraw"),
+  "WithdrawBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
     ownership.onlyOwner(msg)
     ownership.optionalQuantity(msg)
-    local quantity = msg.Tags.Quantity or LatestAoCredBalance
+    local quantity = msg.Tags.Quantity or LatestBaseTokenBal
     ao.send({
       Target = BaseToken,
       Action = "Transfer",

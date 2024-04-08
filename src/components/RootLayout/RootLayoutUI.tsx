@@ -8,6 +8,8 @@ import { ArweaveProvider } from "@/app/ArweaveProvider"
 
 import { theme } from "./theme"
 import Header from "../Header"
+import { AccountBalanceProvider } from "@/app/hooks/useAccountBalance"
+import { CheckBotProvider } from "@/app/hooks/useCheckBot"
 
 export default function RootLayoutUI({
   children,
@@ -19,8 +21,12 @@ export default function RootLayoutUI({
       <CssVarsProvider theme={theme} defaultMode="light">
         <CssBaseline />
         <ArweaveProvider>
-          <Header />
-          <Container maxWidth="xl">{children}</Container>
+          <AccountBalanceProvider>
+            <Header />
+            <CheckBotProvider>
+              <Container maxWidth="xl">{children}</Container>
+            </CheckBotProvider>
+          </AccountBalanceProvider>
         </ArweaveProvider>
       </CssVarsProvider>
     </>

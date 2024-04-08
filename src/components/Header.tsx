@@ -9,6 +9,7 @@ import {
   Toolbar,
   useColorScheme,
   Typography,
+  useTheme,
 } from "@mui/material"
 import { Moon, Sun } from "@phosphor-icons/react"
 import { ConnectButton } from "arweave-wallet-kit"
@@ -22,6 +23,7 @@ import { usePathname } from "next/navigation"
 
 const Header = () => {
   const { mode = "dark", setMode } = useColorScheme()
+  const theme = useTheme()
 
   const pathname = usePathname();
 
@@ -63,7 +65,7 @@ const Header = () => {
               <Button component={Link} href="/" size="large"
                 sx={theme => ({
                   fontSize: '1.25rem', 
-                  color: pathname === '/' ? '#030303': theme.palette.primary.main,
+                  color: `var(--mui-customColors-naviLink-${pathname === '/' ? '' : 'in'}active-${theme.palette.mode})`,
                   textTransform: pathname === '/' ? 'underline uppercase' : 'uppercase'
                 })}>
                 Dashboard
@@ -71,7 +73,7 @@ const Header = () => {
               <Button component={Link} href="/history" size="large"
                 sx={theme => ({
                   fontSize: '1.25rem', 
-                  color: pathname === '/history' ? '#030303': theme.palette.primary.main,
+                  color: `var(--mui-customColors-naviLink-${pathname === '/history' ? '' : 'in'}active-${theme.palette.mode})`,
                   textTransform: pathname === '/history' ? 'underline uppercase' : 'uppercase'
                 })}>
                 History

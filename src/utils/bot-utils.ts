@@ -1,5 +1,5 @@
+import { CRED_ADDR } from "@/api/testnet-cred"
 import * as ao from "@permaweb/aoconnect/browser"
-import { CURRENCY_PROCESS_MAP, findCurrencyById as findTokenSymbolById } from "./data-utils"
 
 export type BotStatus = {
   initialized: true
@@ -7,8 +7,8 @@ export type BotStatus = {
   // type: "Active" | "OutOfFunds" | "Retired"
   // timeLeft: number
   // nextBuy: Date
-  // baseTokenBalance: number
-  // targetTokenBalance: number
+  baseTokenBalance: string
+  targetTokenBalance: string
 }
 export type BotStatusNonInit = {
   initialized: false
@@ -49,6 +49,102 @@ export async function readBotStatus(): Promise<BotStatus | BotStatusNonInit | nu
     }
   
     return null
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+export const depositToBot = async (amount: string) => {
+  const bot = window.localStorage.getItem("botProcess");
+
+  if (!bot) return null;
+
+  try {
+    console.log("Depositing ", amount);
+  
+    const msgId = await ao.message({
+      process: CRED_ADDR,
+      tags: [
+        { name: "Action", value: "Transfer" },
+        { name: "Quantity", value: amount },
+        { name: "Recipient", value: bot },
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: CRED_ADDR,
+    })
+  
+    console.log("Result: ", res)
+
+    return msgId
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+export const withdrawBase = async (amount: string) => {
+  const bot = window.localStorage.getItem("botProcess");
+
+  if (!bot) return null;
+
+  try {
+    console.log("Withdrawing base token ");
+  
+    const msgId = await ao.message({
+      process: bot,
+      tags: [
+        { name: "Action", value: "WithdrawBaseToken" },
+        { name: "Quantity", value: amount }
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: bot,
+    })
+
+    // TODO could also wait for credit notice on user, to be absolutely sure
+  
+    console.log("Result: ", res)
+
+    return msgId
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+export const transferOwnership = async (id: string) => {
+  const process = window.localStorage.getItem("botProcess");
+
+  if (!process) return null;
+
+  try {
+    console.log("Transferring Ownership to ", id);
+  
+    const msgId = await ao.message({
+      process,
+      tags: [{ name: "Action", value: "TransferOwnership" }],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process,
+    })
+  
+    console.log("Result: ", res)
+
+    return msgId;
   } catch (e) {
     console.error(e)
     return null

@@ -1,48 +1,44 @@
 "use client"
 
-import { BotStatus, readBotStatus } from "@/utils/bot-utils"
-import { Pause, PlayArrow, Warning } from "@mui/icons-material"
-import { Chip, Paper, Stack, Typography } from "@mui/material"
+import { Pause, PlayArrow } from "@mui/icons-material"
+import { Chip, Stack, Typography } from "@mui/material"
 import React from "react"
 import { findCurrencyById } from '../utils/data-utils';
+import { useIdentifiedBot } from "./hooks/useCheckBot"
 
-export function BotStatusDisplay(props: { initialBotStatus: BotStatus }) {
-  const { initialBotStatus } = props
+export function BotStatusDisplay() {
 
-  const [botStatus, setBotStatus] = React.useState<BotStatus | null>(
-    initialBotStatus,
-  )
+  const bot = useIdentifiedBot();
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      const update = async () => {
-        const status = await readBotStatus()
-        if (status?.initialized) {
-          setBotStatus(status)
-        }
-      }
-      update();
-    }, 1000)
+  if (!bot) return <></>
 
-    return () => clearInterval(interval)
-  }, [])
+  const { status } = bot
+  
+  const hasFunds = Number.parseInt(status.baseTokenBalance) > 0
 
   return (
     <Stack gap={4} alignItems="flex-start">
       <Typography variant="h4">DCA Bot</Typography>
-      {botStatus !== null && (
+      {bot !== null && (
         <>
         {/* TODO handle states properly */}
           <>
-            {/* display chip according to balance */}
-            <Chip label="No Funds" color="warning" icon={<Pause />} />
-            {/* <Chip label="Active" color="success" icon={<PlayArrow />} /> */}
+            {hasFunds
+              ? <Chip label="Active" variant="outlined" color="success" 
+                  icon={<PlayArrow />} 
+                  sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}
+                />
+              : <Chip label="No Funds" variant="outlined" color="warning" 
+                  icon={<Pause />} 
+                  sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}} 
+                />
+            }
             <Stack gap={0.5}>
               <Typography>
                 <Typography color="text.secondary" component="span">
-                  Target Token:{" "}
+                  Target Token{" - "}
                 </Typography>
-                {findCurrencyById(botStatus?.targetToken)}
+                {findCurrencyById(status?.targetToken)}
               </Typography>
               {/* <Typography>
                 <Typography color="text.secondary" component="span">

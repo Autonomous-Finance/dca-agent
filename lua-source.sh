@@ -2,7 +2,7 @@
 
 cd ao
 
-/opt/homebrew/bin/amalg.lua -s test-process.lua -o build/output.lua ownership.ownership
+/opt/homebrew/bin/amalg.lua -s test-process.lua -o build/output.lua ownership.ownership validations.validations
 
 cd ..
 

@@ -59,10 +59,20 @@ Clarify: what constitutes a bot status ?
 Create working version for each iteration
 
 1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Bot can only be configured in terms of currency. Should list past processes in the table.
+   1. store latest bot id in localstorage
+   2. query historic data and latest bot owned by current user - via graphql
+   3. check that changing the owner works
 2. Fully fledged dca bot with automation, includes state display of the active bot.
 3. Add metrics for bot performance
-5. Prettify UI, add animated stepper for deployment progress display
-6. Reconsider bot design for blueprint-grade code quality (especially names & convenience functions)
+4. Finesse for UX
+   1. Prettify UI, 
+   2. responsive to suit smaller devices
+   3. display relevant info (my current balance) / make available actions more convenient
+      1. click max available to input amount
+      2. slider for 0% - 100% of available balance to input amount etc.
+      3. Assist user in keeping track of all messages sent within the app (wallet doesn't help with that - central place for in-app logs)
+   4. add animated stepper for deployment progress display
+5. Reconsider bot design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
 
 
 

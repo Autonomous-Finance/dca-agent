@@ -1,0 +1,46 @@
+import { readBalance } from "@/api/testnet-cred"
+import { useActiveAddress } from "arweave-wallet-kit"
+import React from "react"
+
+const useBalance = () => {
+  const address = useActiveAddress()
+  const [balance, setBalance] = React.useState(0)
+  const [loading, setLoading] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!address) return
+    let interval: string | number | NodeJS.Timeout | undefined;
+    const syncBalance = async () => {
+      setLoading(true)
+      try {
+        const bal = await readBalance(address)
+        setBalance(bal)
+      } catch (e) {
+        console.error('Failed initial fetch balance ', e)
+      }
+      setLoading(false)
+      interval = setInterval(() => {
+        readBalance(address).then(setBalance)
+      }, 3000)
+    }
+
+    syncBalance()
+
+    return () => clearInterval(interval)
+  }, [address])
+
+  return {balance, loading}
+}
+
+const AccountBalanceContext = React.createContext<{balance: number, loading: boolean}>({balance: 0, loading: false})
+
+export const AccountBalanceProvider = ({children}: { children: React.ReactNode }) => {
+  const accountBalance = useBalance()
+  return (
+    <AccountBalanceContext.Provider value={accountBalance}>
+      {children}
+    </AccountBalanceContext.Provider>
+  )
+}
+
+export const useAccountBalance = () => React.useContext(AccountBalanceContext)

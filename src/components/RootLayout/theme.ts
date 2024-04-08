@@ -3,6 +3,30 @@ import { experimental_extendTheme as extendTheme } from "@mui/material/styles"
 import { MainFontFF } from "./fonts"
 
 export const theme = extendTheme({
+  customColors: {
+    layout: {
+      softborder: {
+        light: "#dedede",
+        dark: '#656565'
+      }   
+    },
+    log: {
+      background: {
+        light: "#fcfdfd",
+        dark: '#2e2e2e'
+      }
+    },
+    naviLink: {
+      active: {
+        light: "#030303",
+        dark: '#fff'
+      },
+      inactive: {
+        light: "#777",
+        dark: '#999'
+      }
+    }
+  },
   colorSchemes: {
     dark: {
       palette: {

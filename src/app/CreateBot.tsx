@@ -13,13 +13,11 @@ import {
   Paper,
   Select,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material"
 import React from "react"
 
-import { credSymbol } from "@/api/testnet-cred"
-import Image from "next/image"
+
 import { IntervalType, TARGET_CURRENCIES, INTERVAL_TYPES, TargetToken, TYPE_ICON_MAP } from '@/utils/data-utils';
 import BotCodeModalButton from "@/components/BotCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -36,14 +34,12 @@ import { BOT_SOURCE } from "@/lua/bot-source"
 import { CURRENCY_PROCESS_MAP } from '../utils/data-utils';
 import LinkIcon from '@mui/icons-material/Link';
 import { shortenId } from "@/utils/ao-utils"
+import Log, { LogEntry } from "@/components/Log";
 
 
 export function CreateBot(props: {checkOutDeployedBot: () => void}) {
   const [loading, setLoading] = React.useState(false)
   const [deployed, setDeployed] = React.useState(false)
-  const [botProcessId, setBotProcessId] = React.useState<string>("")
-  const [evalMsgId, setEvalMsgId] = React.useState<string>("")
-  const [initMsgId, setInitMsgId] = React.useState<string>("")
 
   const disableForm = loading || deployed
 
@@ -54,14 +50,9 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
   // const [intervalValue, setIntervalValue] = React.useState("")
   
   const [validationError, setValidationError] = React.useState("");
-  const [deployLog, setDeployLog] = React.useState<string[]>([])
-
-  const config = {currency, 
-    // amount, slippage, intervalType, intervalValue
-  };
-
+  const [deployLog, setDeployLog] = React.useState<LogEntry[]>([])
       
-  const addToLog = (entry: string) => setDeployLog((log) => [...log, entry]);
+  const addToLog = (entry: LogEntry) => setDeployLog((log) => [...log, entry]);
 
   const validateConfig = () => {
     const valid = true; // TODO refine checks and error
@@ -87,7 +78,6 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
         signer: createDataItemSigner(window.arweaveWallet),
       })
       console.log("📜 LOG > processId:", processId)
-      setBotProcessId(processId)
 
       addToLog('Installing handlers...')
 
@@ -95,9 +85,10 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
       // returned here before the SU has completed the process registration
       
       let installed = false
+      let evalMsgId
       while (!installed) {
         try {
-          const evalMsgId = await message({
+          evalMsgId = await message({
             process: processId,
             data: BOT_SOURCE,
             signer: createDataItemSigner(window.arweaveWallet),
@@ -105,7 +96,6 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
           })
           installed = true
           console.log("📜 LOG > evalMsg:", evalMsgId)
-          setEvalMsgId(evalMsgId)
         } catch (e) {
           console.log('500 on eval ', e)
           await new Promise(resolve => setTimeout(resolve, 1500))
@@ -123,7 +113,6 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
-      setInitMsgId(initMsgId)
 
       const status = await dryrun({
         process: processId,
@@ -133,6 +122,22 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
       console.log("📜 LOG > dryRun Status:", status)
 
       addToLog("Successfully deployed and initalized.")
+      
+      const logEntries: LogEntry[] = [
+        {
+          text: 'Bot process',
+          linkId: processId
+        },
+        {
+          text: 'Handlers installation',
+          linkId: evalMsgId!
+        },
+        {
+          text: 'Initialization',
+          linkId: initMsgId
+        }
+      ];
+      logEntries.forEach((item: LogEntry) => addToLog(item));
       setDeployed(true)
       window.localStorage.setItem("botProcess", processId)
     } catch (e) {
@@ -146,173 +151,138 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
 
   const BTN_WIDTH = 250
   return (
-    <Paper variant="outlined" sx={{ padding: 4}}>
-      <Stack gap={4} alignItems={'stretch'}>
-        <Typography variant="h6">Create New Bot</Typography>
+    <Box maxWidth={'min-content'} mx={'auto'}>
+      <Paper variant="outlined" sx={{ padding: 4}}>
+        <Stack gap={4} alignItems={'stretch'} width={600}>
+          <Typography variant="h6">Create New Bot</Typography>
 
-        <Stack direction="row" gap={2} alignItems="stretch">
-          <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
-            <FormControl fullWidth>
-              <InputLabel id="target-currency-label">Target Token</InputLabel>
-              <Select
-                labelId="target-currency-label"
-                id="target-currency"
-                value={currency}
-                label="Target Currency"
-                disabled={disableForm}
-                onChange={(e) => setCurrency(e.target.value as TargetToken)}
-              >
-                {TARGET_CURRENCIES.map((currency) => (
-                  <MenuItem key={currency} value={currency}>
-                    {currency}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {/* <Stack direction="row" gap={1} sx={{width: "100%"}}>
+          <Stack direction="row" gap={2} alignItems="stretch">
+            <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
               <FormControl fullWidth>
-                <TextField
-                  disabled={loading}
-                  size="small"
-                  value={intervalValue}
-                  onChange={(e) => setIntervalValue(e.target.value)}
-                  type="number"
-                  label="Interval"
-                  error={error !== ""}
-                  helperText={error}
-                />
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel id="interval-type-label"></InputLabel>
+                <InputLabel id="target-currency-label">Target Token</InputLabel>
                 <Select
-                  size="small"
-                  labelId="interval-type-label"
-                  id="interval-type"
-                  value={intervalType}
-                  label=""
-                  onChange={(e) => setIntervalType(e.target.value as IntervalType)}
+                  labelId="target-currency-label"
+                  id="target-currency"
+                  value={currency}
+                  label="Target Currency"
+                  disabled={disableForm}
+                  onChange={(e) => setCurrency(e.target.value as TargetToken)}
                 >
-                  {INTERVAL_TYPE.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
+                  {TARGET_CURRENCIES.map((currency) => (
+                    <MenuItem key={currency} value={currency}>
+                      {currency}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+              {/* <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                <FormControl fullWidth>
+                  <TextField
+                    disabled={loading}
+                    size="small"
+                    value={intervalValue}
+                    onChange={(e) => setIntervalValue(e.target.value)}
+                    type="number"
+                    label="Interval"
+                    error={error !== ""}
+                    helperText={error}
+                  />
+                </FormControl>
+                <FormControl fullWidth>
+                  <InputLabel id="interval-type-label"></InputLabel>
+                  <Select
+                    size="small"
+                    labelId="interval-type-label"
+                    id="interval-type"
+                    value={intervalType}
+                    label=""
+                    onChange={(e) => setIntervalType(e.target.value as IntervalType)}
+                  >
+                    {INTERVAL_TYPE.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+              <TextField
+                disabled={loading}
+                size="small"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                type="number"
+                label="Swap Amount"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">{credSymbol}</InputAdornment>
+                  ),
+                }}
+                error={error !== ""}
+                helperText={error}
+              />
+              <TextField
+                disabled={loading}
+                size="small"
+                sx={{ width: "100%" }}
+                value={slippage}
+                onChange={(e) => setSlippage(e.target.value)}
+                type="number"
+                label="Max Slippage"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">%</InputAdornment>
+                  ),
+                }}
+                error={error !== ""}
+                helperText={error}
+              /> */}
+              <Stack width="100%" mt="auto" gap={1}>
+                {validationError && <Typography color="error">{validationError}</Typography>}
+                <Button
+                  sx={{ height: 40, width: '100%' }}
+                  disabled={disableForm}
+                  startIcon={loading ? <CircularProgress size={14} /> : undefined}
+                  endIcon={<RocketLaunchIcon />}
+                  variant="contained"
+                  color="success"
+                  onClick={handleDeploy}
+                >
+                  Deploy DCA Bot
+                </Button>
+              </Stack>
             </Stack>
-            <TextField
-              disabled={loading}
-              size="small"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              type="number"
-              label="Swap Amount"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">{credSymbol}</InputAdornment>
-                ),
-              }}
-              error={error !== ""}
-              helperText={error}
-            />
-            <TextField
-              disabled={loading}
-              size="small"
-              sx={{ width: "100%" }}
-              value={slippage}
-              onChange={(e) => setSlippage(e.target.value)}
-              type="number"
-              label="Max Slippage"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">%</InputAdornment>
-                ),
-              }}
-              error={error !== ""}
-              helperText={error}
-            /> */}
-            <Stack width="100%" mt="auto" gap={1}>
-              {validationError && <Typography color="error">{validationError}</Typography>}
-              <Button
-                sx={{ height: 40, width: '100%' }}
-                disabled={disableForm}
-                startIcon={loading ? <CircularProgress size={14} /> : undefined}
-                endIcon={<RocketLaunchIcon />}
-                variant="contained"
-                color="success"
-                onClick={handleDeploy}
+            <Box sx={{flexGrow: 1, position: 'relative' }}>
+              {/* <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
+                display={'flex'} alignItems={'center'} justifyContent={'center'}
+                sx={{opacity: 0.025}}
               >
-                Deploy DCA Bot
-              </Button>
-            </Stack>
-          </Stack>
-          <Box sx={{flexGrow: 1, position: 'relative' }}>
-            {/* <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
-              display={'flex'} alignItems={'center'} justifyContent={'center'}
-              sx={{opacity: 0.025}}
-            >
-              <Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/>
-            </Box> */}
-            <Box
-              sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
-              display="flex"
-              alignItems="center"
-              justifyContent="flex-start"
-              flexDirection="column"
-            >
+                <Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/>
+              </Box> */}
+              <Box
+                sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
+                display="flex"
+                alignItems="center"
+                justifyContent="flex-start"
+                flexDirection="column"
+              >
 
-              <Typography paragraph>
-                Deployment will create a bot process as configured.
-              </Typography>
-              <Typography paragraph>
-                You own and control this bot via your connected AR wallet account.
-              </Typography>
-              <BotCodeModalButton />
-            </Box>
-          </Box>
-        </Stack>
-
-        {deployLog.length > 0 && (
-          <>
-            <Divider/>
-            <Stack gap={1}>
-              {deployLog.map((entry: string) => (
-                <Typography key={entry+Math.random()} variant="body1" fontFamily={'Courier New'}>
-                  {entry}
+                <Typography paragraph>
+                  Deployment will create a bot process as configured.
                 </Typography>
-              ))}
-            </Stack>
-          </>
-        )}
+                <Typography paragraph>
+                  You own and control this bot via your connected AR wallet account.
+                </Typography>
+                <BotCodeModalButton />
+              </Box>
+            </Box>
+          </Stack>
 
-        {deployed && (
-          <>          
-            <Stack gap={0.5}>
-              <Typography variant="body1" fontFamily={'Courier New'}>
-                Bot process:{" "}
-                <Link href={`https://www.ao.link/entity/${botProcessId}`} target="_blank"
-                  sx={(theme) => ({display: 'inline-flex', alignItems: 'center', gap: 1, color: theme.palette.info.main})}>
-                  {shortenId(botProcessId)}
-                  <LinkIcon/>
-                </Link>
-              </Typography>
-              <Typography variant="body1" fontFamily={'Courier New'}>
-                Handlers installation:{" "}
-                <Link href={`https://www.ao.link/message/${evalMsgId}`} target="_blank"
-                  sx={(theme) => ({display: 'inline-flex', alignItems: 'center', gap: 1, color: theme.palette.info.main})}>
-                  {shortenId(evalMsgId)}
-                  <LinkIcon/>
-                </Link>
-              </Typography>
-              <Typography variant="body1" fontFamily={'Courier New'}>
-                Initialization:{" "}
-                <Link href={`https://www.ao.link/message/${initMsgId}`} target="_blank"
-                  sx={(theme) => ({display: 'inline-flex', alignItems: 'center', gap: 1, color: theme.palette.info.main})}>
-                  {shortenId(initMsgId)}
-                  <LinkIcon/>
-                </Link>
-              </Typography>
-            </Stack>
+          {deployLog.length > 0 && <Divider />}
+
+          <Log log={deployLog}/>
+          
+          {deployed && (
             <Button
               sx={{ height: 40, width: BTN_WIDTH}}
               endIcon={<MemoryIcon/>}
@@ -322,9 +292,10 @@ export function CreateBot(props: {checkOutDeployedBot: () => void}) {
             >
               Bot Dashboard
             </Button>
-          </>
-        )}
-      </Stack>
-    </Paper>
+          )}
+
+        </Stack>
+      </Paper>
+    </Box>
   )
 }
