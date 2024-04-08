@@ -9,6 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useAccountBalance } from '@/app/hooks/useAccountBalance';
+import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
 
 
 export default function TopUpDialog(props: {
@@ -20,6 +21,12 @@ export default function TopUpDialog(props: {
   const [error, setError] = React.useState("");
 
   const {balance: tokenBalanceUser } = useAccountBalance();
+  
+  const agent = useIdentifiedAgent()
+  if (!agent) return <></>
+  const {status} = agent;
+
+  const isRetired = status.retired
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -38,7 +45,7 @@ export default function TopUpDialog(props: {
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading}
+        disabled={loading || isRetired}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
         onClick={handleClickOpen}

@@ -12,11 +12,11 @@ import LoadingHome from "@/components/LoadingHome"
 import { IdentifiedAgentContext, useCheckAgent } from "./hooks/useCheckAgent"
 
 export default function HomePageServer() {
-  const latestBot = useCheckAgent();
+  const latestAgent = useCheckAgent();
 
-  if (!latestBot) return <></>
+  if (!latestAgent) return <></>
 
-  const {status, loading} = latestBot;
+  const {status, loading} = latestAgent;
 
   const cleanupForNewBot = () => {
     window.localStorage.setItem('agentProcess', '')
@@ -29,9 +29,9 @@ export default function HomePageServer() {
         {loading && <LoadingHome/>}
         {!loading && (
           <>
-            {!status && ( <CreateAgent checkOutDeployedAgent={latestBot.updateStatus}/> )}
+            {!status && ( <CreateAgent checkOutDeployedAgent={latestAgent.updateStatus}/> )}
             {status && (
-              <IdentifiedAgentContext.Provider value={latestBot}>
+              <IdentifiedAgentContext.Provider value={latestAgent}>
                 <AgentPanel />
               </IdentifiedAgentContext.Provider>
             )} 

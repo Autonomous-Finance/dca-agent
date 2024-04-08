@@ -7,9 +7,11 @@ local json = require "json"
 Owner = Owner or ao.Process.env.Owner
 
 Initialized = Initialized or false
+Retired = Retired or false
 
 BaseToken = BaseToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
+LatestTargetTokenBal = LatestTargetTokenBal or "0"
 
 -- INIT & CONFIG
 
@@ -39,8 +41,10 @@ Handlers.add(
     -- is initialized => reply with complete config
     local config = json.encode({
       initialized = true,
+      retired = Retired,
       targetToken = TargetToken,
-      baseTokenBalance = LatestBaseTokenBal
+      baseTokenBalance = LatestBaseTokenBal,
+      targetTokenBalance = LatestTargetTokenBal
     })
     Handlers.utils.reply({
       ["Response-For"] = "GetStatus",
@@ -54,6 +58,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
     ownership.onlyOwner(msg)
+    assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.TargetToken) == 'string', 'Target Token is required!')
     TargetToken = msg.Tags.TargetToken
@@ -64,6 +69,7 @@ Handlers.add(
   end
 )
 
+-- every handler below is gated on Initialized == true
 Handlers.add(
   "checkInit",
   function(msg)
@@ -72,6 +78,19 @@ Handlers.add(
   function(msg)
     error({
       message = "error - process is not initialized"
+    })
+  end
+)
+
+-- every handler below is gated on Retired == false
+Handlers.add(
+  "checkRetired",
+  function(msg)
+    return Retired
+  end,
+  function(msg)
+    error({
+      message = "error - process is retired"
     })
   end
 )
@@ -140,5 +159,22 @@ Handlers.add(
       Quantity = quantity,
       Recipient = Owner
     })
+  end
+)
+
+-- RETIRE
+
+Handlers.add(
+  "Retire",
+  Handlers.utils.hasMatchingTag("Action", "Retire"),
+  function(msg)
+    ownership.onlyOwner(msg)
+    assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
+    assert(LatestTargetTokenBal == "0", 'Target Token balance must be 0 to retire')
+    Retired = true
+    Handlers.utils.reply({
+      ["Response-For"] = "Retire",
+      Data = "Success"
+    })(msg)
   end
 )

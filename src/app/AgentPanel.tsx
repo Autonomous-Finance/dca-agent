@@ -5,13 +5,14 @@ import React from "react"
 
 import { credSymbol } from "@/api/testnet-cred"
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, transferOwnership, withdrawBase } from "@/utils/agent-utils"
+import { depositToAgent, retireAgent, transferOwnership, withdrawBase } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
 import WithdrawBaseDialog from "@/components/WithdrawBaseDialog"
 import { useIdentifiedAgent } from "./hooks/useCheckAgent"
 import { isLocalDev } from "@/utils/debug-utils"
+import RetirementDialog from "@/components/RetirementDialog"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -19,6 +20,7 @@ export function AgentPanel() {
   const [loadingTopUp, setLoadingTopUp] = React.useState(false)
   const [loadingWithdrawBase, setLoadingWithdrawBase] = React.useState(false)
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
+  const [loadingRetirement, setLoadingRetirement] = React.useState(false)
 
   const agent = useIdentifiedAgent()
 
@@ -37,7 +39,7 @@ export function AgentPanel() {
 
   const handleDeposit = async (amount: string) => {
     setLoadingTopUp(true)
-    addToLog({text: `Depositing ${amount} ${credSymbol} to agent`, hasLink: false})
+    addToLog({text: `Depositing ${amount} ${credSymbol} to agent...`, hasLink: false})
     const depositResult = await depositToAgent(amount)
     setLoadingTopUp(false)
     if (depositResult?.type === "Success") {
@@ -50,7 +52,7 @@ export function AgentPanel() {
 
   const handleWithdrawBase = async (amount: string) => {
     setLoadingWithdrawBase(true)
-    addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent`, hasLink: false})
+    addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent...`, hasLink: false})
     const withdrawResult = await withdrawBase(amount)
     setLoadingWithdrawBase(false)
     if (withdrawResult?.type === "Success") {
@@ -87,7 +89,7 @@ export function AgentPanel() {
 
   const handleTransferOwnership = async (id: string) => {
     setLoadingTransferOwnership(true)
-    addToLog({text: `Transferring ownership to ${id}`, hasLink: false})
+    addToLog({text: `Transferring ownership to ${id}...`, hasLink: false})
     setLoadingTransferOwnership(false)
     const transferResult = await transferOwnership(id)
     if (transferResult.type === "Success") {
@@ -95,6 +97,19 @@ export function AgentPanel() {
       addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
     } else {
       addToLog({text: `Failed to transfer ownership to ${id}. Please try again.`, hasLink: false, isError: true}, transferResult.result)
+    }
+  }
+
+  const handleRetirement = async () => {
+    setLoadingRetirement(true)
+    addToLog({text: `Retiring agent...`, hasLink: false})
+    setLoadingRetirement(false)
+    const retirementResult = await retireAgent()
+    if (retirementResult.type === "Success") {
+      const msgId = retirementResult.result
+      addToLog({text: `Agent retired. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
+    } else {
+      addToLog({text: `Failed to retire agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, retirementResult.result)
     }
   }
 
@@ -132,22 +147,33 @@ export function AgentPanel() {
                     tokenSymbol={credSymbol} tokenBalance={credBalance}
                     topUp={handleDeposit}/>
                   <WithdrawBaseDialog loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
-                    tokenSymbol={credSymbol} tokenBalance={credBalance}
+                    tokenSymbol={credSymbol}
                     withdraw={handleWithdrawBase}/>
                 </Stack>
               </Stack>
             </Stack>
             <Divider/>
-            <Stack direction="row" mt={'auto'} justifyContent={'space-between'} alignItems={'center'}>
-              <Stack>
-                <Typography variant="h6">
-                  Ownership
-                </Typography>
-                <Typography variant="body2">
-                  You own this bot
-                </Typography>
+            <Stack gap={2} mt={'auto'}>
+              <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
+                <Stack>
+                  <Typography variant="h6">
+                    Ownership
+                  </Typography>
+                  <Typography variant="body2">
+                    You own this agent
+                  </Typography>
+                </Stack>
+                <TransferOwnershipDialog loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
               </Stack>
-              <TransferOwnershipDialog loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
+              <Divider/>
+              <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
+                <Stack>
+                  <Typography variant="h6">
+                    Retirement
+                  </Typography>
+                </Stack>
+                <RetirementDialog loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
+              </Stack>
             </Stack>
             {/* <Stack direction="row" justifyContent={'space-between'}>
               <Typography variant="h6">

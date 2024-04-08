@@ -8,6 +8,7 @@ export type Receipt<T> = {
 
 export type AgentStatus = {
   initialized: true
+  retired: boolean
   targetToken: string
   // type: "Active" | "OutOfFunds" | "Retired"
   // timeLeft: number
@@ -187,6 +188,53 @@ export const transferOwnership = async (id: string): Promise<Receipt<string>> =>
       tags: [
         { name: "Action", value: "TransferOwnership" },
         { name: "NewOwner", value: id }
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: agent,
+    })
+  
+    console.log("Result: ", res)
+
+    if (res.Error) {
+      return {
+        type: "Failure",
+        result: res.Error
+      }
+    }
+
+    return {
+      type: "Success", 
+      result: msgId
+    }
+  } catch (e) {
+    console.error(e)
+    return {
+      type: "Failure",
+      result: `Error: ${e}`
+    }
+  }
+}
+
+export const retireAgent = async (): Promise<Receipt<string>> => {
+  const agent = window.localStorage.getItem("agentProcess");
+
+  if (!agent) return {
+    type: "Failure",
+    result: "Agent not found"
+  }
+
+  try {
+    console.log("Retiring");
+  
+    const msgId = await ao.message({
+      process: agent,
+      tags: [
+        { name: "Action", value: "Retire" },
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })

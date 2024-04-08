@@ -1,36 +1,37 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { CircularProgress, Stack, Typography } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
 
-export default function TransferOwnershipDialog(props: {loading: boolean, btnWidth: number, transferTo: (id: string) => void}) {
-  const {loading, btnWidth, transferTo} = props;
-  const [open, setOpen] = React.useState(false);
-  const [account, setAccount] = React.useState("");
+export default function RetirementDialog(props: {loading: boolean, btnWidth: number, retire: () => void}) {
+  const {loading, btnWidth, retire} = props
+  const [open, setOpen] = React.useState(false)
 
   const agent = useIdentifiedAgent()
   if (!agent) return <></>
   const {status} = agent;
 
+  const hasFunds = status.baseTokenBalance !== '0' || status.targetTokenBalance !== '0'
   const isRetired = status.retired
 
   const handleClickOpen = () => {
-    setOpen(true);
+    setOpen(true)
   };
 
-  const handleClose = (id?: string) => {
-    setOpen(false);
-    if (id) transferTo(id);
-    setAccount("");
+  const handleClose = () => {
+    setOpen(false)
   };
+
+  const handleCloseAndRetire = () => {
+    setOpen(false)
+    retire()
+  }
 
   return (
     <React.Fragment>
@@ -42,7 +43,7 @@ export default function TransferOwnershipDialog(props: {loading: boolean, btnWid
         variant="contained"
         onClick={handleClickOpen}
       >
-        Transfer <ArrowRightIcon/> <PersonIcon sx={{marginLeft: '-0.5rem'}}/>
+        Retire <DoneAllIcon sx={{marginLeft: '0.25rem'}}/>
       </Button>
       <Dialog
         open={open}
@@ -52,33 +53,23 @@ export default function TransferOwnershipDialog(props: {loading: boolean, btnWid
           onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             // TODO validation
-            handleClose(account);
+            handleCloseAndRetire();
           },
         }}
       >
-        <DialogTitle>Transfer Agent Ownership</DialogTitle>
+        <DialogTitle>Retire Agent</DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
-              <Typography color="text.primary">To transfer your agent, please enter a valid AO account ID below.</Typography>
-              <Typography color="error">By submitting, you renounce control of your AGENT and the ASSETS it manages.</Typography>
+              <Typography color="text.primary">You are about to retire your agent.</Typography>
+              <Typography color="text.primary">After retiring you will no longer be able to use it.</Typography>
+              {hasFunds && <Typography color="error">Your agent has non-zero balances. Please liquidate in order to perform this action.</Typography>}
             </Stack>
           </DialogContentText>
-          <TextField
-            autoFocus
-            fullWidth
-            required
-            margin="dense"
-            label="Account ID (AO Entity)"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            type="text"
-            variant="standard"
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => handleClose()}>Cancel</Button>
-          <Button type="submit">Transfer</Button>
+          <Button type="submit" disabled={hasFunds}>Retire</Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

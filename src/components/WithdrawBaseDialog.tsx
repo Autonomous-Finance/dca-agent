@@ -8,17 +8,25 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/material';
 import RemoveIcon from '@mui/icons-material/Remove';
+import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
 
 
 export default function WithdrawBaseDialog(props: {
-  loading: boolean, btnWidth: number, tokenSymbol: string, tokenBalance: string, withdraw: (id: string) => void
+  loading: boolean, btnWidth: number, tokenSymbol: string, withdraw: (id: string) => void
 }) {
-  const {loading, btnWidth, tokenSymbol, tokenBalance, withdraw} = props;
-  const hasNoFunds = tokenBalance === '0';
-
+  const {loading, btnWidth, withdraw, tokenSymbol} = props;
+  
   const [open, setOpen] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [error, setError] = React.useState("");
+  
+  const agent = useIdentifiedAgent()
+  if (!agent) return <></>
+  const {status} = agent;
+
+  const hasNoFunds = status.baseTokenBalance === '0'
+  const tokenBalance = status.baseTokenBalance;
+  const isRetired = status.retired
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -36,7 +44,7 @@ export default function WithdrawBaseDialog(props: {
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || hasNoFunds}
+        disabled={loading || hasNoFunds || isRetired}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
         onClick={handleClickOpen}
