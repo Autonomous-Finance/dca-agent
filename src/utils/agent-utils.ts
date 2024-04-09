@@ -1,6 +1,9 @@
+import { getLatestAgentInitilizedBy } from "@/app/queries/agent.queries"
 import * as ao from "@permaweb/aoconnect/browser"
 
 export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+
+export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
 export const credSymbol = "AOCRED-Test"
 
@@ -29,9 +32,18 @@ export type AoMsgTag = {
   value: string
 }
 
-export async function readAgentStatus(): Promise<Receipt<AgentStatus | AgentStatusNonInit | null>> {
-  const agent = window.localStorage.getItem("agentProcess");
 
+export const getLatestAgent = async () => {
+  try {
+    const user = await window.arweaveWallet?.getActiveAddress();
+    const agent = await getLatestAgentInitilizedBy(user)
+    return agent
+  } catch (e) {
+    console.error('Failed to get latest agent via gql ', e)
+  }
+}
+
+export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatus | AgentStatusNonInit | null>> {
   if (!agent) return {
     type: "Success",
     result: null

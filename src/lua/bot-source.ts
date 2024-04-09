@@ -44,7 +44,7 @@ local json = require "json"
 
 -- bot deployment triggered by user from browser
 --  => browser wallet owner == process owner
-Owner = Owner or ao.Process.env.Owner
+Owner = Owner or ao.env.Process.Owner
 
 Initialized = Initialized or false
 Retired = Retired or false
@@ -52,6 +52,8 @@ Retired = Retired or false
 QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
+
+Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
 -- INIT & CONFIG
 
@@ -144,6 +146,7 @@ Handlers.add(
   function(msg)
     assert(msg.Tags.NewOwner ~= nil and type(msg.Tags.NewOwner) == 'string', 'Owner is required!')
     Owner = msg.Tags.NewOwner
+    -- intentionally not updating history of ownership transfers in registry process (not necessary for mvp)
     Handlers.utils.reply({
       ["Response-For"] = "TransferOwnership",
       Data = "Success"

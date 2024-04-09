@@ -60,7 +60,7 @@ Create working version for each iteration
 
 1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Agent can only be configured in terms of currency. Should list past processes in the table.
    1. store latest agent id in localstorage
-   2. query historic data and latest agent owned by current user - via graphql
+   2. query historic data and latest agent owned by current user - use registry process (deploy once per app, no access control for registration)
    3. check that changing the owner works
 2. Fully fledged dca agent with automation, includes state display of the active agent.
 3. Add metrics for agent performance
@@ -73,6 +73,8 @@ Create working version for each iteration
       3. Assist user in keeping track of all messages sent within the app (wallet doesn't help with that - central place for in-app logs)
    4. add animated stepper for deployment progress display
 5. Reconsider agent design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
+
+6. Implement access control on registry process (frontend should deploy it per user, so that user is the owner of the registry) 
 
 
 

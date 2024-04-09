@@ -4,7 +4,7 @@ local validations = require "validationss.validations"
 local json = require "json"
 
 -- bot deployment triggered by user from browser => browser wallet owner == process owner
-Owner = Owner or ao.Process.env.Owner
+Owner = Owner or ao.env.Process.Owner
 -- TODO relatively safe to assume initial balances are 0, but worth discussing :
 -- "can ids of not-yet-spawned processes be known in advance and credited?" (for whatever reason)
 LatestTargetTokenBal = LatestTargetTokenBal or 0

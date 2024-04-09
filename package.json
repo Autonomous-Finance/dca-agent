@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build-lua": "chmod +x lua-source.sh && ./lua-source.sh"
+    "build-lua-registry": "chmod +x lua-registry-source.sh && ./lua-registry-source.sh", 
+    "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -22,7 +23,8 @@
     "next": "14.1.4",
     "react": "^18",
     "react-dom": "^18",
-    "tailwind-merge": "^2.2.2"
+    "tailwind-merge": "^2.2.2",
+    "urql": "^4.0.7"
   },
   "devDependencies": {
     "@types/node": "^20",

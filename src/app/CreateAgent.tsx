@@ -35,6 +35,7 @@ import { CURRENCY_PROCESS_MAP } from '../utils/data-utils';
 import LinkIcon from '@mui/icons-material/Link';
 import { shortenId } from "@/utils/ao-utils"
 import Log, { LogEntry } from "@/components/Log";
+import { REGISTRY } from "@/utils/agent-utils";
 
 
 export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
@@ -108,15 +109,32 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
 
       // Initialize (& Config)
 
+      addToLog({text: 'Initializing handlers...', hasLink: false})
+
       const initMsgId = await message({
         process: processId,
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Action", value: "Initialize" },
+          { name: "Process-Type", value: "AF-DCA-Agent" },
+          { name: "Initializer", value: await window.arweaveWallet?.getActiveAddress()},
           { name: "BaseToken", value: CURRENCY_PROCESS_MAP[currency] },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
+
+      addToLog({text: 'Registering agent...', hasLink: false})
+
+      // Register with Registry
+      const registerMsgId = await message({
+        process: REGISTRY,
+        signer: createDataItemSigner(window.arweaveWallet),
+        tags: [
+          { name: "Action", value: "Register" },
+          { name: "Agent", value: processId }
+        ]
+      })
+      console.log("📜 LOG > registerMsg:", registerMsgId)
 
       const status = await dryrun({
         process: processId,
@@ -125,7 +143,13 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
       })
       console.log("📜 LOG > dryRun Status:", status)
 
-      addToLog({text: "Successfully deployed and initalized.", hasLink: false})
+      const registration = await dryrun({
+        process: REGISTRY,
+        tags: [{ name: "Action", value: "GetLatestAgent" }],
+      })
+      console.log("📜 LOG > dryRun Registration:", registration)
+
+      addToLog({text: "Successfully deployed.", hasLink: false})
       
       const logEntries: LogEntry[] = [
         {
@@ -144,6 +168,12 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
           text: 'Initialization',
           hasLink: true,
           linkId: initMsgId,
+          isMessage: true
+        },
+        {
+          text: 'Registration',
+          hasLink: true,
+          linkId: registerMsgId,
           isMessage: true
         }
       ];
