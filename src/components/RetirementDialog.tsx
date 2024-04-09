@@ -17,7 +17,7 @@ export default function RetirementDialog(props: {loading: boolean, btnWidth: num
   if (!agent) return <></>
   const {status} = agent;
 
-  const hasFunds = status.baseTokenBalance !== '0' || status.targetTokenBalance !== '0'
+  const hasFunds = status.quoteTokenBalance !== '0' || status.baseTokenBalance !== '0'
   const isRetired = status.retired
 
   const handleClickOpen = () => {

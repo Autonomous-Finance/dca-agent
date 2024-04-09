@@ -39,9 +39,9 @@ export const TYPE_PATH_MAP: Record<string, string> = {
   Entity: "entity",
 }
 
-export const TARGET_CURRENCIES = ["BRKTST", "TRUNK", "0RBT"] as const
-export type TargetToken = typeof TARGET_CURRENCIES[number]
-export const CURRENCY_PROCESS_MAP: Record<TargetToken, string> = {
+export const BASE_CURRENCIES = ["BRKTST", "TRUNK", "0RBT"] as const
+export type BaseToken = typeof BASE_CURRENCIES[number]
+export const CURRENCY_PROCESS_MAP: Record<BaseToken, string> = {
   BRKTST: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
   TRUNK: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
   '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"

@@ -11,7 +11,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
 
 
-export default function WithdrawBaseDialog(props: {
+export default function WithdrawQuoteDialog(props: {
   loading: boolean, btnWidth: number, tokenSymbol: string, withdraw: (id: string) => void
 }) {
   const {loading, btnWidth, withdraw, tokenSymbol} = props;
@@ -24,8 +24,8 @@ export default function WithdrawBaseDialog(props: {
   if (!agent) return <></>
   const {status} = agent;
 
-  const hasNoFunds = status.baseTokenBalance === '0'
-  const tokenBalance = status.baseTokenBalance;
+  const hasNoFunds = status.quoteTokenBalance === '0'
+  const tokenBalance = status.quoteTokenBalance;
   const isRetired = status.retired
 
   const handleClickOpen = () => {
@@ -68,12 +68,12 @@ export default function WithdrawBaseDialog(props: {
           },
         }}
       >
-        <DialogTitle>Withdraw Base Token</DialogTitle>
+        <DialogTitle>Withdraw Quote Token</DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
               <Typography color="text.primary">
-                To withdraw base token, please enter an amount below.
+                To withdraw quote token, please enter an amount below.
               </Typography>
               <Typography color="text.primary">
                 Your agent will be debited with this amount.

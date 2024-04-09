@@ -69,19 +69,19 @@ export default function TopUpDialog(props: {
           },
         }}
       >
-        <DialogTitle>Top Up Base Token</DialogTitle>
+        <DialogTitle>Top Up Quote Token</DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
               <Typography color="text.primary">
-                To deposit base token for the DCA process, please enter an amount below.
+                To deposit quote token for the DCA process, please enter an amount below.
               </Typography>
               <Typography color="text.primary">
                 <Typography component='span' 
                   color="var(--mui-palette-success-main)" 
                   fontWeight={'bold'}
                 >
-                  Your agent will own this deposit </Typography> and use it to regularly buy target token.
+                  Your agent will own this deposit </Typography> and use it to regularly buy base token.
               </Typography>
             </Stack>
           </DialogContentText>

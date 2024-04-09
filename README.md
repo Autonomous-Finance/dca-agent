@@ -1,6 +1,6 @@
 # Simple DCA Agent on AO
 
-A DCA agent that swaps TargetToken for BaseToken at regular intervals. 
+A DCA agent that swaps QuoteToken for BaseToken at regular intervals. 
 
 
 It works in conjunction with 2 Cron process proxies
@@ -15,13 +15,13 @@ It works in conjunction with 2 Cron process proxies
 - agent is supposed to be owned / controlled by user with an arweave wallet, not by another Agent (msg.From vs. Owner)
 
 ### Operate
-- allows loading up with base token
-- allows withdrawals of base or target token
-- allows for total liquidation (return all in base token)
+- allows loading up with quote token
+- allows withdrawals of base or quote token
+- allows for total liquidation (return all in quote token)
 
 ### Configure
-- target token, slippage, swapAmount are configured only once @ initialization
-- base token can't be configured
+- base token, slippage, swapAmount are configured only once @ initialization
+- quote token can't be configured
 
 
 # Agent Deployment
@@ -36,7 +36,7 @@ To build on osx:
 ## In App
 *swuw* == "signed with user wallet"
 
-1. user configures the agent with target token, slippage, swap amount
+1. user configures the agent with base token, slippage, swap amount
 2. user confirms deployment
    1. create main agent process (*swuw*)
    2. upon deployment confirmation, load `process.lua` 

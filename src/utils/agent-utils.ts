@@ -1,5 +1,8 @@
-import { CRED_ADDR } from "@/api/testnet-cred"
 import * as ao from "@permaweb/aoconnect/browser"
+
+export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+
+export const credSymbol = "AOCRED-Test"
 
 export type Receipt<T> = {
   type: "Success" | "Failure"
@@ -9,12 +12,13 @@ export type Receipt<T> = {
 export type AgentStatus = {
   initialized: true
   retired: boolean
-  targetToken: string
+  baseToken: string
+  quoteToken: string
   // type: "Active" | "OutOfFunds" | "Retired"
   // timeLeft: number
   // nextBuy: Date
+  quoteTokenBalance: string
   baseTokenBalance: string
-  targetTokenBalance: string
 }
 export type AgentStatusNonInit = {
   initialized: false
@@ -122,7 +126,7 @@ export const depositToAgent = async (amount: string): Promise<Receipt<string>> =
   }
 }
 
-export const withdrawBase = async (amount: string): Promise<Receipt<string>> => {
+export const withdrawQuote = async (amount: string): Promise<Receipt<string>> => {
   const agent = window.localStorage.getItem("agentProcess");
 
   if (!agent) return {
@@ -131,12 +135,12 @@ export const withdrawBase = async (amount: string): Promise<Receipt<string>> => 
   }
 
   try {
-    console.log("Withdrawing base token ");
+    console.log("Withdrawing quote token ");
   
     const msgId = await ao.message({
       process: agent,
       tags: [
-        { name: "Action", value: "WithdrawBaseToken" },
+        { name: "Action", value: "WithdrawQuoteToken" },
         { name: "Quantity", value: amount }
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),

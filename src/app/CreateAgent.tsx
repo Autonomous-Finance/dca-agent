@@ -18,7 +18,7 @@ import {
 import React from "react"
 
 
-import { IntervalType, TARGET_CURRENCIES, INTERVAL_TYPES, TargetToken, TYPE_ICON_MAP } from '@/utils/data-utils';
+import { IntervalType, BASE_CURRENCIES, INTERVAL_TYPES, BaseToken, TYPE_ICON_MAP } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -43,7 +43,7 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
 
   const disableForm = loading || deployed
 
-  const [currency, setCurrency] = React.useState<TargetToken>("BRKTST")
+  const [currency, setCurrency] = React.useState<BaseToken>("BRKTST")
   // const [amount, setAmount] = React.useState("")
   // const [slippage, setSlippage] = React.useState("")
   // const [intervalType, setIntervalType] = React.useState<IntervalType>("Days")
@@ -76,6 +76,10 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
         scheduler: "TZ7o7SIZ06ZEJ14lXwVtng1EtSx60QkPy-kh-kdAXog",
         signer: createDataItemSigner(window.arweaveWallet),
+        tags: [
+          { name: "Process-Type", value: "AF-DCA-Agent" },
+          { name: "Deployer", value: await window.arweaveWallet?.getActiveAddress()}
+        ],
       })
       console.log("📜 LOG > processId:", processId)
 
@@ -109,7 +113,7 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Action", value: "Initialize" },
-          { name: "TargetToken", value: CURRENCY_PROCESS_MAP[currency] },
+          { name: "BaseToken", value: CURRENCY_PROCESS_MAP[currency] },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
@@ -165,16 +169,16 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
           <Stack direction="row" gap={2} alignItems="stretch">
             <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
               <FormControl fullWidth>
-                <InputLabel id="target-currency-label">Target Token</InputLabel>
+                <InputLabel id="base-currency-label">Base Token</InputLabel>
                 <Select
-                  labelId="target-currency-label"
-                  id="target-currency"
+                  labelId="base-currency-label"
+                  id="base-currency"
                   value={currency}
-                  label="Target Currency"
+                  label="Base Currency"
                   disabled={disableForm}
-                  onChange={(e) => setCurrency(e.target.value as TargetToken)}
+                  onChange={(e) => setCurrency(e.target.value as BaseToken)}
                 >
-                  {TARGET_CURRENCIES.map((currency) => (
+                  {BASE_CURRENCIES.map((currency) => (
                     <MenuItem key={currency} value={currency}>
                       {currency}
                     </MenuItem>

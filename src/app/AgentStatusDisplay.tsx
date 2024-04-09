@@ -6,6 +6,8 @@ import React from "react"
 import { findCurrencyById } from '../utils/data-utils';
 import { useIdentifiedAgent } from "./hooks/useCheckAgent"
 import DoneAllIcon from '@mui/icons-material/DoneAll';
+import { credSymbol } from "@/utils/agent-utils";
+import AgentInfoUnit from "@/components/AgentInfoUnit";
 
 export function AgentStatusDisplay() {
 
@@ -15,7 +17,7 @@ export function AgentStatusDisplay() {
 
   const { status } = agent
   
-  const hasFunds = Number.parseInt(status.baseTokenBalance) > 0
+  const hasFunds = Number.parseInt(status.quoteTokenBalance) > 0
 
   const isRetired = status.retired
 
@@ -41,23 +43,26 @@ export function AgentStatusDisplay() {
             {!hasFunds && !isRetired && (
               <Chip label="No Funds" variant="outlined" color="warning" 
                   icon={<Pause />} 
-                  sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}} 
+                  sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}  
               />
             )}
-            <Stack gap={0.5}>
-              <Typography>
-                <Typography color="text.secondary" component="span">
-                  Target Token{" - "}
+            <AgentInfoUnit>
+              <Stack gap={0.5}  >
+                <Typography component="span" display={'flex'} justifyContent={'space-between'}>
+                  <Typography color="text.secondary">
+                    Quote
+                  </Typography> 
+                  {credSymbol}
                 </Typography>
-                {findCurrencyById(status?.targetToken)}
-              </Typography>
-              {/* <Typography>
-                <Typography color="text.secondary" component="span">
-                  Base Token Reserves:{" "}
+              
+                <Typography component="span" display={'flex'} justifyContent={'space-between'}>
+                  <Typography color="text.secondary">
+                    Base
+                  </Typography> 
+                  {findCurrencyById(status?.baseToken)}
                 </Typography>
-                {botStatus.baseTokenBalance.toString()}
-              </Typography> */}
-            </Stack>
+              </Stack>
+            </AgentInfoUnit>
           </>
         </>
       )}

@@ -49,9 +49,9 @@ Owner = Owner or ao.Process.env.Owner
 Initialized = Initialized or false
 Retired = Retired or false
 
-BaseToken = BaseToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
-LatestTargetTokenBal = LatestTargetTokenBal or "0"
+LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 
 -- INIT & CONFIG
 
@@ -82,9 +82,10 @@ Handlers.add(
     local config = json.encode({
       initialized = true,
       retired = Retired,
-      targetToken = TargetToken,
+      baseToken = BaseToken,
+      quoteToken = QuoteToken,
       baseTokenBalance = LatestBaseTokenBal,
-      targetTokenBalance = LatestTargetTokenBal
+      quoteTokenBalance = LatestQuoteTokenBal
     })
     Handlers.utils.reply({
       ["Response-For"] = "GetStatus",
@@ -100,8 +101,8 @@ Handlers.add(
     ownership.onlyOwner(msg)
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
-    assert(type(msg.Tags.TargetToken) == 'string', 'Target Token is required!')
-    TargetToken = msg.Tags.TargetToken
+    assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+    BaseToken = msg.Tags.BaseToken
     Handlers.utils.reply({
       ["Response-For"] = "Initialize",
       Data = "Success"
@@ -150,14 +151,14 @@ Handlers.add(
   end
 )
 
--- TRACK latest BaseToken BALANCE
+-- TRACK latest QuoteToken BALANCE
 
 Handlers.add(
   "BalanceUpdateCredit",
   Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
   function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
+    if m.From ~= QuoteToken then return end
+    ao.send({ Target = QuoteToken, Action = "Balance" })
   end
 )
 
@@ -165,36 +166,36 @@ Handlers.add(
   "BalanceUpdateDebit",
   Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
   function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
+    if m.From ~= QuoteToken then return end
+    ao.send({ Target = QuoteToken, Action = "Balance" })
   end
 )
 
 -- response to the balance request
 Handlers.add(
-  "latestBalanceUpdateBaseToken",
+  "latestBalanceUpdateQuoteToken",
   function(m)
     local isMatch = m.Tags.Balance ~= nil
-        and m.From == BaseToken
+        and m.From == QuoteToken
         and m.Account == ao.id
     return isMatch and -1 or 0
   end,
   function(m)
-    LatestBaseTokenBal = m.Balance
+    LatestQuoteTokenBal = m.Balance
   end
 )
 
 -- FEATURES
 
 Handlers.add(
-  "WithdrawBaseToken",
-  Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
+  "WithdrawQuoteToken",
+  Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
     ownership.onlyOwner(msg)
     validations.optionalQuantity(msg)
-    local quantity = msg.Tags.Quantity or LatestBaseTokenBal
+    local quantity = msg.Tags.Quantity or LatestQuoteTokenBal
     ao.send({
-      Target = BaseToken,
+      Target = QuoteToken,
       Action = "Transfer",
       Quantity = quantity,
       Recipient = Owner
@@ -209,8 +210,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Retire"),
   function(msg)
     ownership.onlyOwner(msg)
+    assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
-    assert(LatestTargetTokenBal == "0", 'Target Token balance must be 0 to retire')
     Retired = true
     Handlers.utils.reply({
       ["Response-For"] = "Retire",

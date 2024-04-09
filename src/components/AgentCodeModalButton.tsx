@@ -12,7 +12,7 @@ function AgentCodeModalButton() {
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleCopyBase = () => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(BOT_SOURCE);
     setSnackOpen(true);
   }
@@ -67,7 +67,7 @@ function AgentCodeModalButton() {
                 Copy
               </Typography>
               <ContentCopyIcon fontSize="small"
-                onClick={handleCopyBase}
+                onClick={handleCopy}
               />
             </Stack>
           </Stack>

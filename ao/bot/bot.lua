@@ -1,13 +1,13 @@
-BaseToken = BaseToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AO CRED on testnet
--- TargetToken = TargetToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ" -- BARK on testnet
-TargetToken = TargetToken or nil
+QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AO CRED on testnet
+-- BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ" -- BARK on testnet
+BaseToken = BaseToken or nil
 
 Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet
 
 SwapInAmount = SwapInAmount or nil
 SlippageTolerance = SlippageTolerance or nil -- basis points
 
-LatestPrice = LatestPrice or 0               -- price of TargetToken expressed in BaseToken
+LatestPrice = LatestPrice or 0               -- price of BaseToken expressed in QuoteToken
 
 local bot = {}
 
@@ -15,7 +15,7 @@ bot.init = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
-    Token = TargetToken,
+    Token = BaseToken,
     Quantity = SwapInAmount
   })
 end
@@ -29,7 +29,7 @@ end
 SwapInit = function()
   -- send the transfer
   ao.send({
-    Target = BaseToken,
+    Target = QuoteToken,
     Action = "Transfer",
     Quantity = SwapInAmount,
     Recipient = Pool

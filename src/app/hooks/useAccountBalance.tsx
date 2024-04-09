@@ -1,4 +1,4 @@
-import { readBalance } from "@/api/testnet-cred"
+import { readCredBalance } from "@/utils/ao-utils"
 import { useActiveAddress } from "arweave-wallet-kit"
 import React from "react"
 
@@ -13,14 +13,14 @@ const useBalance = () => {
     const syncBalance = async () => {
       setLoading(true)
       try {
-        const bal = await readBalance(address)
+        const bal = await readCredBalance(address)
         setBalance(bal)
       } catch (e) {
         console.error('Failed initial fetch balance ', e)
       }
       setLoading(false)
       interval = setInterval(() => {
-        readBalance(address).then(setBalance)
+        readCredBalance(address).then(setBalance)
       }, 3000)
     }
 

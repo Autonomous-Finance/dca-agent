@@ -3,22 +3,22 @@
 import { Box, Divider, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
 
-import { credSymbol } from "@/api/testnet-cred"
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, retireAgent, transferOwnership, withdrawBase } from "@/utils/agent-utils"
+import { credSymbol, depositToAgent, retireAgent, transferOwnership, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
-import WithdrawBaseDialog from "@/components/WithdrawBaseDialog"
+import WithdrawQuoteDialog from "@/components/WithdrawQuoteDialog"
 import { useIdentifiedAgent } from "./hooks/useCheckAgent"
 import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
+import AgentInfoUnit from "@/components/AgentInfoUnit"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
   
   const [loadingTopUp, setLoadingTopUp] = React.useState(false)
-  const [loadingWithdrawBase, setLoadingWithdrawBase] = React.useState(false)
+  const [loadingWithdrawQuote, setLoadingWithdrawQuote] = React.useState(false)
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
   const [loadingRetirement, setLoadingRetirement] = React.useState(false)
 
@@ -28,7 +28,7 @@ export function AgentPanel() {
   
   const {status} = agent
 
-  const credBalance = status.baseTokenBalance || '-';
+  const credBalance = status.quoteTokenBalance || '-';
 
   const addToLog = (entry: LogEntry, error?: string) => {
     if (error && isLocalDev()) {
@@ -50,11 +50,11 @@ export function AgentPanel() {
     }
   }
 
-  const handleWithdrawBase = async (amount: string) => {
-    setLoadingWithdrawBase(true)
+  const handleWithdrawQuote = async (amount: string) => {
+    setLoadingWithdrawQuote(true)
     addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent...`, hasLink: false})
-    const withdrawResult = await withdrawBase(amount)
-    setLoadingWithdrawBase(false)
+    const withdrawResult = await withdrawQuote(amount)
+    setLoadingWithdrawQuote(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
@@ -113,8 +113,8 @@ export function AgentPanel() {
     }
   }
 
-  const handleWithdrawTarget = () => {
-    console.log("Withdrawing Target");
+  const handleWithdrawBase = () => {
+    console.log("Withdrawing Base");
 
     // TODO
   }
@@ -130,25 +130,27 @@ export function AgentPanel() {
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4 }}>
         <Stack direction={'row'} gap={4} height={600}>
-          <Stack gap={4} width={540}>
-            <AgentStatusDisplay />
+          <Stack gap={4} width={600}>
+            <AgentStatusDisplay/>
             <Divider />
             <Stack>
               <Typography variant="h6">
-                Base Token
+                Quote Token
               </Typography>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
-                <Box flexGrow={1} display={'flex'} justifyContent={'space-between'}>
-                  <Typography component='span' fontSize={'large'} fontWeight={'bold'} color="text.primary">{credBalance}</Typography>
-                  <Typography component='span' fontSize={'large'} color="text.secondary">{credSymbol}</Typography>
-                </Box>
+                <AgentInfoUnit>
+                  <Box display={'flex'} justifyContent={'space-between'} width={'100%'}>
+                    <Typography component='span' fontSize={'large'} fontWeight={'bold'} color="text.primary">{credBalance}</Typography>
+                    <Typography component='span' fontSize={'large'} color="text.secondary">{credSymbol}</Typography>
+                  </Box>
+                </AgentInfoUnit>
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   <TopUpDialog loading={loadingTopUp} btnWidth={BTN_WIDTH} 
                     tokenSymbol={credSymbol} tokenBalance={credBalance}
                     topUp={handleDeposit}/>
-                  <WithdrawBaseDialog loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
+                  <WithdrawQuoteDialog loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
                     tokenSymbol={credSymbol}
-                    withdraw={handleWithdrawBase}/>
+                    withdraw={handleWithdrawQuote}/>
                 </Stack>
               </Stack>
             </Stack>
@@ -185,9 +187,9 @@ export function AgentPanel() {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={14} /> : undefined}
                 variant="contained"
-                onClick={handleWithdrawTarget}
+                onClick={handleWithdrawBase}
               >
-                Withdraw Target
+                Withdraw Base
               </Button>
               
               <Button
