@@ -42,7 +42,7 @@ export function AgentPanel() {
   const handleDeposit = async (amount: string) => {
     setLoadingTopUp(true)
     addToLog({text: `Depositing ${amount} ${credSymbol} to agent...`, hasLink: false})
-    const depositResult = await depositToAgent(amount)
+    const depositResult = await depositToAgent(agent.agentId, amount)
     setLoadingTopUp(false)
     if (depositResult?.type === "Success") {
       const msgId = depositResult.result
@@ -55,7 +55,7 @@ export function AgentPanel() {
   const handleWithdrawQuote = async (amount: string) => {
     setLoadingWithdrawQuote(true)
     addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent...`, hasLink: false})
-    const withdrawResult = await withdrawQuote(amount)
+    const withdrawResult = await withdrawQuote(agent.agentId, amount)
     setLoadingWithdrawQuote(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
@@ -93,7 +93,7 @@ export function AgentPanel() {
     setLoadingTransferOwnership(true)
     addToLog({text: `Transferring ownership to ${id}...`, hasLink: false})
     setLoadingTransferOwnership(false)
-    const transferResult = await transferOwnership(id)
+    const transferResult = await transferOwnership(agent.agentId, id)
     if (transferResult.type === "Success") {
       const msgId = transferResult.result
       addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
@@ -106,7 +106,7 @@ export function AgentPanel() {
     setLoadingRetirement(true)
     addToLog({text: `Retiring agent...`, hasLink: false})
     setLoadingRetirement(false)
-    const retirementResult = await retireAgent()
+    const retirementResult = await retireAgent(agent.agentId)
     if (retirementResult.type === "Success") {
       const msgId = retirementResult.result
       addToLog({text: `Agent retired. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
