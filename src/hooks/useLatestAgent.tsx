@@ -12,7 +12,8 @@ export type RegisteredAgent = {
   LiquidationSells:  any[],
   Retired:  boolean,
   FromTransfer:  boolean,
-  TransferredAt?:  number
+  TransferredAt?:  number,
+  status?: string // added on frontend
 }
 
 const useGetLatestAgent = () => {

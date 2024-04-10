@@ -11,6 +11,8 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
+import LoadingEmptyState from './LoadingEmptyState';
+import { Typography } from '@mui/material';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -32,53 +34,83 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  id: string,
-  createdAt: number,
-  status: string
-) {
-  return { id, createdAt, status };
-}
-
-const rows = [
-  createData('Jic3UQSN19Sa5Wa4gPhBpJkucdWTqCczGsuIdo', 1712748611000, 'Retired'),
-  createData('Kic3UQSN19Sa5Wa4gPhBpJkucdWTqCczGsuIdo', 1712718611000, 'Active'),
-  createData('Lic3UQSN19Sa5Wa4gPhBpJkucdWTqCczGsuIdo', 1712508611000, 'No Funds')
-];
-
 export default function AgentsTable() {
 
   const router = useRouter()
 
   const agents = useMyAgents()
-  console.log('AGENTS: ', agents)
+
+  const {loading, agentInfos, refresh} = agents
 
   const navigateToAgentPanel = (id: string) => {
     router.push('/my-agents?id=' + id)
   }
 
+  if (agentInfos) {
+    agentInfos.forEach((agentInfo) => {
+      agentInfo.status = agentInfo.Retired ? 'Retired' : 'Active' // TODO add 'no funds' to status -> registry will have to keep track of quote token balance and configured swap amount
+    })
+  }
+
+  const GreenPoint = styled('span')(({ theme }) => ({
+    color: theme.palette.success.main,
+    fontWeight: 'bold',
+  }));
+
+  const OrangePoint = styled('span')(({ theme }) => ({
+    color: theme.palette.warning.main,
+    fontWeight: 'bold',
+  }));
+
   return (
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 900 }} aria-label="customized table">
-        <TableHead>
-          <TableRow>
-            <StyledTableCell>Agent ID</StyledTableCell>
-            <StyledTableCell align="right">Created</StyledTableCell>
-            <StyledTableCell align="right">Status</StyledTableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => (
-            <StyledTableRow key={row.id} onClick={() => navigateToAgentPanel(row.id)}>
-              <StyledTableCell component="th" scope="row">
-                {row.id}
-              </StyledTableCell>
-              <StyledTableCell align="right">{(new Date(row.createdAt).toLocaleString())}</StyledTableCell>
-              <StyledTableCell align="right">{row.status}</StyledTableCell>
-            </StyledTableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <>
+      {loading && (
+        <LoadingEmptyState texts={['Retrieving your agents']}/>
+      )}
+      {!loading && !agentInfos && (
+        <Typography variant="h5" align="center" gutterBottom>
+          Could not retrieve agents.
+        </Typography>
+      )}
+      {!loading && agentInfos && !agentInfos.length && (
+        <Typography variant="h5" align="center" gutterBottom>
+          No Agents Found.
+        </Typography>
+      )}
+      {!loading && (
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 900 }} aria-label="customized table">
+            <TableHead>
+              <TableRow>
+                <StyledTableCell>Agent ID</StyledTableCell>
+                <StyledTableCell align="right">Created</StyledTableCell>
+                <StyledTableCell align="right">Status</StyledTableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {agentInfos?.map((agentInfo) => (
+                <StyledTableRow key={agentInfo.Agent} 
+                  onClick={() => navigateToAgentPanel(agentInfo.Agent)}
+                  sx={{cursor: 'pointer'}}
+                  >
+                  <StyledTableCell component="th" scope="row">
+                    {agentInfo.Agent}
+                  </StyledTableCell>
+                  <StyledTableCell align="right">{(new Date(agentInfo.CreatedAt).toLocaleString())}</StyledTableCell>
+                  <StyledTableCell align="right">
+                    <Typography color={agentInfo.status === 'Active' ? 'green' : 'primary'}
+                      fontSize={'large'}
+                      fontWeight={agentInfo.status === 'Active' ? 'bold' : 'normal'}
+                      >
+                      {agentInfo.status}
+                    </Typography>
+                  </StyledTableCell>
+                </StyledTableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </>
   );
 }

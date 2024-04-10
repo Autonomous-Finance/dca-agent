@@ -23,22 +23,22 @@ local onlyAgent = function(msg)
 end
 
 
-local getAgentFromMapping = function(agentId)
+local getAgentAndIndex = function(agentId)
   local owner = RegisteredAgents[agentId]
   local agents = AgentsPerUser[owner] or {}
   for i, agent in ipairs(agents) do
     if agent == agentId then
-      return i, agent
+      return agent, i
     end
   end
 end
 
-local getAgentInfoFromMapping = function(agentId)
+local getAgentInfoAndIndex = function(agentId)
   local owner = RegisteredAgents[agentId]
   local agentInfos = AgentInfosPerUser[owner] or {}
   for i, agentInfo in ipairs(agentInfos) do
     if agentInfo.Agent == agentId then
-      return i, agentInfo
+      return agentInfo, i
     end
   end
   return nil
@@ -50,11 +50,11 @@ local changeOwners = function(agentId, newOwner, timestamp)
 
   RegisteredAgents[agentId] = newOwner
 
-  local idxAgent, _ = getAgentFromMapping(agentId)
+  local _, idxAgent = getAgentAndIndex(agentId)
   table.remove(AgentsPerUser[currentOwner], idxAgent)
   table.insert(AgentsPerUser[newOwner], agentId)
 
-  local idxAgentInfo, _ = getAgentInfoFromMapping(agentId)
+  local _, idxAgentInfo = getAgentInfoAndIndex(agentId)
   local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
   info["Owner"] = newOwner
   info["FromTransfer"] = true
@@ -159,7 +159,7 @@ Handlers.add(
   function(msg)
     onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoFromMapping(agentId)
+    local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
     Handlers.utils.reply({
       ["Response-For"] = "RetireAgent",
@@ -180,6 +180,22 @@ Handlers.add(
     Handlers.utils.reply({
       ["Response-For"] = "Wipe",
       Data = "Success"
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
+  'retireAgentDebug',
+  Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
+  function(msg)
+    -- onlyAgent(msg)
+    local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    agentInfo.Retired = true
+    Handlers.utils.reply({
+      ["Response-For"] = "RetireAgentDebug",
+      Data = "Success",
     })(msg)
   end
 )
