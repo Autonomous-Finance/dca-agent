@@ -1,8 +1,8 @@
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import Image from 'next/image'
 import React from 'react'
 
-function LoadingHome() {
+function LoadingEmptyState({texts}: {texts?: string[]}) {
   return (
     <Box position={'relative'} height={400} display={'flex'} gap={4}
       alignItems={'center'} justifyContent={'center'} flexDirection={'column'}
@@ -13,9 +13,14 @@ function LoadingHome() {
         >
         <Image alt="icon" width={600} height={600} src={'/ao.svg'} />
       </Box>
+      <Stack gap={1}>
+        {texts?.map((text) => (
+          <Typography key={text} textAlign={'center'} variant={'h5'}>{text}</Typography>
+        ))}       
+      </Stack>
       <CircularProgress size={64} />
     </Box>
   )
 }
 
-export default LoadingHome
+export default LoadingEmptyState

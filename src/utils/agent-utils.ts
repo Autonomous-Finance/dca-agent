@@ -1,4 +1,4 @@
-import { getLatestAgentInitilizedBy } from "@/app/queries/agent.queries"
+import { getLatestAgentInitilizedBy } from "@/queries/agent.queries"
 import * as ao from "@permaweb/aoconnect/browser"
 
 export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
@@ -13,7 +13,7 @@ export type Receipt<T> = {
 }
 
 export type AgentStatus = {
-  initialized: true
+  initialized: boolean
   retired: boolean
   baseToken: string
   quoteToken: string
@@ -23,32 +23,92 @@ export type AgentStatus = {
   quoteTokenBalance: string
   baseTokenBalance: string
 }
-export type AgentStatusNonInit = {
-  initialized: false
-}
 
 export type AoMsgTag = {
   name: string
   value: string
 }
 
+type DryRunResult = Awaited<ReturnType<typeof ao.dryrun>>
 
-export const getLatestAgent = async () => {
-  try {
-    const user = await window.arweaveWallet?.getActiveAddress();
-    const agent = await getLatestAgentInitilizedBy(user)
-    return agent
-  } catch (e) {
-    console.error('Failed to get latest agent via gql ', e)
+const extractResponse = (result: DryRunResult, actionName: string) => {
+  const respMsg = result.Messages.find(
+    msg => msg.Tags.some(
+      (tag: AoMsgTag) => tag.name === 'Response-For' && tag.value === actionName)
+  );
+  if (respMsg) {
+    const respData = respMsg?.Tags.find(
+      (tag: AoMsgTag) => tag.name === 'Data'
+    )?.value
+    return JSON.parse(respData)
+  } else {
+    throw('Internal: could not find the data')
   }
 }
 
-export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatus | AgentStatusNonInit | null>> {
-  if (!agent) return {
-    type: "Success",
-    result: null
-  }
 
+export const getLatestAgent = async () => {
+  try {
+    const res = await ao.dryrun({
+      process: REGISTRY,
+      tags: [
+        { name: "Action", value: "GetLatestAgent" },
+        { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
+      ],
+    })
+    if (res.Error) {
+      console.error('Error on dry-run for latest agent query', res)
+      return {
+        type: "Failure",
+        result: null
+      }
+    }
+
+    return {
+      type: "Success",
+      result: extractResponse(res, 'GetLatestAgent')
+    }
+  } catch (e) {
+    console.error('Failed to get latest agent', e)
+    return {
+      type: "Failure",
+      result: null
+    }
+  }
+}
+
+export const getAllAgents = async () => {
+  try {
+    const res = await ao.dryrun({
+      process: REGISTRY,
+      tags: [
+        { name: "Action", value: "GetAllAgents" },
+        { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
+      ],
+    })
+
+    if (res.Error) {
+      console.error('Error on dry-run for latest agent query', res)
+      return {
+        type: "Failure",
+        result: null
+      }
+    }
+
+    return {
+      type: "Success",
+      result: extractResponse(res, 'GetAllAgents')
+    }
+  } catch (e) {
+    console.error('Failed to get all agents', e)
+    return {
+      type: "Failure",
+      result: null
+    }
+  }
+}
+
+export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatus | null>> {
   try {
     const result = await ao.dryrun({
       process: agent,
@@ -65,20 +125,9 @@ export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatu
       }
     } 
 
-    const respMsg = result.Messages.find(
-      msg => msg.Tags.some(
-        (tag: AoMsgTag) => tag.name === 'Response-For' && tag.value === 'GetStatus')
-    );
-    if (respMsg) {
-      const respData = respMsg?.Tags.find(
-        (tag: AoMsgTag) => tag.name === 'Data'
-      )?.value
-      return {
-        type: "Success",
-        result: JSON.parse(respData)
-      }
-    } else {
-      throw('Internal: bot status read should have had the data')
+    return {
+      type: "Success",
+      result: extractResponse(result, 'GetStatus')
     }
   } catch (e) {
     console.error(e)
@@ -89,14 +138,7 @@ export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatu
   }
 }
 
-export const depositToAgent = async (amount: string): Promise<Receipt<string>> => {
-  const agent = window.localStorage.getItem("agentProcess");
-
-  if (!agent) return {
-    type: "Failure",
-    result: "Agent not found"
-  }
-
+export const depositToAgent = async (agent: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Depositing ", amount);
   
@@ -138,14 +180,7 @@ export const depositToAgent = async (amount: string): Promise<Receipt<string>> =
   }
 }
 
-export const withdrawQuote = async (amount: string): Promise<Receipt<string>> => {
-  const agent = window.localStorage.getItem("agentProcess");
-
-  if (!agent) return {
-    type: "Failure",
-    result: "Agent not found"
-  }
-
+export const withdrawQuote = async (agent: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Withdrawing quote token ");
   
@@ -188,22 +223,15 @@ export const withdrawQuote = async (amount: string): Promise<Receipt<string>> =>
   }
 }
 
-export const transferOwnership = async (id: string): Promise<Receipt<string>> => {
-  const agent = window.localStorage.getItem("agentProcess");
-
-  if (!agent) return {
-    type: "Failure",
-    result: "Agent not found"
-  }
-
+export const transferOwnership = async (agent: string, newOwnerId: string): Promise<Receipt<string>> => {
   try {
-    console.log("Transferring Ownership to ", id);
+    console.log("Transferring Ownership to ", newOwnerId);
   
     const msgId = await ao.message({
       process: agent,
       tags: [
         { name: "Action", value: "TransferOwnership" },
-        { name: "NewOwner", value: id }
+        { name: "NewOwner", value: newOwnerId }
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
@@ -236,14 +264,7 @@ export const transferOwnership = async (id: string): Promise<Receipt<string>> =>
   }
 }
 
-export const retireAgent = async (): Promise<Receipt<string>> => {
-  const agent = window.localStorage.getItem("agentProcess");
-
-  if (!agent) return {
-    type: "Failure",
-    result: "Agent not found"
-  }
-
+export const retireAgent = async (agent: string): Promise<Receipt<string>> => {
   try {
     console.log("Retiring");
   
@@ -280,5 +301,34 @@ export const retireAgent = async (): Promise<Receipt<string>> => {
       type: "Failure",
       result: `Error: ${e}`
     }
+  }
+}
+
+// only for debugging
+export const wipeRegistry = async () => {
+  try {
+    console.log("!!! Wiping Registry");
+  
+    const msgId = await ao.message({
+      process: REGISTRY,
+      tags: [
+        { name: "Action", value: "Wipe" },
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: REGISTRY,
+    })
+  
+    console.log("Result: ", res)
+
+    if (res.Error) {
+      console.error("Failure!")
+    }
+  } catch (e) {
+    console.error("Failure!", e)
   }
 }

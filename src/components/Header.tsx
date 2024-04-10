@@ -70,13 +70,13 @@ const Header = () => {
                 })}>
                 Dashboard
               </Button>
-              <Button component={Link} href="/history" size="large"
+              <Button component={Link} href="/my-agents" size="large"
                 sx={theme => ({
                   fontSize: '1.25rem', 
-                  color: `var(--mui-customColors-naviLink-${pathname === '/history' ? '' : 'in'}active-${theme.palette.mode})`,
-                  textTransform: pathname === '/history' ? 'underline uppercase' : 'uppercase'
+                  color: `var(--mui-customColors-naviLink-${pathname === '/my-agents' ? '' : 'in'}active-${theme.palette.mode})`,
+                  textTransform: pathname === '/my-agents' ? 'underline uppercase' : 'uppercase'
                 })}>
-                History
+                My Agents
               </Button>
             </Stack>
             <Stack direction="row" gap={2} alignItems="center">

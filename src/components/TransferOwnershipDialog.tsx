@@ -9,16 +9,20 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { CircularProgress, Stack, Typography } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
+import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 export default function TransferOwnershipDialog(props: {loading: boolean, btnWidth: number, transferTo: (id: string) => void}) {
   const {loading, btnWidth, transferTo} = props;
   const [open, setOpen] = React.useState(false);
   const [account, setAccount] = React.useState("");
 
-  const agent = useIdentifiedAgent()
+  const agent = usePolledAgentStatusContext();
+
   if (!agent) return <></>
-  const {status} = agent;
+
+  const status = agent.status
+
+  if (!status) return <></>
 
   const isRetired = status.retired
 

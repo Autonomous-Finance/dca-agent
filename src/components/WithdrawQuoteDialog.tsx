@@ -8,7 +8,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/material';
 import RemoveIcon from '@mui/icons-material/Remove';
-import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
+import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 
 export default function WithdrawQuoteDialog(props: {
@@ -20,9 +20,13 @@ export default function WithdrawQuoteDialog(props: {
   const [amount, setAmount] = React.useState("");
   const [error, setError] = React.useState("");
   
-  const agent = useIdentifiedAgent()
+  const agent = usePolledAgentStatusContext();
+
   if (!agent) return <></>
-  const {status} = agent;
+
+  const status = agent.status
+
+  if (!status) return <></>
 
   const hasNoFunds = status.quoteTokenBalance === '0'
   const tokenBalance = status.quoteTokenBalance;

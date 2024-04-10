@@ -9,10 +9,10 @@ import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
 import WithdrawQuoteDialog from "@/components/WithdrawQuoteDialog"
-import { useIdentifiedAgent } from "./hooks/useCheckAgent"
 import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
 import AgentInfoUnit from "@/components/AgentInfoUnit"
+import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -22,11 +22,13 @@ export function AgentPanel() {
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
   const [loadingRetirement, setLoadingRetirement] = React.useState(false)
 
-  const agent = useIdentifiedAgent()
+  const agent = usePolledAgentStatusContext();
 
   if (!agent) return <></>
-  
-  const {status} = agent
+
+  const status = agent.status
+
+  if (!status) return <></>
 
   const credBalance = status.quoteTokenBalance || '-';
 

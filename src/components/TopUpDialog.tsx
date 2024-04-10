@@ -8,8 +8,8 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { useAccountBalance } from '@/app/hooks/useAccountBalance';
-import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
+import { useAccountBalance } from '@/hooks/useAccountBalance';
+import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 
 export default function TopUpDialog(props: {
@@ -22,9 +22,13 @@ export default function TopUpDialog(props: {
 
   const {balance: tokenBalanceUser } = useAccountBalance();
   
-  const agent = useIdentifiedAgent()
+  const agent = usePolledAgentStatusContext();
+
   if (!agent) return <></>
-  const {status} = agent;
+
+  const status = agent.status
+
+  if (!status) return <></>
 
   const isRetired = status.retired
 

@@ -62,6 +62,10 @@ Create working version for each iteration
    1. store latest agent id in localstorage
    2. query historic data and latest agent owned by current user - use registry process (deploy once per app, no access control for registration)
    3. check that changing the owner works
+   4. support managing multiple agents at once (including transferred ones)
+
+
+
 2. Fully fledged dca agent with automation, includes state display of the active agent.
 3. Add metrics for agent performance
 4. Finesse for UX

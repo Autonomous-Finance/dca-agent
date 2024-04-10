@@ -96,6 +96,7 @@ Handlers.add(
   end
 )
 
+-- msg to be sent by end user
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
@@ -146,7 +147,7 @@ Handlers.add(
   function(msg)
     assert(msg.Tags.NewOwner ~= nil and type(msg.Tags.NewOwner) == 'string', 'Owner is required!')
     Owner = msg.Tags.NewOwner
-    -- intentionally not updating history of ownership transfers in registry process (not necessary for mvp)
+    ao.send({ Target = Registry, Action = "TransferAgent", NewOwner = Owner })
     Handlers.utils.reply({
       ["Response-For"] = "TransferOwnership",
       Data = "Success"
@@ -216,6 +217,7 @@ Handlers.add(
     assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
+    ao.send({ Target = Registry, Action = "RetireAgent" })
     Handlers.utils.reply({
       ["Response-For"] = "Retire",
       Data = "Success"

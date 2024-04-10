@@ -7,15 +7,19 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { CircularProgress, Stack, Typography } from '@mui/material';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import { useIdentifiedAgent } from '@/app/hooks/useCheckAgent';
+import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 export default function RetirementDialog(props: {loading: boolean, btnWidth: number, retire: () => void}) {
   const {loading, btnWidth, retire} = props
   const [open, setOpen] = React.useState(false)
 
-  const agent = useIdentifiedAgent()
+  const agent = usePolledAgentStatusContext();
+
   if (!agent) return <></>
-  const {status} = agent;
+
+  const status = agent.status
+
+  if (!status) return <></>
 
   const hasFunds = status.quoteTokenBalance !== '0' || status.baseTokenBalance !== '0'
   const isRetired = status.retired

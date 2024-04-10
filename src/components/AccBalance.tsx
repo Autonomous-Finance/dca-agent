@@ -2,7 +2,7 @@ import { Paper, Skeleton, Stack, Typography } from "@mui/material"
 import { useActiveAddress } from "arweave-wallet-kit"
 import React from "react"
 
-import { useAccountBalance } from "@/app/hooks/useAccountBalance"
+import { useAccountBalance } from "@/hooks/useAccountBalance"
 
 export function AccBalance() {
   const address = useActiveAddress()

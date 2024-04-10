@@ -8,8 +8,8 @@ import { ArweaveProvider } from "@/app/ArweaveProvider"
 
 import { theme } from "./theme"
 import Header from "../Header"
-import { AccountBalanceProvider } from "@/app/hooks/useAccountBalance"
-import { CheckAgentProvider } from "@/app/hooks/useCheckAgent"
+import { AccountBalanceProvider } from "@/hooks/useAccountBalance"
+import { LatestAgentProvider } from "@/hooks/useLatestAgent"
 
 export default function RootLayoutUI({
   children,
@@ -23,9 +23,9 @@ export default function RootLayoutUI({
         <ArweaveProvider>
           <AccountBalanceProvider>
             <Header />
-            <CheckAgentProvider>
+            <LatestAgentProvider>
               <Container maxWidth="xl">{children}</Container>
-            </CheckAgentProvider>
+            </LatestAgentProvider>
           </AccountBalanceProvider>
         </ArweaveProvider>
       </CssVarsProvider>
