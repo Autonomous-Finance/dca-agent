@@ -12,7 +12,9 @@ import Paper from '@mui/material/Paper';
 import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
 import LoadingEmptyState from './LoadingEmptyState';
-import { Typography } from '@mui/material';
+import { Chip, Typography } from '@mui/material';
+import { RegisteredAgent } from '@/hooks/useLatestAgent';
+import { credSymbol } from '@/utils/agent-utils';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -25,7 +27,8 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  '&:nth-of-type(odd)': {
+  transition: 'all 0.15s ease-in-out',
+  '&:hover': {
     backgroundColor: theme.palette.action.hover,
   },
   // hide last border
@@ -33,6 +36,30 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
     border: 0,
   },
 }));
+
+
+const StatusChip = ({agentInfo}: {agentInfo: RegisteredAgent}) => {
+  return (
+    <>  
+      {agentInfo.status === 'Active' && (
+        <Chip label="Active" variant="outlined" color="success" 
+          sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}
+        />
+      )}
+      {agentInfo.status === 'Retired' && (
+        <Chip label="Retired" variant="outlined" color="primary" 
+            sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}} 
+        />
+      )}
+      {agentInfo.status === 'No Funds' && (
+        <Chip label="No Funds" variant="outlined" color="warning" 
+            sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}  
+        />
+      )}
+    </>
+  )
+}
+
 
 export default function AgentsTable() {
 
@@ -48,19 +75,21 @@ export default function AgentsTable() {
 
   if (agentInfos) {
     agentInfos.forEach((agentInfo) => {
-      agentInfo.status = agentInfo.Retired ? 'Retired' : 'Active' // TODO add 'no funds' to status -> registry will have to keep track of quote token balance and configured swap amount
+      if (agentInfo.Retired) {
+        agentInfo.status = 'Retired'
+      } else if (agentInfo.QuoteTokenBalance === '0') { // TODO update to compare to price of automated swap
+        agentInfo.status = 'No Funds'
+      } else {
+        agentInfo.status = 'Active'
+      }
+
+      agentInfo.ownedSince = (new Date(agentInfo.TransferredAt ?? agentInfo.CreatedAt).toLocaleString())
+      agentInfo.provenance = agentInfo.TransferredAt ? 'Transfer' : 'Created'
     })
   }
 
-  const GreenPoint = styled('span')(({ theme }) => ({
-    color: theme.palette.success.main,
-    fontWeight: 'bold',
-  }));
-
-  const OrangePoint = styled('span')(({ theme }) => ({
-    color: theme.palette.warning.main,
-    fontWeight: 'bold',
-  }));
+  const sortedAgentInfos = agentInfos?.slice()
+  sortedAgentInfos?.reverse()
 
   return (
     <>
@@ -83,12 +112,14 @@ export default function AgentsTable() {
             <TableHead>
               <TableRow>
                 <StyledTableCell>Agent ID</StyledTableCell>
-                <StyledTableCell align="right">Created</StyledTableCell>
+                <StyledTableCell align="right">Quote Balance</StyledTableCell>
+                <StyledTableCell align="right">Owned Since</StyledTableCell>
                 <StyledTableCell align="right">Status</StyledTableCell>
+                <StyledTableCell align="right">Provenance</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {agentInfos?.map((agentInfo) => (
+              {sortedAgentInfos?.map((agentInfo) => (
                 <StyledTableRow key={agentInfo.Agent} 
                   onClick={() => navigateToAgentPanel(agentInfo.Agent)}
                   sx={{cursor: 'pointer'}}
@@ -96,15 +127,17 @@ export default function AgentsTable() {
                   <StyledTableCell component="th" scope="row">
                     {agentInfo.Agent}
                   </StyledTableCell>
-                  <StyledTableCell align="right">{(new Date(agentInfo.CreatedAt).toLocaleString())}</StyledTableCell>
                   <StyledTableCell align="right">
-                    <Typography color={agentInfo.status === 'Active' ? 'green' : 'primary'}
-                      fontSize={'large'}
-                      fontWeight={agentInfo.status === 'Active' ? 'bold' : 'normal'}
-                      >
-                      {agentInfo.status}
+                    <Typography component='span'>
+                      <Typography component='span' fontWeight={'bold'} color="text.primary">{agentInfo.QuoteTokenBalance}</Typography>
+                      <Typography component='span' variant="body1" color="text.secondary">{" "}{credSymbol}</Typography>
                     </Typography>
                   </StyledTableCell>
+                  <StyledTableCell align="right">{agentInfo.ownedSince}</StyledTableCell>
+                  <StyledTableCell align="right">
+                    <StatusChip agentInfo={agentInfo}/>
+                  </StyledTableCell>
+                  <StyledTableCell align="right">{agentInfo.provenance}</StyledTableCell>
                 </StyledTableRow>
               ))}
             </TableBody>

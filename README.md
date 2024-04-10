@@ -69,18 +69,21 @@ Create working version for each iteration
 2. Fully fledged dca agent with automation, includes state display of the active agent.
 3. Add metrics for agent performance
 4. Finesse for UX
-   1. Prettify UI, 
+   1. Prettify UI
    2. responsive to suit smaller devices
    3. display relevant info (my current balance) / make available actions more convenient
       1. click max available to input amount
       2. slider for 0% - 100% of available balance to input amount etc.
       3. Assist user in keeping track of all messages sent within the app (wallet doesn't help with that - central place for in-app logs)
    4. add animated stepper for deployment progress display
+   5. Support pagination for my processes
 5. Reconsider agent design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
 
 6. Implement access control on registry process (frontend should deploy it per user, so that user is the owner of the registry) 
 
 
+## Tech Debt
+- perform the reverse of agents and agentInfos retrieved from registry already on AO, not on frontend
 
 
 

@@ -109,6 +109,7 @@ Handlers.add(
     table.insert(AgentInfosPerUser[sender], {
       Agent = agent,
       CreatedAt = msg.Timestamp,
+      QuoteTokenBalance = "0",
       Deposits = {},
       WithdrawalsQuoteToken = {},
       WithdrawalsBaseToken = {},
@@ -164,6 +165,22 @@ Handlers.add(
     Handlers.utils.reply({
       ["Response-For"] = "GetLatestAgent",
       Data = json.encode(latestAgentInfo),
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
+  'updateQuoteTokenBalance',
+  Handlers.utils.hasMatchingTag('Action', 'UpdateQuoteTokenBalance'),
+  function(msg)
+    onlyAgent(msg)
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    agentInfo.QuoteTokenBalance = msg.Tags.Balance
+    Handlers.utils.reply({
+      ["Response-For"] = "UpdateQuoteTokenBalance",
+      Data = "Success"
     })(msg)
   end
 )

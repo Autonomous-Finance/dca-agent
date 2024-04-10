@@ -40,7 +40,7 @@ export default function HomePageServer() {
             </Typography>
             <Stack direction={'row'} gap={4}>
               <Button component={Link} href="/create-agent" size="large" 
-                variant="contained" color="success"
+                variant="outlined" color="success"
                 sx={{ fontSize: '1.25rem' }}>
                 Create Agent <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>
               </Button>

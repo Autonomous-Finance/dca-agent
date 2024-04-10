@@ -146,6 +146,7 @@ Handlers.add(
   end,
   function(m)
     LatestQuoteTokenBal = m.Balance
+    ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
   end
 )
 

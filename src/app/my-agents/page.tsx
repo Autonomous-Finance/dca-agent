@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowBack } from "@mui/icons-material";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation"
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -26,10 +26,19 @@ export default function MyAgents() {
   const canGoBack = noback !== "1" && id !== null
   const displayAllAgents = id === null
 
-  const naviWidth = displayAgentPanel ? 600 + 2*32 : 900
+  // const naviWidth = displayAgentPanel ? 600 + 2*32 : 900
   return (
-    <Stack mt={8} gap={4} mx={'auto'} width={900}> 
-      <Stack direction={'row'} width={naviWidth} mx={'auto'}>
+    <Stack mt={4} gap={4} mx={'auto'} px={'16px'}> 
+      <Stack direction={'row'}>
+        {!displayAgentPanel && (
+          <Button component={Link} href="/create-agent"
+            size="large"
+            variant="outlined"
+            color="success"
+            sx={{ fontSize: '1.25rem', marginLeft: 'auto' }}>
+            Create Agent <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>
+          </Button>
+        )}
         {displayAgentPanel && (
           <>
             {canGoBack && (
@@ -54,22 +63,16 @@ export default function MyAgents() {
             )}
           </>
         )}
-
-        {!displayAgentPanel && (
-          <Button component={Link} href="/create-agent"
-            size="large"
-            variant="contained"
-            color="success"
-            sx={{ fontSize: '1.25rem', marginLeft: 'auto' }}>
-            Create Agent <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>
-          </Button>
-        )}
       </Stack>
+
+      <Divider />
 
       {displayAgentPanel && (
         <ViewAgent agentId={id} />
       )}
-      {displayAllAgents && <AgentsTable/>}
+      {displayAllAgents && (
+          <AgentsTable/>
+        )}
     </Stack>
   )
 }

@@ -3,8 +3,10 @@ import React from "react";
 
 
 export type RegisteredAgent = {
+  // -- tracked in registry
   Agent: string,
   CreatedAt: number,
+  QuoteTokenBalance: string,
   Deposits:  any[],
   WithdrawalsQuoteToken:  any[],
   WithdrawalsBaseToken:  any[],
@@ -13,7 +15,10 @@ export type RegisteredAgent = {
   Retired:  boolean,
   FromTransfer:  boolean,
   TransferredAt?:  number,
-  status?: string // added on frontend
+  // -- added on frontend
+  status?: string, // 'Active' | 'Retired' | 'No Funds'
+  ownedSince?: string, // date string
+  provenance?: string // 'Owned' or 'Transferred'
 }
 
 const useGetLatestAgent = () => {
