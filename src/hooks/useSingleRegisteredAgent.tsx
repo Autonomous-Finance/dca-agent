@@ -1,6 +1,5 @@
-import { getOneAgent } from "@/utils/agent-utils"
+import { getOneAgent, RegisteredAgent } from "@/utils/agent-utils"
 import { useEffect, useState } from "react"
-import { RegisteredAgent } from "./useLatestRegisteredAgent"
 
 export const useSingleRegisteredAgent = (id: string | null) => {
 
@@ -20,7 +19,7 @@ export const useSingleRegisteredAgent = (id: string | null) => {
         setLoading(false)
         const res = agentQuery.result
         if (agentQuery.type === 'Failure') {
-          console.log('no latest agentProcess found', res)
+          console.log('no agentProcess found', res)
           return
         }
         setRegisteredAgent(res)

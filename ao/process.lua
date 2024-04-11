@@ -69,9 +69,9 @@ Handlers.add(
   "transferOwnership",
   Handlers.utils.hasMatchingTag("Action", "TransferOwnership"),
   function(msg)
-    assert(msg.From == Owner, 'Only the owner can update the owner!')
+    assert(msg.From == newOwner, 'Only the owner can update the owner!')
     assert(msg.Tags.Owner ~= nil and type(msg.Tags.Owner) == 'string', 'Owner is required!')
-    Owner = msg.Tags.Owner
+    newOwner = msg.Tags.Owner
   end
 )
 
@@ -211,7 +211,7 @@ Handlers.add(
       Target = TargetToken,
       Action = "Transfer",
       Quantity = quantity,
-      Recipient = Owner
+      Recipient = newOwner
     })
   end
 )
@@ -227,7 +227,7 @@ Handlers.add(
       Target = BaseToken,
       Action = "Transfer",
       Quantity = quantity,
-      Recipient = Owner
+      Recipient = newOwner
     })
   end
 )

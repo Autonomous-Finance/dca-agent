@@ -1,6 +1,5 @@
-import { getAllAgents } from "@/utils/agent-utils";
+import { getAllAgents, RegisteredAgent } from "@/utils/agent-utils";
 import React from "react";
-import { RegisteredAgent } from "./useLatestRegisteredAgent";
 
 export const useMyAgents = () => {
 

@@ -13,9 +13,9 @@ import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 
 export default function TopUpDialog(props: {
-  loading: boolean, btnWidth: number, tokenSymbol: string, tokenBalance: string, topUp: (id: string) => void
+  loading: boolean, disabled?: boolean, btnWidth: number, tokenSymbol: string, tokenBalance: string, topUp: (id: string) => void
 }) {
-  const {loading, btnWidth, tokenSymbol, tokenBalance, topUp} = props;
+  const {loading, disabled, btnWidth, tokenSymbol, tokenBalance, topUp} = props;
   const [open, setOpen] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [error, setError] = React.useState("");
@@ -49,7 +49,7 @@ export default function TopUpDialog(props: {
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || isRetired}
+        disabled={loading || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
         onClick={handleClickOpen}

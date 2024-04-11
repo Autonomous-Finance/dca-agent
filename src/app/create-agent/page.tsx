@@ -13,12 +13,13 @@ import {
   Paper,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material"
 import React from "react"
 
 
-import { IntervalType, BASE_CURRENCIES, INTERVAL_TYPES, BaseToken, TYPE_ICON_MAP } from '@/utils/data-utils';
+import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, TYPE_ICON_MAP } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -32,10 +33,8 @@ import {
 } from "@permaweb/aoconnect/browser"
 import { BOT_SOURCE } from "@/lua/bot-source"
 import { CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
-import LinkIcon from '@mui/icons-material/Link';
-import { shortenId } from "@/utils/ao-utils"
 import Log, { LogEntry } from "@/components/Log";
-import { REGISTRY } from "@/utils/agent-utils";
+import { credSymbol, REGISTRY } from "@/utils/agent-utils";
 import { useRouter } from "next/navigation";
 
 
@@ -46,10 +45,11 @@ export default function CreateAgent() {
   const disableForm = loading || !!deployed
 
   const [currency, setCurrency] = React.useState<BaseToken>("BRKTST")
-  // const [amount, setAmount] = React.useState("")
+  const [agentName, setAgentName] = React.useState("")
+  const [swapInAmount, setSwapInAmount] = React.useState("100")
+  const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Days")
+  const [swapIntervalValue, setSwapIntervalValue] = React.useState("10")
   // const [slippage, setSlippage] = React.useState("")
-  // const [intervalType, setIntervalType] = React.useState<IntervalType>("Days")
-  // const [intervalValue, setIntervalValue] = React.useState("")
   
   const [validationError, setValidationError] = React.useState("");
   const [deployLog, setDeployLog] = React.useState<LogEntry[]>([])
@@ -57,7 +57,7 @@ export default function CreateAgent() {
   const router = useRouter()
 
   const navigateToDeployedAgent = () => {
-    router.replace(`/my-agents?id=${deployed}&noback=1`)
+    router.replace(`/single-agent?id=${deployed}&noback=1`)
   }
 
   const addToLog = (entry: LogEntry) => setDeployLog((log) => [...log, entry]);
@@ -74,6 +74,8 @@ export default function CreateAgent() {
     if (!validateConfig()) {
       return
     }
+
+    const defaultAgentName = `MrSmith_${Math.ceil(1000 * Math.random())}`
 
     try {
       setLoading(true);
@@ -125,10 +127,26 @@ export default function CreateAgent() {
           { name: "Action", value: "Initialize" },
           { name: "Process-Type", value: "AF-DCA-Agent" },
           { name: "Initializer", value: await window.arweaveWallet?.getActiveAddress()},
+          { name: "AgentName", value: agentName || defaultAgentName },
           { name: "BaseToken", value: CURRENCY_PROCESS_MAP[currency] },
+          { name: "SwapInAmount", value: swapInAmount },
+          { name: "SwapIntervalValue", value: swapIntervalValue },
+          { name: "SwapIntervalUnit", value: swapIntervalUnit },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
+
+      const initRes = await result({
+        message: initMsgId,
+        process: processId,
+      })
+      console.log('📜 LOG > Initialization result: ', initRes)
+
+      if (initRes.Error) {
+        addToLog({text: "Failed to initialize agent. Please try again.", isError: true, hasLink: false})
+        setLoading(false);
+        return
+      }
 
       addToLog({text: 'Registering agent...', hasLink: false})
 
@@ -138,7 +156,11 @@ export default function CreateAgent() {
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Action", value: "RegisterAgent" },
-          { name: "Agent", value: processId }
+          { name: "Agent", value: processId },
+          { name: "AgentName", value: agentName || defaultAgentName},
+          { name: "SwapInAmount", value: swapInAmount },
+          { name: "SwapIntervalValue", value: swapIntervalValue },
+          { name: "SwapIntervalUnit", value: swapIntervalUnit },
         ]
       })
       console.log("📜 LOG > registerMsg:", registerMsgId)
@@ -212,7 +234,7 @@ export default function CreateAgent() {
 
   const BTN_WIDTH = 250
   return (
-    <Box margin={'8rem auto 0'}>
+    <Box margin={'4rem auto 0'}>
       <Box maxWidth={'min-content'} mx={'auto'}>
         <Paper variant="outlined" sx={{ padding: 4}}>
           <Stack gap={4} alignItems={'stretch'} width={600}>
@@ -220,6 +242,17 @@ export default function CreateAgent() {
 
             <Stack direction="row" gap={2} alignItems="stretch">
               <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
+                <FormControl fullWidth>
+                  <TextField
+                    disabled={loading}
+                    size="small"
+                    value={agentName}
+                    onChange={(e) => setAgentName(e.target.value)}
+                    type="text"
+                    label="Name"
+                    placeholder="MrSmith_2143"
+                  />
+                </FormControl>
                 <FormControl fullWidth>
                   <InputLabel id="base-currency-label">Base Token</InputLabel>
                   <Select
@@ -231,38 +264,40 @@ export default function CreateAgent() {
                     onChange={(e) => setCurrency(e.target.value as BaseToken)}
                   >
                     {BASE_CURRENCIES.map((currency) => (
-                      <MenuItem key={currency} value={currency}>
+                      <MenuItem key={currency} value={currency} disabled={currency !== "BRKTST"}>
                         {currency}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-                {/* <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                <Stack direction="row" gap={1} sx={{width: "100%"}}>
                   <FormControl fullWidth>
                     <TextField
                       disabled={loading}
+                      required
                       size="small"
-                      value={intervalValue}
-                      onChange={(e) => setIntervalValue(e.target.value)}
+                      value={swapIntervalValue}
+                      onChange={(e) => setSwapIntervalValue(e.target.value)}
                       type="number"
                       label="Interval"
-                      error={error !== ""}
-                      helperText={error}
+                      // error={error !== ""}
+                      // helperText={error}
                     />
                   </FormControl>
                   <FormControl fullWidth>
-                    <InputLabel id="interval-type-label"></InputLabel>
+                    <InputLabel id="interval-unit-label"></InputLabel>
                     <Select
                       size="small"
-                      labelId="interval-type-label"
-                      id="interval-type"
-                      value={intervalType}
+                      disabled={loading}
+                      labelId="interval-unit-label"
+                      id="interval-unit"
+                      value={swapIntervalUnit}
                       label=""
-                      onChange={(e) => setIntervalType(e.target.value as IntervalType)}
+                      onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
                     >
-                      {INTERVAL_TYPE.map((type) => (
-                        <MenuItem key={type} value={type}>
-                          {type}
+                      {INTERVAL_UNITS.map((unit) => (
+                        <MenuItem key={unit} value={unit}>
+                          {unit}
                         </MenuItem>
                       ))}
                     </Select>
@@ -270,9 +305,10 @@ export default function CreateAgent() {
                 </Stack>
                 <TextField
                   disabled={loading}
+                  required
                   size="small"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={swapInAmount}
+                  onChange={(e) => setSwapInAmount(e.target.value)}
                   type="number"
                   label="Swap Amount"
                   InputProps={{
@@ -280,10 +316,10 @@ export default function CreateAgent() {
                       <InputAdornment position="end">{credSymbol}</InputAdornment>
                     ),
                   }}
-                  error={error !== ""}
-                  helperText={error}
+                  // error={error !== ""}
+                  // helperText={error}
                 />
-                <TextField
+                {/* <TextField
                   disabled={loading}
                   size="small"
                   sx={{ width: "100%" }}
@@ -325,16 +361,17 @@ export default function CreateAgent() {
                   sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
                   display="flex"
                   alignItems="center"
-                  justifyContent="flex-start"
+                  justifyContent="space-between"
                   flexDirection="column"
                 >
-
-                  <Typography paragraph>
-                    Deployment will create an agent process as configured.
-                  </Typography>
-                  <Typography paragraph>
-                    You own and control this agent via your connected AR wallet account.
-                  </Typography>
+                  <Box>
+                    <Typography paragraph>
+                      Deployment will create an agent process as configured.
+                    </Typography>
+                    <Typography paragraph>
+                      You own and control this agent via your connected AR wallet account.
+                    </Typography>
+                  </Box>
                   <AgentCodeModalButton />
                 </Box>
               </Box>

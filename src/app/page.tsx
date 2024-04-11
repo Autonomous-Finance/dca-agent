@@ -22,10 +22,20 @@ export default function HomePageServer() {
 
   const foundActiveAgent = agentId && !details?.Retired;
 
+  const [wiping, setWiping] = React.useState(false);
+
   const wipe = async () => {
+    setWiping(true);
     await wipeRegistry();
-    refresh();
+    window.location.reload();
   }
+
+  if (wiping) return (
+    <Box margin={'8rem auto 0'}>
+      <LoadingEmptyState texts={['Wiping Registry...']}/>
+    </Box>
+  )
+
   return (
     <>
       <Box margin={'8rem auto 0'}>
@@ -36,7 +46,7 @@ export default function HomePageServer() {
         {!loading && !foundActiveAgent && (
           <Stack gap={8} mx={'auto'} width={600} height={400} justifyContent={'center'} alignItems={'center'}>
             <Typography variant="h5" align="center" gutterBottom>
-              No Active Agent Found.
+              No Recent Active Agent Found.
             </Typography>
             <Stack direction={'row'} gap={4}>
               <Button component={Link} href="/create-agent" size="large" 

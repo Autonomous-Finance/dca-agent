@@ -1,26 +1,33 @@
 "use client"
 
-import { Box, Divider, Paper, Stack, Typography } from "@mui/material"
+import { Box, Button, Divider, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { credSymbol, depositToAgent, retireAgent, transferOwnership, withdrawQuote } from "@/utils/agent-utils"
+import { credSymbol, depositToAgent, liquidate, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
-import WithdrawQuoteDialog from "@/components/WithdrawQuoteDialog"
+import WithdrawDialog from "@/components/WithdrawDialog"
 import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
 import AgentInfoUnit from "@/components/AgentInfoUnit"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
+import { WaterDrop } from "@mui/icons-material"
+import LiquidateDialog from "@/components/LiquidateDialog"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
   
   const [loadingTopUp, setLoadingTopUp] = React.useState(false)
   const [loadingWithdrawQuote, setLoadingWithdrawQuote] = React.useState(false)
+  const [loadingWithdrawBase, setLoadingWithdrawBase] = React.useState(false)
+  const [loadingLiquidate, setLoadingLiquidate] = React.useState(false)
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
   const [loadingRetirement, setLoadingRetirement] = React.useState(false)
+
+  const [showOwnership, setShowOwnership] = React.useState(true)
+  const [disabledActions, setDisabledActions] = React.useState(false)
 
   const agent = usePolledAgentStatusContext();
 
@@ -65,29 +72,33 @@ export function AgentPanel() {
     }
   }
 
-    const handleSubmit = () => {
-      // VALIDATE INPUTS
-  
-      // const parsed = parseFloat(amount)
-      // if (isNaN(parsed) || parsed < 10_000) {
-      //   setError("Amount must be a number greater than or equal to 10,000")
-      //   return
-      // }
-      // console.log("Submitting", amount)
-  
-      // setError("")
-      // setLoading(true)
-      // setReceipt(null)
-      // launch(parsed)
-      //   .then(setReceipt)
-      //   .then(() => {
-      //     setAmount("")
-      //   })
-      //   .finally(() => setLoading(false))
-      //   .catch((err) => {
-      //     console.error(err)
-      //   })
+  const handleWithdrawBase = async (amount: string) => {
+    // TODO
+    setLoadingWithdrawBase(true)
+    addToLog({ text: `Withdrawing ${amount} ${status.baseTokenSymbol} from agent...`, hasLink: false})
+    const withdrawResult = await withdrawBase(agent.agentId, amount)
+    setLoadingWithdrawBase(false)
+    if (withdrawResult?.type === "Success") {
+      const msgId = withdrawResult.result
+      addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
+    } else {
+      addToLog({ text: `Failed to withdraw ${status.baseTokenSymbol}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
+  }
+
+  const handleLiquidate = async () => {
+    // TODO 
+    setLoadingLiquidate(true)
+    addToLog({ text: `Liquidating agent. Selling base token and withdrawing...`, hasLink: false})
+    const liquidationResult = await liquidate(agent.agentId)
+    setLoadingLiquidate(false)
+    if (liquidationResult?.type === "Success") {
+      const msgId = liquidationResult.result
+      addToLog({ text: 'Liquidation successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
+    } else {
+      addToLog({ text: `Failed to liquidate. Please try again.`, isError: true, hasLink: false}, liquidationResult.result)
+    }
+  }
 
   const handleTransferOwnership = async (id: string) => {
     setLoadingTransferOwnership(true)
@@ -97,6 +108,8 @@ export function AgentPanel() {
     if (transferResult.type === "Success") {
       const msgId = transferResult.result
       addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
+      setDisabledActions(true)
+      setShowOwnership(false)
     } else {
       addToLog({text: `Failed to transfer ownership to ${id}. Please try again.`, hasLink: false, isError: true}, transferResult.result)
     }
@@ -110,52 +123,52 @@ export function AgentPanel() {
     if (retirementResult.type === "Success") {
       const msgId = retirementResult.result
       addToLog({text: `Agent retired. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
+      setDisabledActions(true)
     } else {
       addToLog({text: `Failed to retire agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, retirementResult.result)
     }
-  }
-
-  const handleWithdrawBase = () => {
-    console.log("Withdrawing Base");
-
-    // TODO
-  }
-
-  const handleLiquidate = () => {
-    console.log("Liquidating");
-
-    // TODO
   }
 
   const BTN_WIDTH = 150
   return (
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4 }}>
-        <Stack direction={'row'} gap={4} height={600}>
-          <Stack gap={4} width={600}>
+        <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
+          <Stack gap={4} width={664}>
             <AgentStatusDisplay/>
             <Divider />
-            <Stack>
-              <Typography variant="h6">
-                Quote Token
-              </Typography>
+
+            <Stack gap={2}>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
-                <AgentInfoUnit>
-                  <Box display={'flex'} justifyContent={'space-between'} width={'100%'}>
-                    <Typography component='span' fontSize={'large'} fontWeight={'bold'} color="text.primary">{credBalance}</Typography>
-                    <Typography component='span' fontSize={'large'} color="text.secondary">{credSymbol}</Typography>
-                  </Box>
-                </AgentInfoUnit>
+                <Typography variant="h6">
+                  Quote Token
+                </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  <TopUpDialog loading={loadingTopUp} btnWidth={BTN_WIDTH} 
+                  <TopUpDialog disabled={disabledActions} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
                     tokenSymbol={credSymbol} tokenBalance={credBalance}
                     topUp={handleDeposit}/>
-                  <WithdrawQuoteDialog loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="quote" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
                     tokenSymbol={credSymbol}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
               </Stack>
+              <Divider />
+              <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
+                <Typography variant="h6">
+                  Profits
+                </Typography>
+                <Stack direction="row" gap={2} alignItems={'center'}>
+                  <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
+                    tokenSymbol={credSymbol}
+                    withdraw={handleWithdrawQuote}/>
+                  
+                  <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
+                    liquidate={handleLiquidate}>
+                  </LiquidateDialog>
+                </Stack>
+              </Stack>
             </Stack>
+            
             <Divider/>
             <Stack gap={2} mt={'auto'}>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
@@ -163,11 +176,8 @@ export function AgentPanel() {
                   <Typography variant="h6">
                     Ownership
                   </Typography>
-                  <Typography variant="body2">
-                    You own this agent
-                  </Typography>
                 </Stack>
-                <TransferOwnershipDialog loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
+                <TransferOwnershipDialog disabled={disabledActions} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
               </Stack>
               <Divider/>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
@@ -176,7 +186,7 @@ export function AgentPanel() {
                     Retirement
                   </Typography>
                 </Stack>
-                <RetirementDialog loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
+                <RetirementDialog disabled={disabledActions} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
               </Stack>
             </Stack>
             {/* <Stack direction="row" justifyContent={'space-between'}>

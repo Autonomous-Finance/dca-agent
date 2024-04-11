@@ -1,26 +1,5 @@
-import { getLatestAgent } from "@/utils/agent-utils";
+import { getLatestAgent, RegisteredAgent } from "@/utils/agent-utils";
 import React from "react";
-
-
-export type RegisteredAgent = {
-  // -- tracked in registry
-  Owner: string,
-  Agent: string,
-  CreatedAt: number,
-  QuoteTokenBalance: string,
-  Deposits:  any[],
-  WithdrawalsQuoteToken:  any[],
-  WithdrawalsBaseToken:  any[],
-  DcaBuys:  any[],
-  LiquidationSells:  any[],
-  Retired:  boolean,
-  FromTransfer:  boolean,
-  TransferredAt?:  number,
-  // -- added on frontend
-  status?: string, // 'Active' | 'Retired' | 'No Funds'
-  ownedSince?: string, // date string
-  provenance?: string // 'Owned' or 'Transferred'
-}
 
 const useGetLatestAgent = () => {
 
@@ -33,10 +12,12 @@ const useGetLatestAgent = () => {
       const agent = await getLatestAgent()
 
       if (!agent) return
-      const agentId = agent.result.Agent  
+      const agentId = agent.result?.Agent  
       if (!agentId) {
         console.log('no latest agentProcess found')
         setLoading(false)
+        setAgentId(null)
+        setDetails(null)
         return
       }
       setAgentId(agentId)

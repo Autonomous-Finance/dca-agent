@@ -20,10 +20,12 @@ import { MonoFontFF } from "./RootLayout/fonts"
 import { Logo } from "./Logo"
 import React, { useEffect } from "react"
 import { usePathname } from "next/navigation"
+import { useLatestRegisteredAgent } from "@/hooks/useLatestRegisteredAgent"
 
 const Header = () => {
   const { mode = "dark", setMode } = useColorScheme()
-  const theme = useTheme()
+
+  const {refresh} = useLatestRegisteredAgent();
 
   const pathname = usePathname();
 
@@ -63,6 +65,7 @@ const Header = () => {
               {/* TODO highlight underline for active link */}
 
               <Button component={Link} href="/" size="large"
+                onClick={refresh}
                 sx={theme => ({
                   fontSize: '1.25rem', 
                   color: `var(--mui-customColors-naviLink-${pathname === '/' ? '' : 'in'}active-${theme.palette.mode})`,

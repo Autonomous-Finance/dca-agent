@@ -21,7 +21,7 @@ const useBalance = () => {
       setLoading(false)
       interval = setInterval(() => {
         readCredBalance(address).then(setBalance)
-      }, 3000)
+      }, 5000)
     }
 
     syncBalance()

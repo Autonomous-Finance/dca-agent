@@ -1,5 +1,5 @@
-import { getLatestAgentInitilizedBy } from "@/queries/agent.queries"
 import * as ao from "@permaweb/aoconnect/browser"
+import { findCurrencyById } from "./data-utils"
 
 export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 
@@ -7,22 +7,61 @@ export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
 export const credSymbol = "AOCRED-Test"
 
+// AGENT INFO AS RETURNED BY AGENT PROCESS
+export type AgentStatus = {
+  initialized: boolean
+  agentName: string
+  retired: boolean
+  baseToken: string
+  quoteToken: string
+  swapInAmount: string
+  swapIntervalValue: string
+  swapIntervalUnit: string
+  // timeLeft: number
+  // nextBuy: Date
+  quoteTokenBalance: string
+  baseTokenBalance: string
+
+  // added on Frontend
+  statusX?: AgentStatusX
+  quoteTokenSymbol?: string
+  baseTokenSymbol?: string
+}
+
+export const AGENT_STATUS_X_VALUES = ["Active", "Retired", "No Funds"] as const
+export type AgentStatusX = typeof AGENT_STATUS_X_VALUES[number]
+
+// AGENT INFO AS RETURNED BY REGISTRY PROCESS
+export type RegisteredAgent = {
+  // -- tracked in registry
+  Owner: string,
+  Agent: string,
+  AgentName: string,
+  SwapIntervalValue: string,
+  SwapIntervalUnit: string,
+  SwapInAmount: string,
+  CreatedAt: number,
+  QuoteTokenBalance: string,
+  Deposits:  any[],
+  WithdrawalsQuoteToken:  any[],
+  WithdrawalsBaseToken:  any[],
+  DcaBuys:  any[],
+  LiquidationSells:  any[],
+  Retired:  boolean,
+  FromTransfer:  boolean,
+  TransferredAt?:  number,
+  // -- added on frontend
+  statusX?: AgentStatusX, 
+  ownedSince?: string, // date string
+  provenance?: string // 'Owned' or 'Transferred'
+}
+
+
 export type Receipt<T> = {
   type: "Success" | "Failure"
   result: T
 }
 
-export type AgentStatus = {
-  initialized: boolean
-  retired: boolean
-  baseToken: string
-  quoteToken: string
-  // type: "Active" | "OutOfFunds" | "Retired"
-  // timeLeft: number
-  // nextBuy: Date
-  quoteTokenBalance: string
-  baseTokenBalance: string
-}
 
 export type AoMsgTag = {
   name: string
@@ -56,6 +95,7 @@ export const getLatestAgent = async () => {
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
       ],
     })
+
     if (res.Error) {
       console.error('Error on dry-run for latest agent query', res)
       return {
@@ -77,6 +117,34 @@ export const getLatestAgent = async () => {
   }
 }
 
+export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
+  if (agentInfo.Retired) {
+    agentInfo.statusX = 'Retired'
+  } else if (Number.parseInt(agentInfo.QuoteTokenBalance) < Number.parseInt(agentInfo.SwapInAmount)) {
+    agentInfo.statusX = 'No Funds'
+  } else {
+    agentInfo.statusX = 'Active'
+  }
+
+  agentInfo.ownedSince = (new Date(agentInfo.TransferredAt ?? agentInfo.CreatedAt).toLocaleString())
+  agentInfo.provenance = agentInfo.TransferredAt ? 'Transfer' : 'Created'
+}
+
+export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
+  const hasFunds = Number.parseInt(agentStatus.quoteTokenBalance) > Number.parseInt(agentStatus.swapInAmount)
+
+  if (agentStatus.retired) {
+    agentStatus.statusX = 'Retired'
+  } else if (!hasFunds) {
+    agentStatus.statusX = 'No Funds'
+  } else {
+    agentStatus.statusX = 'Active'
+  }
+
+  agentStatus.quoteTokenSymbol = credSymbol
+  agentStatus.baseTokenSymbol = findCurrencyById(agentStatus.baseToken)
+}
+
 export const getOneAgent = async (agentId: string) => {
   try {
     const res = await ao.dryrun({
@@ -86,6 +154,7 @@ export const getOneAgent = async (agentId: string) => {
         { name: "Agent", value: agentId },
       ],
     })
+
     if (res.Error) {
       console.error('Error on dry-run for one agent query', res)
       return {
@@ -117,7 +186,7 @@ export const getAllAgents = async () => {
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
       ],
     })
-
+    
     if (res.Error) {
       console.error('Error on dry-run for latest agent query', res)
       return {
@@ -211,6 +280,8 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
   }
 }
 
+// TODO DRY UNIFY withdraw functions, they're pretty much the same
+
 export const withdrawQuote = async (agent: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Withdrawing quote token ");
@@ -251,6 +322,56 @@ export const withdrawQuote = async (agent: string, amount: string): Promise<Rece
       type: "Failure",
       result: `Error: ${e}`
     }
+  }
+}
+
+export const withdrawBase = async (agent: string, amount: string): Promise<Receipt<string>> => {
+  try {
+    console.log("Withdrawing base token ");
+  
+    const msgId = await ao.message({
+      process: agent,
+      tags: [
+        { name: "Action", value: "WithdrawBaseToken" },
+        { name: "Quantity", value: amount }
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: agent,
+    })
+
+    // TODO could also wait for credit notice on user, to be absolutely sure
+  
+    console.log("Result: ", res)
+
+    if (res.Error) {
+      return {
+        type: "Failure",
+        result: res.Error
+      }
+    }
+
+    return {
+      type: "Success", 
+      result: msgId
+    }
+  } catch (e) {
+    console.error(e)
+    return {
+      type: "Failure",
+      result: `Error: ${e}`
+    }
+  }
+}
+
+export const liquidate = async (agent: string): Promise<Receipt<string>> => {
+  return {
+    type: "Failure",
+    result: "Not implemented"
   }
 }
 

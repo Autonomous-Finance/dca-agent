@@ -11,8 +11,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
-export default function TransferOwnershipDialog(props: {loading: boolean, btnWidth: number, transferTo: (id: string) => void}) {
-  const {loading, btnWidth, transferTo} = props;
+export default function TransferOwnershipDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, transferTo: (id: string) => void}) {
+  const {loading, disabled, btnWidth, transferTo} = props;
   const [open, setOpen] = React.useState(false);
   const [account, setAccount] = React.useState("");
 
@@ -40,7 +40,7 @@ export default function TransferOwnershipDialog(props: {loading: boolean, btnWid
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || isRetired}
+        disabled={loading || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         color="secondary"
         variant="contained"

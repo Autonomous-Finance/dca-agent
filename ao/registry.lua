@@ -17,6 +17,9 @@ AgentsPerUser = AgentsPerUser or {}         -- map user to his agents (process i
 AgentInfosPerUser = AgentInfosPerUser or {} -- map user to historical info on his agents (tables)
 RegisteredAgents = RegisteredAgents or {}   -- map agent id to current owner (user)
 
+Logg = Logg or {}
+
+
 -- HELPERS
 local onlyAgent = function(msg)
   assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
@@ -48,18 +51,20 @@ end
 local changeOwners = function(agentId, newOwner, timestamp)
   local currentOwner = RegisteredAgents[agentId]
 
-  RegisteredAgents[agentId] = newOwner
-
+  AgentsPerUser[newOwner] = AgentsPerUser[newOwner] or {}
   local _, idxAgent = getAgentAndIndex(agentId)
   table.remove(AgentsPerUser[currentOwner], idxAgent)
   table.insert(AgentsPerUser[newOwner], agentId)
 
+  AgentInfosPerUser[newOwner] = AgentInfosPerUser[newOwner] or {}
   local _, idxAgentInfo = getAgentInfoAndIndex(agentId)
   local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
   info["Owner"] = newOwner
   info["FromTransfer"] = true
   info["TransferredAt"] = timestamp
   table.insert(AgentInfosPerUser[newOwner], info)
+
+  RegisteredAgents[agentId] = newOwner
 end
 
 -- REGISTRATION
@@ -82,6 +87,10 @@ Handlers.add(
   function(msg)
     local agent = msg.Tags.Agent
     assert(type(agent) == 'string', 'Agent is required!')
+    assert(type(msg.Tags.AgentName) == 'string', 'AgentName is required!')
+    assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
+    assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
+    assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
 
     local sender = msg.From
 
@@ -93,6 +102,10 @@ Handlers.add(
     table.insert(AgentInfosPerUser[sender], {
       Owner = sender,
       Agent = agent,
+      AgentName = msg.Tags.AgentName,
+      SwapInAmount = msg.Tags.SwapInAmount,
+      SwapIntervalValue = msg.Tags.SwapIntervalValue,
+      SwapIntervalUnit = msg.Tags.SwapIntervalUnit,
       CreatedAt = msg.Timestamp,
       QuoteTokenBalance = "0",
       Deposits = {},
@@ -212,6 +225,7 @@ Handlers.add(
     AgentsPerUser = {}
     AgentInfosPerUser = {}
     RegisteredAgents = {}
+    Logg = {}
     Handlers.utils.reply({
       ["Response-For"] = "Wipe",
       Data = "Success"
@@ -219,7 +233,6 @@ Handlers.add(
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
   'retireAgentDebug',
   Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
@@ -234,7 +247,6 @@ Handlers.add(
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
   'assignOwnerDebug',
   Handlers.utils.hasMatchingTag('Action', 'AssignOwnerDebug'),
@@ -245,6 +257,44 @@ Handlers.add(
     Handlers.utils.reply({
       ["Response-For"] = "AssignOwnerDebug",
       Data = "Success",
+    })(msg)
+  end
+)
+
+Handlers.add(
+  'logg',
+  Handlers.utils.hasMatchingTag('Action', 'Logg'),
+  function(msg)
+    Handlers.utils.reply({
+      ["Response-For"] = "Logg",
+      Data = json.encode(Logg),
+    })(msg)
+  end
+)
+
+Handlers.add(
+  'readAllDebug',
+  Handlers.utils.hasMatchingTag('Action', 'ReadAllDebug'),
+  function(msg)
+    Handlers.utils.reply({
+      ["Response-For"] = "ReadAllDebug",
+      Data = json.encode({
+        -- RegisteredAgents,
+        -- AgentsPerUser,
+        AgentInfosPerUser
+      }),
+    })(msg)
+  end
+)
+
+
+Handlers.add(
+  'customDebug',
+  Handlers.utils.hasMatchingTag('Action', 'CustomDebug'),
+  function(msg)
+    Handlers.utils.reply({
+      ["Response-For"] = "CustomDebug",
+      Data = "Success"
     })(msg)
   end
 )

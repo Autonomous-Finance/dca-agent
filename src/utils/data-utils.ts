@@ -47,8 +47,8 @@ export const CURRENCY_PROCESS_MAP: Record<BaseToken, string> = {
   '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"
 }
 
-export const INTERVAL_TYPES = ["Minutes", "Hours", "Days"] as const
-export type IntervalType = typeof INTERVAL_TYPES[number]
+export const INTERVAL_UNITS = ["Minutes", "Hours", "Days"] as const
+export type IntervalUnit = typeof INTERVAL_UNITS[number]
 
 
 export const findCurrencyById = (id: string) => {

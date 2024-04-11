@@ -11,10 +11,15 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
 
-export default function WithdrawQuoteDialog(props: {
-  loading: boolean, btnWidth: number, tokenSymbol: string, withdraw: (id: string) => void
+export default function WithdrawDialog(props: {
+  loading: boolean, 
+  disabled?: boolean, 
+  btnWidth: number, 
+  tokenSymbol: string, 
+  type: 'base' | 'quote',
+  withdraw: (id: string) => void
 }) {
-  const {loading, btnWidth, withdraw, tokenSymbol} = props;
+  const {loading, disabled, btnWidth, withdraw, tokenSymbol, type} = props;
   
   const [open, setOpen] = React.useState(false);
   const [amount, setAmount] = React.useState("");
@@ -28,8 +33,10 @@ export default function WithdrawQuoteDialog(props: {
 
   if (!status) return <></>
 
-  const hasNoFunds = status.quoteTokenBalance === '0'
-  const tokenBalance = status.quoteTokenBalance;
+  const tokenBalance = type === 'quote' ? status.quoteTokenBalance : status.baseTokenBalance;
+  const hasNoFunds = type === 'quote'
+    ? Number.parseInt(tokenBalance) < Number.parseInt(status.swapInAmount)
+    : Number.parseInt(tokenBalance) === 0
   const isRetired = status.retired
 
   const handleClickOpen = () => {
@@ -38,7 +45,7 @@ export default function WithdrawQuoteDialog(props: {
 
   const handleClose = (amount?: string) => {
     setOpen(false);
-    if (amount) withdraw (amount);
+    if (amount) withdraw(amount);
     setAmount("");
   };
 
@@ -48,7 +55,7 @@ export default function WithdrawQuoteDialog(props: {
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || hasNoFunds || isRetired}
+        disabled={loading || hasNoFunds || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
         onClick={handleClickOpen}
@@ -72,12 +79,12 @@ export default function WithdrawQuoteDialog(props: {
           },
         }}
       >
-        <DialogTitle>Withdraw Quote Token</DialogTitle>
+        <DialogTitle>Withdraw {type === 'base' ? 'Base' : 'Quote'} Token</DialogTitle>
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
               <Typography color="text.primary">
-                To withdraw quote token, please enter an amount below.
+                To withdraw {type === 'base' ? 'base' : 'quote'} token, please enter an amount below.
               </Typography>
               <Typography color="text.primary">
                 Your agent will be debited with this amount.

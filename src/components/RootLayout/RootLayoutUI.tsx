@@ -22,8 +22,8 @@ export default function RootLayoutUI({
         <CssBaseline />
         <ArweaveProvider>
           <AccountBalanceProvider>
-            <Header />
             <LatestAgentProvider>
+              <Header />
               <Container maxWidth="xl">{children}</Container>
             </LatestAgentProvider>
           </AccountBalanceProvider>

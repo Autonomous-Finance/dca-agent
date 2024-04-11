@@ -1,3 +1,4 @@
+"use client"
 
 import ActiveAgentPanel from '@/components/ActiveAgentPanel'
 import React from 'react'

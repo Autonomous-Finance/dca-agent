@@ -49,7 +49,9 @@ Owner = Owner or ao.env.Process.Owner
 Initialized = Initialized or false
 Retired = Retired or false
 
-QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+AgentName = AgentName or ""
+QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AOcred on testnet
+BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ"   -- BARK on testnet
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 
@@ -83,9 +85,13 @@ Handlers.add(
     -- is initialized => reply with complete config
     local config = json.encode({
       initialized = true,
+      agentName = AgentName,
       retired = Retired,
       baseToken = BaseToken,
       quoteToken = QuoteToken,
+      swapInAmount = SwapInAmount,
+      swapIntervalValue = SwapIntervalValue,
+      swapIntervalUnit = SwapIntervalUnit,
       baseTokenBalance = LatestBaseTokenBal,
       quoteTokenBalance = LatestQuoteTokenBal
     })
@@ -105,7 +111,16 @@ Handlers.add(
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+    assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
+    assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
+    assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
+
+    AgentName = msg.Tags.AgentName
     BaseToken = msg.Tags.BaseToken
+    SwapInAmount = msg.Tags.SwapInAmount
+    SwapIntervalValue = msg.Tags.SwapIntervalValue
+    SwapIntervalUnit = msg.Tags.SwapIntervalUnit
+
     Handlers.utils.reply({
       ["Response-For"] = "Initialize",
       Data = "Success"
@@ -145,9 +160,10 @@ Handlers.add(
   "transferOwnership",
   Handlers.utils.hasMatchingTag("Action", "TransferOwnership"),
   function(msg)
-    assert(msg.Tags.NewOwner ~= nil and type(msg.Tags.NewOwner) == 'string', 'Owner is required!')
-    Owner = msg.Tags.NewOwner
-    ao.send({ Target = Registry, Action = "TransferAgent", NewOwner = Owner })
+    local newOwner = msg.Tags.NewOwner
+    assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
+    Owner = newOwner
+    ao.send({ Target = Registry, Action = "TransferAgent", NewOwner = newOwner })
     Handlers.utils.reply({
       ["Response-For"] = "TransferOwnership",
       Data = "Success"

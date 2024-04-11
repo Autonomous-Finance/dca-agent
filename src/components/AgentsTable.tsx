@@ -12,9 +12,9 @@ import Paper from '@mui/material/Paper';
 import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
 import LoadingEmptyState from './LoadingEmptyState';
-import { Chip, Typography } from '@mui/material';
-import { RegisteredAgent } from '@/hooks/useLatestRegisteredAgent';
-import { credSymbol } from '@/utils/agent-utils';
+import { Typography } from '@mui/material';
+import { credSymbol, enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
+import AgentStatusChip from './AgentStatusChip';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -38,53 +38,21 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 }));
 
 
-const StatusChip = ({agentInfo}: {agentInfo: RegisteredAgent}) => {
-  return (
-    <>  
-      {agentInfo.status === 'Active' && (
-        <Chip label="Active" variant="outlined" color="success" 
-          sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}
-        />
-      )}
-      {agentInfo.status === 'Retired' && (
-        <Chip label="Retired" variant="outlined" color="primary" 
-            sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}} 
-        />
-      )}
-      {agentInfo.status === 'No Funds' && (
-        <Chip label="No Funds" variant="outlined" color="warning" 
-            sx={{padding: '0.5rem', fontSize: '1rem', fontWeight: 'bold'}}  
-        />
-      )}
-    </>
-  )
-}
-
-
 export default function AgentsTable() {
 
   const router = useRouter()
 
   const agents = useMyAgents()
 
-  const {loading, agentInfos, refresh} = agents
+  const {loading, agentInfos} = agents
 
   const navigateToAgentPanel = (id: string) => {
-    router.push('/my-agents?id=' + id)
+    router.push('/single-agent?id=' + id)
   }
 
   if (agentInfos) {
     agentInfos.forEach((agentInfo) => {
-      if (agentInfo.Retired) {
-        agentInfo.status = 'Retired'
-      } else if (agentInfo.QuoteTokenBalance === '0') { // TODO update to compare to price of automated swap
-        agentInfo.status = 'No Funds'
-      } else {
-        agentInfo.status = 'Active'
-      }
-
-      agentInfo.ownedSince = (new Date(agentInfo.TransferredAt ?? agentInfo.CreatedAt).toLocaleString())
-      agentInfo.provenance = agentInfo.TransferredAt ? 'Transfer' : 'Created'
+      enhanceRegisteredAgentInfo(agentInfo)
     })
   }
 
@@ -102,15 +70,16 @@ export default function AgentsTable() {
         </Typography>
       )}
       {!loading && agentInfos && !agentInfos.length && (
-        <Typography variant="h5" align="center" gutterBottom>
+        <Typography mt={'8rem'} variant="h5" align="center" gutterBottom>
           No Agents Found.
         </Typography>
       )}
-      {!loading && (
+      {!loading && !!agentInfos && !!agentInfos.length && (
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 900 }} aria-label="customized table">
             <TableHead>
               <TableRow>
+                <StyledTableCell>Agent Name</StyledTableCell>
                 <StyledTableCell>Agent ID</StyledTableCell>
                 <StyledTableCell align="right">Quote Balance</StyledTableCell>
                 <StyledTableCell align="right">Owned Since</StyledTableCell>
@@ -125,6 +94,9 @@ export default function AgentsTable() {
                   sx={{cursor: 'pointer'}}
                   >
                   <StyledTableCell component="th" scope="row">
+                    {agentInfo.AgentName}
+                  </StyledTableCell>
+                  <StyledTableCell component="th" scope="row">
                     {agentInfo.Agent}
                   </StyledTableCell>
                   <StyledTableCell align="right">
@@ -135,7 +107,7 @@ export default function AgentsTable() {
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.ownedSince}</StyledTableCell>
                   <StyledTableCell align="right">
-                    <StatusChip agentInfo={agentInfo}/>
+                    {agentInfo.statusX ? <AgentStatusChip statusX={agentInfo.statusX} noIcon/> : '- -'}
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.provenance}</StyledTableCell>
                 </StyledTableRow>

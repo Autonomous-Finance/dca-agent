@@ -9,9 +9,9 @@ import { CircularProgress, Stack, Typography } from '@mui/material';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
-export default function RetirementDialog(props: {loading: boolean, btnWidth: number, retire: () => void}) {
-  const {loading, btnWidth, retire} = props
-  const [open, setOpen] = React.useState(false)
+export default function RetirementDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, retire: () => void}) {
+  const {loading, disabled, btnWidth, retire} = props
+  const [open, setOpen] = React.useState(false);
 
   const agent = usePolledAgentStatusContext();
 
@@ -41,7 +41,7 @@ export default function RetirementDialog(props: {loading: boolean, btnWidth: num
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || isRetired}
+        disabled={loading || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         color="secondary"
         variant="contained"
