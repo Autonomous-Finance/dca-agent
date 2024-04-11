@@ -8,17 +8,16 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ViewAgent from "@/components/ViewAgent";
 import AgentsTable from "@/components/AgentsTable";
 import ViewListIcon from '@mui/icons-material/ViewList';
+import { useMemo } from "react";
+import { set } from 'date-fns';
+import { getOneAgent } from "@/utils/agent-utils";
+import { useSingleRegisteredAgent } from "@/hooks/useSingleRegisteredAgent";
 
 export default function MyAgents() {
-  const params = useSearchParams();
+  const params = useSearchParams()
   const noback = params.get("noback")
 
   const router = useRouter()
-
-  const navigateBack = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    router.back()
-  }
 
   const id = params.get("id")
 
@@ -26,7 +25,14 @@ export default function MyAgents() {
   const canGoBack = noback !== "1" && id !== null
   const displayAllAgents = id === null
 
-  // const naviWidth = displayAgentPanel ? 600 + 2*32 : 900
+  const {loading, isOwn} = useSingleRegisteredAgent(id)
+
+  const navigateBack = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    router.back()
+  }
+
+
   return (
     <Stack mt={4} gap={4} mx={'auto'} px={'16px'}> 
       <Stack direction={'row'}>
@@ -67,7 +73,17 @@ export default function MyAgents() {
 
       <Divider />
 
-      {displayAgentPanel && (
+      {displayAgentPanel && !loading && !isOwn && (
+        <Box height={400} display={'flex'} gap={4}
+          alignItems={'center'} justifyContent={'center'} flexDirection={'column'}
+        >
+          <Typography variant="h5">
+            You do not own this agent.
+          </Typography>
+        </Box>
+      )}
+
+      {displayAgentPanel && !loading && isOwn && (
         <ViewAgent agentId={id} />
       )}
       {displayAllAgents && (

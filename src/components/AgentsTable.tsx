@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
 import LoadingEmptyState from './LoadingEmptyState';
 import { Chip, Typography } from '@mui/material';
-import { RegisteredAgent } from '@/hooks/useLatestAgent';
+import { RegisteredAgent } from '@/hooks/useLatestRegisteredAgent';
 import { credSymbol } from '@/utils/agent-utils';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({

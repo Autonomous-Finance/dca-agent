@@ -36,7 +36,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import { shortenId } from "@/utils/ao-utils"
 import Log, { LogEntry } from "@/components/Log";
 import { REGISTRY } from "@/utils/agent-utils";
-import { useLatestAgent } from "@/hooks/useLatestAgent";
+import { useLatestRegisteredAgent } from "@/hooks/useLatestRegisteredAgent";
 
 
 export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
@@ -54,7 +54,7 @@ export function CreateAgent(props: {checkOutDeployedAgent: () => void}) {
   const [validationError, setValidationError] = React.useState("");
   const [deployLog, setDeployLog] = React.useState<LogEntry[]>([])
 
-  const {refresh: refreshLatestAgent} = useLatestAgent();
+  const {refresh: refreshLatestAgent} = useLatestRegisteredAgent();
 
       
   const addToLog = (entry: LogEntry) => setDeployLog((log) => [...log, entry]);

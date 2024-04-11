@@ -107,6 +107,7 @@ Handlers.add(
 
     table.insert(AgentsPerUser[sender], agent)
     table.insert(AgentInfosPerUser[sender], {
+      Owner = sender,
       Agent = agent,
       CreatedAt = msg.Timestamp,
       QuoteTokenBalance = "0",
@@ -150,6 +151,23 @@ Handlers.add(
     Handlers.utils.reply({
       ["Response-For"] = "GetAllAgents",
       Data = json.encode(AgentInfosPerUser[owner] or {}),
+    })(msg)
+  end
+)
+
+Handlers.add(
+  'getOneAgent',
+  Handlers.utils.hasMatchingTag('Action', 'GetOneAgent'),
+  function(msg)
+    local agentId = msg.Tags.Agent
+    assert(agentId ~= nil, "Agent is required")
+    local owner = RegisteredAgents[agentId]
+    assert(owner ~= nil, "No such agent is registered")
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    assert(agentInfo ~= nil, "Internal: Agent not found")
+    Handlers.utils.reply({
+      ["Response-For"] = "GetOneAgent",
+      Data = json.encode(agentInfo),
     })(msg)
   end
 )
@@ -222,12 +240,26 @@ Handlers.add(
   'retireAgentDebug',
   Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
   function(msg)
-    -- onlyAgent(msg)
     local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
     Handlers.utils.reply({
       ["Response-For"] = "RetireAgentDebug",
+      Data = "Success",
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
+  'assignOwnerDebug',
+  Handlers.utils.hasMatchingTag('Action', 'AssignOwnerDebug'),
+  function(msg)
+    local agentId = "zSMGBVafyTrNeMVshCo9W0k_JJMEirH7M5kt1atqU_Q"
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    agentInfo.Owner = "P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4"
+    Handlers.utils.reply({
+      ["Response-For"] = "AssignOwnerDebug",
       Data = "Success",
     })(msg)
   end

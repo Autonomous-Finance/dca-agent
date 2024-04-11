@@ -9,7 +9,7 @@ import { ArweaveProvider } from "@/app/ArweaveProvider"
 import { theme } from "./theme"
 import Header from "../Header"
 import { AccountBalanceProvider } from "@/hooks/useAccountBalance"
-import { LatestAgentProvider } from "@/hooks/useLatestAgent"
+import { LatestAgentProvider } from "@/hooks/useLatestRegisteredAgent"
 
 export default function RootLayoutUI({
   children,

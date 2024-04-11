@@ -77,6 +77,37 @@ export const getLatestAgent = async () => {
   }
 }
 
+export const getOneAgent = async (agentId: string) => {
+  try {
+    const res = await ao.dryrun({
+      process: REGISTRY,
+      tags: [
+        { name: "Action", value: "GetOneAgent" },
+        { name: "Agent", value: agentId },
+      ],
+    })
+    if (res.Error) {
+      console.error('Error on dry-run for one agent query', res)
+      return {
+        type: "Failure",
+        result: null
+      }
+    }
+
+    return {
+      type: "Success",
+      result: extractResponse(res, 'GetOneAgent')
+    }
+  } catch (e) {
+    console.error('Failed to get agent', e)
+    return {
+      type: "Failure",
+      result: null
+    }
+  }
+}
+
+
 export const getAllAgents = async () => {
   try {
     const res = await ao.dryrun({

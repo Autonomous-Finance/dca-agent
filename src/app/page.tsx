@@ -8,7 +8,7 @@ import { AgentPanel } from "./AgentPanel"
 import React from "react"
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import LoadingEmptyState from "@/components/LoadingEmptyState"
-import { useLatestAgent } from "@/hooks/useLatestAgent"
+import { useLatestRegisteredAgent } from "@/hooks/useLatestRegisteredAgent"
 import Link from "next/link"
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -16,7 +16,7 @@ import ViewAgent from "@/components/ViewAgent"
 import { wipeRegistry } from "@/utils/agent-utils"
 
 export default function HomePageServer() {
-  const latestFromRegistry = useLatestAgent();
+  const latestFromRegistry = useLatestRegisteredAgent();
 
   const {agentId, details, loading, refresh} = latestFromRegistry;
 

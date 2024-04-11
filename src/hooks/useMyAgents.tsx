@@ -1,6 +1,6 @@
 import { getAllAgents } from "@/utils/agent-utils";
 import React from "react";
-import { RegisteredAgent } from "./useLatestAgent";
+import { RegisteredAgent } from "./useLatestRegisteredAgent";
 
 export const useMyAgents = () => {
 
@@ -16,7 +16,7 @@ export const useMyAgents = () => {
         setLoading(false)
         return
       }
-      
+
       setAgentInfos(agentsQuery.result)
     } catch (e) {
       console.error(e)

@@ -4,6 +4,7 @@ import React from "react";
 
 export type RegisteredAgent = {
   // -- tracked in registry
+  Owner: string,
   Agent: string,
   CreatedAt: number,
   QuoteTokenBalance: string,
@@ -83,4 +84,4 @@ export const LatestAgentProvider = ({children}: { children: React.ReactNode }) =
   )
 }
 
-export const useLatestAgent = () => React.useContext(LatestAgentContext)
+export const useLatestRegisteredAgent = () => React.useContext(LatestAgentContext)
