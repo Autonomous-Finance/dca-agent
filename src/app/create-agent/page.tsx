@@ -118,7 +118,7 @@ export default function CreateAgent() {
 
       // Initialize (& Config)
 
-      addToLog({text: 'Initializing handlers...', hasLink: false})
+      addToLog({text: 'Initializing...', hasLink: false})
 
       const initMsgId = await message({
         process: processId,

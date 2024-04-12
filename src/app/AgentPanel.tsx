@@ -37,8 +37,6 @@ export function AgentPanel() {
 
   if (!status) return <></>
 
-  const credBalance = status.quoteTokenBalance || '-';
-
   const addToLog = (entry: LogEntry, error?: string) => {
     if (error && isLocalDev()) {
       entry.text = `${entry.text} - ${error}`
@@ -130,6 +128,7 @@ export function AgentPanel() {
   }
 
   const BTN_WIDTH = 150
+
   return (
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4 }}>
@@ -141,31 +140,35 @@ export function AgentPanel() {
             <Stack gap={2}>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
                 <Typography variant="h6">
-                  Quote Token
+                  {status.quoteTokenSymbol}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   <TopUpDialog disabled={disabledActions} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
-                    tokenSymbol={credSymbol} tokenBalance={credBalance}
+                    tokenSymbol={status.quoteTokenSymbol!} tokenBalance={status.quoteTokenBalance}
                     topUp={handleDeposit}/>
                   <WithdrawDialog type="quote" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
-                    tokenSymbol={credSymbol}
+                    tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
               </Stack>
-              <Divider />
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
                 <Typography variant="h6">
-                  Profits
+                  {status.baseTokenSymbol}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
+                  {/* <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
+                    liquidate={handleLiquidate}/> */}
                   <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
-                    tokenSymbol={credSymbol}
+                    tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawQuote}/>
-                  
-                  <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
-                    liquidate={handleLiquidate}>
-                  </LiquidateDialog>
                 </Stack>
+              </Stack>
+              <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
+                <Typography variant="h6">
+                    {"All Assets"}
+                </Typography>
+                <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
+                  liquidate={handleLiquidate}/>
               </Stack>
             </Stack>
             
@@ -179,7 +182,7 @@ export function AgentPanel() {
                 </Stack>
                 <TransferOwnershipDialog disabled={disabledActions} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
               </Stack>
-              <Divider/>
+              {/* <Divider/> */}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>
                   <Typography variant="h6">

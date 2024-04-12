@@ -29,9 +29,9 @@ export function AgentStatusDisplay() {
   return (
     <Stack gap={4} alignItems="flex-start">
       <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
-        <Typography variant="h5">
+        <Typography variant="h4">
           Agent{" "}
-          <Typography variant="h5" component="span" fontFamily={'Courier New'} fontWeight={'bold'}>
+          <Typography variant="h4" component="span" fontFamily={'Courier New'} fontWeight={'bold'}>
             {status.agentName}
           </Typography>
         </Typography>
@@ -78,8 +78,10 @@ export function AgentStatusDisplay() {
         </Box>
         <Stack flex={'grow'} width={'100%'} gap={2}>
           {/* CURRENT VALUES */}
-          <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}/>
-          <InfoLine label={'Quote Balance'} value={`${status.quoteTokenBalance}`} suffix={status.quoteTokenSymbol}/>
+          <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}
+            />
+          <InfoLine label={'Quote Balance'} value={`${status.quoteTokenBalance}`} suffix={status.quoteTokenSymbol}
+            color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
           <Box my={'12px'}><Divider /></Box>
           {/* TODO calculate real value est. based on base token price */}
           <InfoLine label={'Total Deposited'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
@@ -92,10 +94,12 @@ export function AgentStatusDisplay() {
   )
 }
 
-const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string}) => {
+const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string, color?: string}) => {
   return (
     <Stack direction={'row'} justifyContent={'space-between'} gap={2}>
-      <Typography variant="body1" color="text.secondary" display={'flex'} alignItems={'center'}>
+      <Typography variant="body1" display={'flex'} alignItems={'center'}
+        sx={{color: props.color || 'text.secondary'}}
+      >
         {props.label} {props.labelInfo && <HelpIcon text={props.labelInfo}/>}
       </Typography>
       <Stack direction={'row'} gap={1}>
@@ -104,8 +108,15 @@ const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labe
             {props.value}
           </Typography>
         )}
-        {typeof props.value !== 'string' && props.value}
-        {props.suffix && <Typography variant="body1">{props.suffix}</Typography>}
+        {typeof props.value !== 'string' && (
+          <Typography variant="body1">
+            {props.value}
+          </Typography>
+        )}
+        {props.suffix && <Typography variant="body1"
+        >
+          {props.suffix}
+        </Typography>}
       </Stack>
     </Stack>
   )

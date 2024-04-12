@@ -131,7 +131,7 @@ export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
 }
 
 export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
-  const hasFunds = Number.parseInt(agentStatus.quoteTokenBalance) > Number.parseInt(agentStatus.swapInAmount)
+  const hasFunds = Number.parseInt(agentStatus.quoteTokenBalance) >= Number.parseInt(agentStatus.swapInAmount)
 
   if (agentStatus.retired) {
     agentStatus.statusX = 'Retired'
@@ -265,6 +265,20 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
         type: "Failure",
         result: res.Error
       }
+    } else if (res.Messages.length) {
+      const errorMessage = res.Messages.find(
+        msg => msg.Tags.some(
+          (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer-Error')
+      );
+      if (errorMessage) {
+        const errorTag = errorMessage.Tags.find(
+          (tag: AoMsgTag) => tag.name === 'Error'
+        );
+        return {
+          type: "Failure",
+          result: 'Token Process: ' + errorTag?.value
+        }
+      }
     }
 
     return {
@@ -280,16 +294,15 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
   }
 }
 
-// TODO DRY UNIFY withdraw functions, they're pretty much the same
-
-export const withdrawQuote = async (agent: string, amount: string): Promise<Receipt<string>> => {
+export const withdrawAsset = async (agent: string, amount: string, tokenType: 'quote' | 'base'): Promise<Receipt<string>> => {
   try {
-    console.log("Withdrawing quote token ");
-  
+    console.log(`Withdrawing ${tokenType} token`);
+    const action = tokenType === 'quote' ? "WithdrawQuoteToken" : "WithdrawBaseToken"
+
     const msgId = await ao.message({
       process: agent,
       tags: [
-        { name: "Action", value: "WithdrawQuoteToken" },
+        { name: "Action", value: action },
         { name: "Quantity", value: amount }
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
@@ -300,17 +313,44 @@ export const withdrawQuote = async (agent: string, amount: string): Promise<Rece
       message: msgId,
       process: agent,
     })
-
-    // TODO could also wait for credit notice on user, to be absolutely sure
-  
     console.log("Result: ", res)
+    
+    /**
+    * We account for possibly failed withdrawals
+    *  wrong quantity set by the agent when requesting transfer => 
+    *  insufficient balance => 
+    *  QuoteToken process will send msg to agent Action = "Transfer-Error" etc.
+    */
 
     if (res.Error) {
       return {
         type: "Failure",
         result: res.Error
       }
+    } else if (res.Messages.length) {
+      // message from agent to token process
+      const transferMessage = res.Messages.find(
+        msg => msg.Tags.some(
+          (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer')
+      );
+      // messages resulting from the token process handling the transfer message
+      if (transferMessage.Messages.length) {
+        const errorMessage = transferMessage.Messages.find(
+          (msg: any) => msg.Tags.some(
+            (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer-Error')
+        );
+        if (errorMessage) {
+          const errorTag = errorMessage.Tags.find(
+            (tag: AoMsgTag) => tag.name === 'Error'
+          );
+          return {
+            type: "Failure",
+            result: 'Token Process: ' + errorTag?.value
+          }
+        }
+      }
     }
+
 
     return {
       type: "Success", 
@@ -323,52 +363,18 @@ export const withdrawQuote = async (agent: string, amount: string): Promise<Rece
       result: `Error: ${e}`
     }
   }
+}
+
+export const withdrawQuote = async (agent: string, amount: string): Promise<Receipt<string>> => {
+  return withdrawAsset(agent, amount, 'quote')
 }
 
 export const withdrawBase = async (agent: string, amount: string): Promise<Receipt<string>> => {
-  try {
-    console.log("Withdrawing base token ");
-  
-    const msgId = await ao.message({
-      process: agent,
-      tags: [
-        { name: "Action", value: "WithdrawBaseToken" },
-        { name: "Quantity", value: amount }
-      ],
-      signer: ao.createDataItemSigner(window.arweaveWallet),
-    })
-    console.log("Message sent: ", msgId)
-  
-    const res = await ao.result({
-      message: msgId,
-      process: agent,
-    })
-
-    // TODO could also wait for credit notice on user, to be absolutely sure
-  
-    console.log("Result: ", res)
-
-    if (res.Error) {
-      return {
-        type: "Failure",
-        result: res.Error
-      }
-    }
-
-    return {
-      type: "Success", 
-      result: msgId
-    }
-  } catch (e) {
-    console.error(e)
-    return {
-      type: "Failure",
-      result: `Error: ${e}`
-    }
-  }
+  return withdrawAsset(agent, amount, 'base')
 }
 
 export const liquidate = async (agent: string): Promise<Receipt<string>> => {
+  console.log('Liquidating agent ', agent)
   return {
     type: "Failure",
     result: "Not implemented"

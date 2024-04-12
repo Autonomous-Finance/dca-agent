@@ -1,9 +1,10 @@
 import React from 'react'
 
 import { Pause, PlayArrow } from "@mui/icons-material"
-import { Chip } from "@mui/material"
+import { Box, Chip } from "@mui/material"
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { AgentStatusX } from '@/utils/agent-utils';
+import HelpIcon from './HelpIcon';
 
 
 function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, large?: boolean, noIcon?: boolean}) {
@@ -18,8 +19,20 @@ function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, larg
       fontSize: '1rem',
       fontWeight: 'bold'
     }
+
+  const helpText = statusX === 'No Funds' ? 'Agent is active but has insufficient funds to perform DCA orders.' : ''
+
   return (
-    <>
+    <Box position={'relative'}>
+      {large && helpText && (
+        <Box position={'absolute'} left={0} top={0} height={'100%'} 
+          display={'flex'} alignItems={'center'} justifyContent={'center'}
+          sx={{
+            transform: 'translateX(calc(-100% - 0.5rem))',
+          }}>
+          <HelpIcon text={helpText}/>
+        </Box>
+      )}
       {statusX === 'Active' && (
         <Chip label="Active" variant="outlined" color="success" 
             icon={noIcon ? <></> : <PlayArrow />} 
@@ -38,7 +51,7 @@ function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, larg
             sx={sx}  
         />
       )}
-    </>
+    </Box>
   )
 }
 

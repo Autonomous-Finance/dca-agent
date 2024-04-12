@@ -168,20 +168,31 @@ Handlers.add(
 
 -- FEATURES
 
-Handlers.add(
-  "WithdrawQuoteToken",
-  Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
-  function(msg)
+local withdrawToken = function(type)
+  local Token = type == 'quote' and QuoteToken or BaseToken
+  local quantity = type == 'quote' and LatestQuoteTokenBal or LatestBaseTokenBal
+  return function(msg)
     ownership.onlyOwner(msg)
     validations.optionalQuantity(msg)
-    local quantity = msg.Tags.Quantity or LatestQuoteTokenBal
     ao.send({
-      Target = QuoteToken,
+      Target = Token,
       Action = "Transfer",
       Quantity = quantity,
       Recipient = Owner
     })
   end
+end
+
+Handlers.add(
+  "withdrawQuoteToken",
+  Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
+  withdrawToken('quote')
+)
+
+Handlers.add(
+  "withdrawBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
+  withdrawToken('base')
 )
 
 -- RETIRE

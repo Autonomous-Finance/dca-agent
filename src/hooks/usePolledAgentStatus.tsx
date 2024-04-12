@@ -1,4 +1,4 @@
-import { AgentStatus, getLatestAgent, readAgentStatus } from "@/utils/agent-utils";
+import { AgentStatus, enhanceAgentStatus, getLatestAgent, readAgentStatus } from "@/utils/agent-utils";
 import React from "react";
 import { Agent } from "../queries/agent.queries";
 import { set } from "date-fns";
@@ -12,6 +12,7 @@ export const usePolledAgentStatus = (props: {agentId: string}) => {
   const getStatus = async (id: string) => {
     const resp = await readAgentStatus(id)
     if (resp.type === "Success") {
+      enhanceAgentStatus(resp.result!)
       setStatus(resp.result)
     } else {
       console.error("Failed to get agent status", resp.result)

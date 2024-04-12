@@ -31,29 +31,27 @@ export default function SingleAgent() {
   }
 
   return (
-    <Stack mt={4} gap={4} mx={'auto'} px={'16px'}> 
-      <Stack direction={'row'}>
-        {canGoBack && (
-          <Button component={Link} href="#" size="large"
-            variant="outlined"
-            onClick={navigateBack}
-            sx={theme => ({
-              fontSize: '1.25rem', 
-              color: `var(--mui-customColors-naviLink-inactive-${theme.palette.mode})`,
-            })}>
-            <Stack direction={'row'} gap={1} alignItems={'center'}>
-              <ArrowBack/> Back
-            </Stack>
-          </Button>
-        )}
-        {!canGoBack && (
-          <Button component={Link} href="/my-agents" size="large" 
-            variant="outlined"
-            sx={{ fontSize: '1.25rem' }}>
-            My Agents <ViewListIcon sx={{marginLeft: '0.5rem'}}/>
-          </Button>
-        )}
-      </Stack>
+    <Stack mt={2} gap={2} mx={'auto'} px={'16px'}> 
+      {canGoBack && (
+        <Button component={Link} href="#"
+          variant="outlined"
+          onClick={navigateBack}
+          sx={theme => ({
+            fontSize: '1.25rem', marginRight: 'auto', 
+            color: `var(--mui-customColors-naviLink-inactive-${theme.palette.mode})`,
+          })}>
+          <Stack direction={'row'} gap={1} alignItems={'center'}>
+            <ArrowBack/> Back
+          </Stack>
+        </Button>
+      )}
+      {!canGoBack && (
+        <Button component={Link} href="/my-agents" 
+          variant="outlined"
+          sx={{ fontSize: '1.25rem', marginRight: 'auto' }}>
+          My Agents <ViewListIcon sx={{marginLeft: '0.5rem'}}/>
+        </Button>
+      )}
 
       <Divider />
 
