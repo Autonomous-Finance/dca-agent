@@ -1,4 +1,4 @@
-import { AgentStatus, enhanceAgentStatus, getLatestAgent, readAgentStatus } from "@/utils/agent-utils";
+import { AgentStatus, enhanceAgentStatus, getLatestAgent, getOneAgent, readAgentStatus, RegisteredAgent } from "@/utils/agent-utils";
 import React from "react";
 import { Agent } from "../queries/agent.queries";
 import { set } from "date-fns";
@@ -6,23 +6,28 @@ import { set } from "date-fns";
 
 export const usePolledAgentStatus = (props: {agentId: string}) => {
   const {agentId} = props
-  const [status, setStatus] = React.useState<AgentStatus | null>(null)
+  const [agent, setAgent] = React.useState<AgentStatus & RegisteredAgent | null>(null)
   const [loading, setLoading] = React.useState(true)
 
-  const getStatus = async (id: string) => {
-    const resp = await readAgentStatus(id)
-    if (resp.type === "Success") {
-      enhanceAgentStatus(resp.result!)
-      setStatus(resp.result)
+  const getAgent = async (id: string) => {
+    const respStatusProm = readAgentStatus(id)
+    const respRegisteredAgentProm = getOneAgent(id)
+    const [respStatus, respRegisteredAgent] = await Promise.all([respStatusProm, respRegisteredAgentProm])
+    if (respStatus.type === "Success" && respRegisteredAgent.type === "Success") {
+      enhanceAgentStatus(respStatus.result!)
+      setAgent({
+        ...respStatus.result,
+        ...respRegisteredAgent.result
+      })
     } else {
-      console.error("Failed to get agent status", resp.result)
+      console.error("Failed to get agent status", respStatus.result)
     }
   }
 
   // instant initialization
   React.useEffect(() => {
     const getInitial = async () => {
-      await getStatus(agentId)
+      await getAgent(agentId)
       setLoading(false)
     }
     getInitial()
@@ -33,11 +38,11 @@ export const usePolledAgentStatus = (props: {agentId: string}) => {
     if (!agentId) return;
 
     const interval = setInterval(() => {
-      getStatus(agentId)
+      getAgent(agentId)
     }, 3000)
 
     return () => clearInterval(interval)
   }, [agentId])
 
-  return {loading, status, agentId};
+  return {loading, status: agent, agentId};
 }

@@ -9,6 +9,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import AgentStatusChip from "@/components/AgentStatusChip";
 import HelpIcon from "@/components/HelpIcon";
 import { ArrowForward, ArrowRight, ArrowRightAlt, East } from "@mui/icons-material";
+import SwapDebug from "@/components/SwapDebug";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
@@ -72,6 +73,7 @@ export function AgentStatusDisplay() {
             </Typography>}/>
           <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue} ${status.swapIntervalUnit}`}></InfoLine>
           <InfoLine label={'Swap Amount'} value={`${status.swapInAmount}`} suffix={status.quoteTokenSymbol}></InfoLine>
+          <SwapDebug />
         </Stack>
         <Box px={2}>
           <Divider orientation="vertical"/>
@@ -84,8 +86,8 @@ export function AgentStatusDisplay() {
             color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
           <Box my={'12px'}><Divider /></Box>
           {/* TODO calculate real value est. based on base token price */}
-          <InfoLine label={'Total Deposited'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
-          <InfoLine label={'Total Swaps'} value={`n/A`} />
+          <InfoLine label={'Total Deposited'} value={status.TotalDeposited} suffix={status.quoteTokenSymbol}/>
+          <InfoLine label={'Total Swaps'} value={status.DcaBuys.length} />
           <InfoLine label={'Total Value (est.)'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
           <InfoLine label={'SPR'} value={`n/A`} suffix={'%'} labelInfo={HELP_TEXT_SPR}/>
         </Stack>

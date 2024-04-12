@@ -43,6 +43,7 @@ export type RegisteredAgent = {
   CreatedAt: number,
   QuoteTokenBalance: string,
   Deposits:  any[],
+  TotalDeposited: string,
   WithdrawalsQuoteToken:  any[],
   WithdrawalsBaseToken:  any[],
   DcaBuys:  any[],
@@ -294,7 +295,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
   }
 }
 
-export const withdrawAsset = async (agent: string, amount: string, tokenType: 'quote' | 'base'): Promise<Receipt<string>> => {
+export const withdrawAsset = async (agent: string, amount: string, tokenType: 'quote' | 'base', tokenProcess: string): Promise<Receipt<string>> => {
   try {
     console.log(`Withdrawing ${tokenType} token`);
     const action = tokenType === 'quote' ? "WithdrawQuoteToken" : "WithdrawBaseToken"
@@ -333,8 +334,15 @@ export const withdrawAsset = async (agent: string, amount: string, tokenType: 'q
         msg => msg.Tags.some(
           (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer')
       );
+      const transferMsgId = transferMessage?.ID
+      const transferResult = await ao.result({
+        message: transferMsgId,
+        process: tokenProcess,
+      })
+      console.log("Transfer Result: ", transferResult)
+
       // messages resulting from the token process handling the transfer message
-      if (transferMessage.Messages.length) {
+      if (transferResult.Messages.length) {
         const errorMessage = transferMessage.Messages.find(
           (msg: any) => msg.Tags.some(
             (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer-Error')
@@ -365,12 +373,12 @@ export const withdrawAsset = async (agent: string, amount: string, tokenType: 'q
   }
 }
 
-export const withdrawQuote = async (agent: string, amount: string): Promise<Receipt<string>> => {
-  return withdrawAsset(agent, amount, 'quote')
+export const withdrawQuote = async (agent: string, amount: string, tokenProcess: string): Promise<Receipt<string>> => {
+  return withdrawAsset(agent, amount, 'quote', tokenProcess)
 }
 
-export const withdrawBase = async (agent: string, amount: string): Promise<Receipt<string>> => {
-  return withdrawAsset(agent, amount, 'base')
+export const withdrawBase = async (agent: string, amount: string, tokenProcess: string): Promise<Receipt<string>> => {
+  return withdrawAsset(agent, amount, 'base', tokenProcess)
 }
 
 export const liquidate = async (agent: string): Promise<Receipt<string>> => {
@@ -490,3 +498,33 @@ export const wipeRegistry = async () => {
     console.error("Failure!", e)
   }
 }
+
+// only for debugging
+export const swapDebug = async () => {
+  try {
+    console.log("Performing Swap");
+  
+    // const msgId = await ao.message({
+    //   process: REGISTRY,
+    //   tags: [
+    //     { name: "Action", value: "Wipe" },
+    //   ],
+    //   signer: ao.createDataItemSigner(window.arweaveWallet),
+    // })
+    // console.log("Message sent: ", msgId)
+  
+    // const res = await ao.result({
+    //   message: msgId,
+    //   process: REGISTRY,
+    // })
+  
+    // console.log("Result: ", res)
+
+    // if (res.Error) {
+    //   console.error("Failure!")
+    // }
+  } catch (e) {
+    console.error("Failure!", e)
+  }
+}
+

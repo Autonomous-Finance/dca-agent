@@ -125,6 +125,7 @@ Handlers.add(
       CreatedAt = msg.Timestamp,
       QuoteTokenBalance = "0",
       Deposits = {},
+      TotalDeposited = "0",
       WithdrawalsQuoteToken = {},
       WithdrawalsBaseToken = {},
       DcaBuys = {},
@@ -211,6 +212,32 @@ Handlers.add(
     agentInfo.QuoteTokenBalance = msg.Tags.Balance
     Handlers.utils.reply({
       ["Response-For"] = "UpdateQuoteTokenBalance",
+      Data = "Success"
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
+  'Deposited',
+  Handlers.utils.hasMatchingTag('Action', 'Deposited'),
+  function(msg)
+    onlyAgent(msg)
+    assert(type(msg.Tags.Sender) == 'string', 'Sender is required!')
+    assert(type(msg.Tags.Quantity) == 'string', 'Quantity is required!')
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    if agentInfo == nil then
+      error("Internal: Agent not found")
+    end
+    table.insert(agentInfo.Deposits, {
+      Sender = msg.Tags.Sender,
+      Quantity = msg.Tags.Quantity,
+      Timestamp = msg.Timestamp
+    })
+    agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
+    Handlers.utils.reply({
+      ["Response-For"] = "Deposited",
       Data = "Success"
     })(msg)
   end

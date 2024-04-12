@@ -14,6 +14,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewAgent from "@/components/ViewAgent"
 import { wipeRegistry } from "@/utils/agent-utils"
+import WipeDebug from "@/components/WipeDebug"
 
 export default function HomePageServer() {
   const latestFromRegistry = useLatestRegisteredAgent();
@@ -64,10 +65,7 @@ export default function HomePageServer() {
         )}
       </Box>
       {/* button fixed bottom right debug */}
-      <Button onClick={wipe} variant="outlined" size="large"
-        sx={{position: 'fixed', bottom: 0, right: 0, margin: 2, opacity: 0.6}}>
-        <CleaningServicesIcon sx={{marginRight: 1}}/> WIPE
-      </Button>
+      <WipeDebug wipe={wipe} />
     </>
   )
 }

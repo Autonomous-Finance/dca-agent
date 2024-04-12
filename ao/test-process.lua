@@ -139,6 +139,12 @@ Handlers.add(
   function(m)
     if m.From ~= QuoteToken then return end
     ao.send({ Target = QuoteToken, Action = "Balance" })
+    ao.send({
+      Target = Registry,
+      Action = "Deposited",
+      Sender = m.Tags.Sender,
+      Quantity = m.Quantity
+    })
   end
 )
 

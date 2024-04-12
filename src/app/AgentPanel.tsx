@@ -11,9 +11,7 @@ import TopUpDialog from "@/components/TopUpDialog"
 import WithdrawDialog from "@/components/WithdrawDialog"
 import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
-import AgentInfoUnit from "@/components/AgentInfoUnit"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
-import { WaterDrop } from "@mui/icons-material"
 import LiquidateDialog from "@/components/LiquidateDialog"
 
 export function AgentPanel() {
@@ -26,7 +24,6 @@ export function AgentPanel() {
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
   const [loadingRetirement, setLoadingRetirement] = React.useState(false)
 
-  const [showOwnership, setShowOwnership] = React.useState(true)
   const [disabledActions, setDisabledActions] = React.useState(false)
 
   const agent = usePolledAgentStatusContext();
@@ -60,7 +57,7 @@ export function AgentPanel() {
   const handleWithdrawQuote = async (amount: string) => {
     setLoadingWithdrawQuote(true)
     addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent...`, hasLink: false})
-    const withdrawResult = await withdrawQuote(agent.agentId, amount)
+    const withdrawResult = await withdrawQuote(agent.agentId, amount, status.quoteToken)
     setLoadingWithdrawQuote(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
@@ -74,7 +71,7 @@ export function AgentPanel() {
     // TODO
     setLoadingWithdrawBase(true)
     addToLog({ text: `Withdrawing ${amount} ${status.baseTokenSymbol} from agent...`, hasLink: false})
-    const withdrawResult = await withdrawBase(agent.agentId, amount)
+    const withdrawResult = await withdrawBase(agent.agentId, amount, status.baseToken)
     setLoadingWithdrawBase(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
@@ -107,7 +104,6 @@ export function AgentPanel() {
       const msgId = transferResult.result
       addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
       setDisabledActions(true)
-      setShowOwnership(false)
     } else {
       addToLog({text: `Failed to transfer ownership to ${id}. Please try again.`, hasLink: false, isError: true}, transferResult.result)
     }
@@ -133,7 +129,7 @@ export function AgentPanel() {
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4 }}>
         <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
-          <Stack gap={4} width={664}>
+          <Stack gap={4} width={696} pr={4} borderRight={'1px solid var(--mui-palette-divider)'}>
             <AgentStatusDisplay/>
             <Divider />
 
@@ -158,7 +154,7 @@ export function AgentPanel() {
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   {/* <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
                     liquidate={handleLiquidate}/> */}
-                  <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
                     tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
@@ -221,9 +217,7 @@ export function AgentPanel() {
             
           </Stack>
           {actionLog.length > 0 && (
-            <Stack flexGrow={1} pl={4} gap={1} height={'100%'} width={400}
-              borderLeft={'1px solid var(--mui-palette-divider)'}
-              >
+            <Stack flexGrow={1} gap={1} width={400}>
               <Typography variant="h6">
                 Action Log
               </Typography>
