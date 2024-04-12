@@ -3,12 +3,15 @@
 import {
   Box,
   Button,
+  Checkbox,
+  Chip,
   CircularProgress,
   Divider,
   FormControl,
+  FormControlLabel,
+  FormGroup,
   InputAdornment,
   InputLabel,
-  Link,
   MenuItem,
   Paper,
   Select,
@@ -19,11 +22,10 @@ import {
 import React from "react"
 
 
-import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, TYPE_ICON_MAP } from '@/utils/data-utils';
+import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
-
 import {
   createDataItemSigner,
   dryrun,
@@ -32,11 +34,14 @@ import {
   result,
 } from "@permaweb/aoconnect/browser"
 import { BOT_SOURCE } from "@/lua/bot-source"
-import { CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
+import { BASE_CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
 import Log, { LogEntry } from "@/components/Log";
 import { credSymbol, REGISTRY } from "@/utils/agent-utils";
 import { useRouter } from "next/navigation";
-
+import { shortenId } from '../../utils/ao-utils';
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckIcon from "@mui/icons-material/Check";
+import Image from "next/image";
 
 export default function CreateAgent() {
   const [loading, setLoading] = React.useState(false)
@@ -50,7 +55,8 @@ export default function CreateAgent() {
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Days")
   const [swapIntervalValue, setSwapIntervalValue] = React.useState("10")
   // const [slippage, setSlippage] = React.useState("")
-  
+  const [selectedPools, setSelectedPools] = React.useState<LiquidityPool[]>(["Bark"])
+
   const [validationError, setValidationError] = React.useState("");
   const [deployLog, setDeployLog] = React.useState<LogEntry[]>([])
 
@@ -128,7 +134,7 @@ export default function CreateAgent() {
           { name: "Process-Type", value: "AF-DCA-Agent" },
           { name: "Initializer", value: await window.arweaveWallet?.getActiveAddress()},
           { name: "AgentName", value: agentName || defaultAgentName },
-          { name: "BaseToken", value: CURRENCY_PROCESS_MAP[currency] },
+          { name: "BaseToken", value: BASE_CURRENCY_PROCESS_MAP[currency] },
           { name: "SwapInAmount", value: swapInAmount },
           { name: "SwapIntervalValue", value: swapIntervalValue },
           { name: "SwapIntervalUnit", value: swapIntervalUnit },
@@ -233,6 +239,18 @@ export default function CreateAgent() {
   }
 
   const BTN_WIDTH = 250
+
+  const selectedPoolChip = ({selPool}: {selPool: LiquidityPool}) => (
+    <Chip key={selPool} label={selPool} sx={{fontSize: '1rem', letterSpacing: '0.1rem', height: '23px', padding: '0 4px'}}
+      onDelete={() =>
+        setSelectedPools(selectedPools.filter((pool) => pool !== selPool))
+      }
+      deleteIcon={
+        <CancelIcon onMouseDown={(event) => event.stopPropagation()} />
+      }
+    /> 
+  )
+
   return (
     <Box margin={'4rem auto 0'}>
       <Box maxWidth={'min-content'} mx={'auto'}>
@@ -253,72 +271,133 @@ export default function CreateAgent() {
                     placeholder="MrSmith_2143"
                   />
                 </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel id="base-currency-label">Base Token</InputLabel>
-                  <Select
-                    labelId="base-currency-label"
-                    id="base-currency"
-                    value={currency}
-                    label="Base Currency"
-                    disabled={disableForm}
-                    onChange={(e) => setCurrency(e.target.value as BaseToken)}
-                  >
-                    {BASE_CURRENCIES.map((currency) => (
-                      <MenuItem key={currency} value={currency} disabled={currency !== "BRKTST"}>
-                        {currency}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                <Stack width={'100%'} gap={3}>
+                  <Typography variant="body1" color="text.primary">Currencies</Typography>
+                  <Stack direction={'row'} gap={1}>
+                    <FormControl fullWidth>
+                      <InputLabel id="base-token-label">Base Token</InputLabel>
+                      <Select
+                        labelId="base-token-label"
+                        id="base-token"
+                        value={currency}
+                        label="Base Token"
+                        disabled={disableForm}
+                        onChange={(e) => setCurrency(e.target.value as BaseToken)}
+                      >
+                        {BASE_CURRENCIES.map((currency) => (
+                          <MenuItem key={currency} value={currency} disabled={currency !== "BRKTST"}>
+                            {currency}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl fullWidth>
+                      <InputLabel id="quote-token-label">Quote Token</InputLabel>
+                      <Select
+                        labelId="quote-token-label"
+                        id="quote-token"
+                        value={credSymbol}
+                        label="quote Token"
+                        disabled={disableForm}
+                      >
+                        {QUOTE_CURRENCIES.map((currency) => (
+                          <MenuItem key={currency} value={currency} disabled={currency !== credSymbol}>
+                            {currency}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Stack>
                   <FormControl fullWidth>
-                    <TextField
-                      disabled={loading}
-                      required
-                      size="small"
-                      value={swapIntervalValue}
-                      onChange={(e) => setSwapIntervalValue(e.target.value)}
-                      type="number"
-                      label="Interval"
-                      // error={error !== ""}
-                      // helperText={error}
-                    />
-                  </FormControl>
-                  <FormControl fullWidth>
-                    <InputLabel id="interval-unit-label"></InputLabel>
+                    <InputLabel id="liquidity-pools">
+                      {`Liquidity Pools for BRKTST/${credSymbol}`}
+                    </InputLabel>
                     <Select
-                      size="small"
-                      disabled={loading}
-                      labelId="interval-unit-label"
-                      id="interval-unit"
-                      value={swapIntervalUnit}
-                      label=""
-                      onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
+                      id="liquidity-pools"
+                      value={selectedPools}
+                      label={`Liquidity Pools for BRKTST/${credSymbol}`}
+                      multiple
+                      required
+                      renderValue={(selected) => (
+                        <Stack gap={1} direction="row" flexWrap="wrap">
+                          {selected.map((selPool) => selectedPoolChip({selPool}))}
+                        </Stack>
+                      )}
                     >
-                      {INTERVAL_UNITS.map((unit) => (
-                        <MenuItem key={unit} value={unit}>
-                          {unit}
+                      {LIQUIDITY_POOLS.map((pool) => (
+                        <MenuItem key={pool} value={pool}
+                            disabled={pool !== "Bark"}
+                            sx={{justifyContent: 'space-between'}}
+                            onClick={() => setSelectedPools(pools => pools.includes(pool) ? pools.filter(p => p !== pool) : [...pools, pool])}
+                          >
+                            <Stack direction={'row'} justifyContent={'space-between'} width="100%">
+                              <Typography fontSize={'1.125rem'}>{pool}</Typography>
+                              <Typography fontFamily={'Courier New'} fontSize={'1.125rem'}>
+                                {shortenId(LIQUIDITY_POOL_MAP[pool].processId)}
+                              </Typography>
+                            </Stack>
+                            <CheckIcon color="info" sx={{marginLeft: '0.25rem', opacity : selectedPools.includes(pool) ? 1 : 0}}/>
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
+                  <FormGroup sx={{marginTop: -2}}>
+                    <FormControlLabel disabled control={<Checkbox />} label="Use Global RFQ" />
+                  </FormGroup>
                 </Stack>
-                <TextField
-                  disabled={loading}
-                  required
-                  size="small"
-                  value={swapInAmount}
-                  onChange={(e) => setSwapInAmount(e.target.value)}
-                  type="number"
-                  label="Swap Amount"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">{credSymbol}</InputAdornment>
-                    ),
-                  }}
-                  // error={error !== ""}
-                  // helperText={error}
-                />
+                <Stack width={'100%'} gap={3}>
+                  <Typography variant="body1" color="text.primary">DCA Configuration</Typography>
+                  
+                  <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                    <FormControl fullWidth>
+                      <TextField
+                        disabled={loading}
+                        required
+                        size="small"
+                        value={swapIntervalValue}
+                        onChange={(e) => setSwapIntervalValue(e.target.value)}
+                        type="number"
+                        label="Interval"
+                        // error={error !== ""}
+                        // helperText={error}
+                      />
+                    </FormControl>
+                    <FormControl fullWidth>
+                      <InputLabel id="interval-unit-label"></InputLabel>
+                      <Select
+                        size="small"
+                        disabled={loading}
+                        labelId="interval-unit-label"
+                        id="interval-unit"
+                        value={swapIntervalUnit}
+                        label=""
+                        onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
+                      >
+                        {INTERVAL_UNITS.map((unit) => (
+                          <MenuItem key={unit} value={unit}>
+                            {unit}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Stack>
+                  <TextField
+                    disabled={loading}
+                    required
+                    size="small"
+                    value={swapInAmount}
+                    onChange={(e) => setSwapInAmount(e.target.value)}
+                    type="number"
+                    label="Swap Amount"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">{credSymbol}</InputAdornment>
+                      ),
+                    }}
+                    // error={error !== ""}
+                    // helperText={error}
+                  />
+                </Stack>
                 {/* <TextField
                   disabled={loading}
                   size="small"
@@ -351,27 +430,28 @@ export default function CreateAgent() {
                 </Stack>
               </Stack>
               <Box sx={{flexGrow: 1, position: 'relative' }}>
-                {/* <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
-                  display={'flex'} alignItems={'center'} justifyContent={'center'}
-                  sx={{opacity: 0.025}}
+                <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
+                  display={'flex'} flexDirection={'column'} alignItems={'center'} justifyContent={'flex-start'}
+                  sx={{opacity: 0.05}}
                 >
-                  <Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/>
-                </Box> */}
+                  <Box sx={{marginTop: '-50px'}}><Image alt="icon" width={200} height={200} src={'/ao.svg'}/></Box>
+                  <Box sx={{marginTop: '-30px'}}><Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/></Box>
+                </Box>
                 <Box
                   sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
                   display="flex"
                   alignItems="center"
-                  justifyContent="space-between"
+                  justifyContent="flex-end"
                   flexDirection="column"
                 >
-                  <Box>
+                  {/* <Box> */}
                     <Typography paragraph>
                       Deployment will create an agent process as configured.
                     </Typography>
                     <Typography paragraph>
                       You own and control this agent via your connected AR wallet account.
                     </Typography>
-                  </Box>
+                  {/* </Box> */}
                   <AgentCodeModalButton />
                 </Box>
               </Box>

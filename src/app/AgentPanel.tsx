@@ -129,7 +129,7 @@ export function AgentPanel() {
     <Box maxWidth={'min-content'} mx={'auto'}>
       <Paper variant="outlined" sx={{ padding: 4 }}>
         <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
-          <Stack gap={4} width={696} pr={4} borderRight={'1px solid var(--mui-palette-divider)'}>
+          <Stack gap={4} width={696} pr={4} borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
             <AgentStatusDisplay/>
             <Divider />
 

@@ -22,6 +22,6 @@ export async function readCredBalance(userAddr: string) {
 }
 
 export const shortenId = (id: string): string => {
-  if (!id || id.length <= 16) return id
-  return id.slice(0, 8) + "..." + id.slice(-8)
+  if (!id || id.length <= 8) return id
+  return id.slice(0, 4) + "..." + id.slice(-4)
 }
