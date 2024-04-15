@@ -56,7 +56,7 @@ export default function CreateAgent() {
   const [swapInAmount, setSwapInAmount] = React.useState("10")
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Minutes")
   const [swapIntervalValue, setSwapIntervalValue] = React.useState("1")
-  // const [slippage, setSlippage] = React.useState("")
+  const [slippage, setSlippage] = React.useState("1")
   const [selectedPools, setSelectedPools] = React.useState<LiquidityPool[]>(["Bark"])
 
   const [validationError, setValidationError] = React.useState("");
@@ -138,6 +138,7 @@ export default function CreateAgent() {
           { name: "SwapInAmount", value: swapInAmount },
           { name: "SwapIntervalValue", value: swapIntervalValue },
           { name: "SwapIntervalUnit", value: swapIntervalUnit },
+          { name: "Slippage", value: slippage },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
@@ -383,6 +384,7 @@ export default function CreateAgent() {
                         </Select>
                       </FormControl>
                     </Stack>
+                    
                     <TextField
                       disabled={loading}
                       required
@@ -399,23 +401,23 @@ export default function CreateAgent() {
                       // error={error !== ""}
                       // helperText={error}
                     />
+                    <TextField
+                      disabled={loading}
+                      size="small"
+                      sx={{ width: "100%" }}
+                      value={slippage}
+                      onChange={(e) => setSlippage(e.target.value)}
+                      type="number"
+                      label="Max Slippage"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">%</InputAdornment>
+                        ),
+                      }}
+                      // error={error !== ""}
+                      // helperText={error}
+                    />
                   </Stack>
-                  {/* <TextField
-                    disabled={loading}
-                    size="small"
-                    sx={{ width: "100%" }}
-                    value={slippage}
-                    onChange={(e) => setSlippage(e.target.value)}
-                    type="number"
-                    label="Max Slippage"
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">%</InputAdornment>
-                      ),
-                    }}
-                    error={error !== ""}
-                    helperText={error}
-                  /> */}
                   <Stack width="100%" mt="auto" gap={1}>
                     {validationError && <Typography color="error">{validationError}</Typography>}
                     <Button

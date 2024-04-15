@@ -6,7 +6,7 @@ Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on test
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
-SlippageTolerance = SlippageTolerance or nil   -- basis points
+SlippageTolerance = SlippageTolerance or nil   -- percentage value (22.33 for 22.33%)
 
 SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
@@ -220,6 +220,7 @@ Handlers.add(
       baseTokenBalance = LatestBaseTokenBal,
       quoteTokenBalance = LatestQuoteTokenBal,
       swapExpectedOutput = SwapExpectedOutput,
+      slippageTolerance = SlippageTolerance,
       transferId = TransferId,
       pool = Pool,
     })
@@ -242,12 +243,14 @@ Handlers.add(
     assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
     assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
     assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
+    assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
 
     AgentName = msg.Tags.AgentName
     BaseToken = msg.Tags.BaseToken
     SwapInAmount = msg.Tags.SwapInAmount
     SwapIntervalValue = msg.Tags.SwapIntervalValue
     SwapIntervalUnit = msg.Tags.SwapIntervalUnit
+    SlippageTolerance = msg.Tags.Slippage
 
     Handlers.utils.reply({
       ["Response-For"] = "Initialize",

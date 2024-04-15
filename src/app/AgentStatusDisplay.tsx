@@ -74,9 +74,9 @@ export function AgentStatusDisplay() {
             soft
           ></InfoLine>
 
-          {/* <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
+          <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
             -
-          </Typography> */}
+          </Typography>
           <Box my={'12px'}><Divider /></Box>
 
           <Typography display={'flex'} fontWeight={'bold'}>
@@ -105,6 +105,7 @@ export function AgentStatusDisplay() {
             </Typography>}/>
           <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
           <InfoLine label={'Swap Amount'} value={`${status.swapInAmount}`} suffix={status.quoteTokenSymbol}></InfoLine>
+          <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}></InfoLine>
           
           <Box my={'12px'}><Divider /></Box>
 

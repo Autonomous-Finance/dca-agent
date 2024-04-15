@@ -19,6 +19,7 @@ export type AgentStatus = {
   // nextBuy: Date
   quoteTokenBalance: string
   baseTokenBalance: string
+  slippageTolerance: string
 
   // added on Frontend
   statusX?: AgentStatusX

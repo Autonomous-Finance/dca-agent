@@ -3,7 +3,7 @@ Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on test
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
-SlippageTolerance = SlippageTolerance or nil   -- basis points
+SlippageTolerance = SlippageTolerance or nil   -- percentage value (22.33 for 22.33%)
 
 SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
