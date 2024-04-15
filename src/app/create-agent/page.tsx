@@ -22,7 +22,7 @@ import {
 import React from "react"
 
 
-import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP } from '@/utils/data-utils';
+import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP, credSymbol } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -36,7 +36,7 @@ import {
 import { BOT_SOURCE } from "@/lua/bot-source"
 import { BASE_CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
 import Log, { LogEntry } from "@/components/Log";
-import { credSymbol, REGISTRY } from "@/utils/agent-utils";
+import { REGISTRY } from "@/utils/agent-utils";
 import { useRouter } from "next/navigation";
 import { shortenId } from '../../utils/ao-utils';
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -49,8 +49,10 @@ export default function CreateAgent() {
 
   const disableForm = loading || !!deployed
 
+  const defaultAgentName = `MrSmith_${Math.ceil(10000 * Math.random())}`
+
   const [currency, setCurrency] = React.useState<BaseToken>("BRKTST")
-  const [agentName, setAgentName] = React.useState("")
+  const [agentName, setAgentName] = React.useState(defaultAgentName)
   const [swapInAmount, setSwapInAmount] = React.useState("100")
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Days")
   const [swapIntervalValue, setSwapIntervalValue] = React.useState("10")
@@ -80,8 +82,6 @@ export default function CreateAgent() {
     if (!validateConfig()) {
       return
     }
-
-    const defaultAgentName = `MrSmith_${Math.ceil(1000 * Math.random())}`
 
     try {
       setLoading(true);

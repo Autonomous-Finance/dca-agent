@@ -219,6 +219,22 @@ Handlers.add(
 
 -- msg to be sent by agent itself
 Handlers.add(
+  'updateBaseTokenBalance',
+  Handlers.utils.hasMatchingTag('Action', 'UpdateBaseTokenBalance'),
+  function(msg)
+    onlyAgent(msg)
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    agentInfo.BaseTokenBalance = msg.Tags.Balance
+    Handlers.utils.reply({
+      ["Response-For"] = "UpdateBaseTokenBalance",
+      Data = "Success"
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
   'Deposited',
   Handlers.utils.hasMatchingTag('Action', 'Deposited'),
   function(msg)
@@ -238,6 +254,31 @@ Handlers.add(
     agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
     Handlers.utils.reply({
       ["Response-For"] = "Deposited",
+      Data = "Success"
+    })(msg)
+  end
+)
+
+-- message to be sent by agent itself
+Handlers.add(
+  'swapped',
+  Handlers.utils.hasMatchingTag('Action', 'Swapped'),
+  function(msg)
+    onlyAgent(msg)
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    if agentInfo == nil then
+      error("Internal: Agent not found")
+    end
+    local dcaBuys = agentInfo.DcaBuys
+    table.insert(dcaBuys, {
+      Timestamp = msg.Tags.ConfirmedAt,
+      Input = msg.Tags.Input,
+      ExpectedOutput = msg.Tags.ExpectedOutput,
+      Actual = msg.Tags.Actual,
+    })
+    Handlers.utils.reply({
+      ["Response-For"] = "Swapped",
       Data = "Success"
     })(msg)
   end

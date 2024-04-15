@@ -5,7 +5,11 @@ SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
 SlippageTolerance = SlippageTolerance or nil -- basis points
 
-LatestPrice = LatestPrice or 0               -- price of BaseToken expressed in QuoteToken
+
+SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+
+LatestPrice = LatestPrice or nil               -- price of BaseToken expressed in QuoteToken
+-- used by frontend to express simulated swap results
 
 local bot = {}
 
@@ -24,8 +28,8 @@ bot.updatePrice = function(msg)
   end
 end
 
-SwapInit = function()
-  -- send the transfer
+bot.swapInit = function()
+  -- prepare swap
   ao.send({
     Target = QuoteToken,
     Action = "Transfer",
@@ -34,26 +38,17 @@ SwapInit = function()
   })
 end
 
-SwapExec = function(transferId)
-  assert(type(transferId) == 'string', 'transferId is required!')
+bot.swapExec = function()
+  assert(type(TransferId) == 'string', 'transferId is required!')
   -- swap interaction
   ao.message({
     Target = Pool,
     Action = "Swap",
-    Transfer = transferId,
+    Transfer = TransferId,
     Pool = Pool,
-    ["Slippage-Tolerance"] = "100", -- TODO check how pool interprets the value, is it basis points?
-    ["Expected-Output"] = CalcExpectedOutput(),
+    ["Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["Expected-Output"] = SwapExpectedOutput,
   })
-end
-
-
-CalcExpectedOutput = function()
-  -- TODO refine calc
-  local amount = tonumber(SwapInAmount)
-  local priceAdj = LatestPrice
-  local expectedOutput = amount * priceAdj
-  return expectedOutput
 end
 
 

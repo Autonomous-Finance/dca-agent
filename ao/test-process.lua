@@ -1,5 +1,7 @@
 local ownership = require "ownership.ownership"
 local validations = require "validations.validations"
+local bot = require "bot.bot"
+local patterns = require "utils.patterns"
 local json = require "json"
 
 -- bot deployment triggered by user from browser
@@ -53,7 +55,10 @@ Handlers.add(
       swapIntervalValue = SwapIntervalValue,
       swapIntervalUnit = SwapIntervalUnit,
       baseTokenBalance = LatestBaseTokenBal,
-      quoteTokenBalance = LatestQuoteTokenBal
+      quoteTokenBalance = LatestQuoteTokenBal,
+      swapExpectedOutput = SwapExpectedOutput,
+      transferId = TransferId,
+      pool = Pool,
     })
     Handlers.utils.reply({
       ["Response-For"] = "GetStatus",
@@ -131,10 +136,85 @@ Handlers.add(
   end
 )
 
+-- TRACK latest price
+
+Handlers.add(
+  'requestLatestPrice',
+  Handlers.utils.hasMatchingTag('Action', 'RequestLatestPrice'),
+  function(msg)
+    ao.send({ Target = Pool, Action = "Get-Price", Token = BaseToken })
+  end
+)
+
+Handlers.add(
+  'latestPriceUpdate',
+  patterns.continue(function(m)
+    return m.Tags.Price ~= nil and m.From == Pool
+  end),
+  function(m)
+    LatestPrice = m.Price
+  end
+)
+
+-- SWAP
+
+-- response to the bot transferring quote token to the pool, in order to prepare the swap
+Handlers.add(
+  "requestSwapOutputOnDebitNotice",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  function(m)
+    -- ensure this was a transfer from the bot to the pool as preliminary to the swap
+    if m.From ~= QuoteToken then return end
+    if m.Recipient ~= Pool then return end
+
+    TransferId = m["Pushed-For"]
+
+    ao.send({
+      Target = Pool,
+      Action = "Get-Price",
+      Token = QuoteToken,
+      Quantity = SwapInAmount
+    })
+  end
+)
+
+-- response to the price request
+Handlers.add(
+  'swapExecOnGetPriceResponse',
+  patterns.continue(function(msg)
+    return msg.From == Pool and msg.Tags.Price ~= nil
+  end),
+  function(msg)
+    SwapExpectedOutput = msg.Tags.Price
+    ao.send({
+      Target = ao.id,
+      Data = "Attempt executing swap with trasnferid: " ..
+          TransferId .. 'and expected output ' .. SwapExpectedOutput
+    })
+    bot.swapExec()
+  end
+)
+
+-- response to successful swap
+Handlers.add(
+  'orderConfirmation',
+  Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
+  function(msg)
+    ao.send({
+      Target = Registry,
+      Action = "Swapped",
+      Input = msg.Tags["From-Quantity"],
+      ExpectedOutput = SwapExpectedOutput,
+      Actual = msg.Tags["To-Quantity"],
+      ConfirmedAt = msg.Timestamp
+    })
+  end
+)
+
 -- TRACK latest QuoteToken BALANCE
 
 Handlers.add(
-  "BalanceUpdateCredit",
+  "balanceUpdateCreditQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
   function(m)
     if m.From ~= QuoteToken then return end
@@ -149,7 +229,7 @@ Handlers.add(
 )
 
 Handlers.add(
-  "BalanceUpdateDebit",
+  "balanceUpdateDebitQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
   function(m)
     if m.From ~= QuoteToken then return end
@@ -169,6 +249,41 @@ Handlers.add(
   function(m)
     LatestQuoteTokenBal = m.Balance
     ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+  end
+)
+
+-- TRACK latest BASE TOKEN BALANCE
+
+Handlers.add(
+  "balanceUpdateCreditBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+Handlers.add(
+  "balanceUpdateDebitBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+-- response to the balance request
+Handlers.add(
+  "latestBalanceUpdateBaseToken",
+  function(m)
+    local isMatch = m.Tags.Balance ~= nil
+        and m.From == BaseToken
+        and m.Account == ao.id
+    return isMatch and -1 or 0
+  end,
+  function(m)
+    LatestBaseTokenBal = m.Balance
+    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -216,5 +331,15 @@ Handlers.add(
       ["Response-For"] = "Retire",
       Data = "Success"
     })(msg)
+  end
+)
+
+-- DEBUG / DEV
+
+Handlers.add(
+  "triggerSwapDebug",
+  Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
+  function(msg)
+    bot.swapInit()
   end
 )

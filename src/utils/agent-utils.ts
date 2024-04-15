@@ -1,11 +1,9 @@
 import * as ao from "@permaweb/aoconnect/browser"
-import { findCurrencyById } from "./data-utils"
+import { credSymbol, findCurrencyById } from "./data-utils"
 
 export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 
 export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
-
-export const credSymbol = "AOCRED-Test"
 
 // AGENT INFO AS RETURNED BY AGENT PROCESS
 export type AgentStatus = {
@@ -72,6 +70,7 @@ export type AoMsgTag = {
 type DryRunResult = Awaited<ReturnType<typeof ao.dryrun>>
 
 const extractResponse = (result: DryRunResult, actionName: string) => {
+
   const respMsg = result.Messages.find(
     msg => msg.Tags.some(
       (tag: AoMsgTag) => tag.name === 'Response-For' && tag.value === actionName)
@@ -492,7 +491,10 @@ export const wipeRegistry = async () => {
     console.log("Result: ", res)
 
     if (res.Error) {
-      console.error("Failure!")
+      return {
+        type: "Failure",
+        result: res.Error
+      }
     }
   } catch (e) {
     console.error("Failure!", e)
@@ -500,31 +502,42 @@ export const wipeRegistry = async () => {
 }
 
 // only for debugging
-export const swapDebug = async () => {
+export const swapDebug = async (agentId: string) => {
   try {
-    console.log("Performing Swap");
+    console.log("Triggering a Swap");
   
-    // const msgId = await ao.message({
-    //   process: REGISTRY,
-    //   tags: [
-    //     { name: "Action", value: "Wipe" },
-    //   ],
-    //   signer: ao.createDataItemSigner(window.arweaveWallet),
-    // })
-    // console.log("Message sent: ", msgId)
-  
-    // const res = await ao.result({
-    //   message: msgId,
-    //   process: REGISTRY,
-    // })
-  
-    // console.log("Result: ", res)
+    // prepare with a transfer
 
-    // if (res.Error) {
-    //   console.error("Failure!")
-    // }
+    const swapMsgId = await ao.message({
+      process: agentId,
+      tags: [
+        { name: "Action", value: "TriggerSwapDebug" },
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Triggered Swap: ", swapMsgId)
+  
+    const swapRes = await ao.result({
+      message: swapMsgId,
+      process: agentId,
+    })
+  
+    console.log("Swap Trigger result: ", swapRes)
+
+    if (swapRes.Error) {
+      throw(swapRes.Error)
+    }
+
+    return {
+      type: "Success",
+      result: swapMsgId
+    }
+
   } catch (e) {
-    console.error("Failure!", e)
+    return {
+      type: "Failure",
+      result: e
+    }
   }
 }
 

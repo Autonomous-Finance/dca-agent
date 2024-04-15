@@ -13,8 +13,9 @@ import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
 import LoadingEmptyState from './LoadingEmptyState';
 import { Typography } from '@mui/material';
-import { credSymbol, enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
+import { enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
 import AgentStatusChip from './AgentStatusChip';
+import { credSymbol } from '@/utils/data-utils';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {

@@ -1,5 +1,66 @@
 do
 local _ENV = _ENV
+package.preload[ "bot.bot" ] = function( ... ) local arg = _G.arg;
+Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
+
+SwapIntervalValue = SwapIntervalValue or nil
+SwapIntervalUnit = SwapIntervalUnit or nil
+SwapInAmount = SwapInAmount or nil
+SlippageTolerance = SlippageTolerance or nil -- basis points
+
+
+SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+
+LatestPrice = LatestPrice or nil               -- price of BaseToken expressed in QuoteToken
+-- used by frontend to express simulated swap results
+
+local bot = {}
+
+bot.init = function()
+  ao.send({
+    Target = Pool,
+    Action = "Get-Price",
+    Token = BaseToken,
+    Quantity = SwapInAmount
+  })
+end
+
+bot.updatePrice = function(msg)
+  if msg.From == Pool and msg.Price ~= nil then
+    LatestPrice = msg.Price
+  end
+end
+
+bot.swapInit = function()
+  -- prepare swap
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Quantity = SwapInAmount,
+    Recipient = Pool
+  })
+end
+
+bot.swapExec = function()
+  assert(type(TransferId) == 'string', 'transferId is required!')
+  -- swap interaction
+  ao.message({
+    Target = Pool,
+    Action = "Swap",
+    Transfer = TransferId,
+    Pool = Pool,
+    ["Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["Expected-Output"] = SwapExpectedOutput,
+  })
+end
+
+
+return bot
+end
+end
+
+do
+local _ENV = _ENV
 package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
@@ -8,6 +69,78 @@ local mod = {}
 
 mod.onlyOwner = function(msg)
   assert(msg.From == Owner, "Only the owner is allowed")
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "utils.patterns" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+-- This function allows the wrapped pattern function
+-- to continue the execution after the handler
+---@param fn fun(msg: Message)
+---@return PatternFunction
+function mod.continue(fn)
+  return function (msg)
+    local patternResult = fn(msg)
+
+    if not patternResult or patternResult == 0 or patternResult == "skip" then
+      return patternResult
+    end
+    return 1
+  end
+end
+
+-- The "hasMatchingTag" utility function, but it supports
+-- multiple values for the tag
+---@param name string Tag name
+---@param values string[] Tag values
+---@return PatternFunction
+function mod.hasMatchingTagOf(name, values)
+  return function (msg)
+    for _, value in ipairs(values) do
+      local patternResult = Handlers.utils.hasMatchingTag(name, value)(msg)
+
+      if patternResult ~= 0 then
+        return patternResult
+      end
+    end
+
+    return 0
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global RefundError to the error message.
+-- We use this to refund the user if anything goes wrong with an
+-- interaction that involves incoming transfers (such as swap or
+-- provide)
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapper(handler)
+  -- return the wrapped handler
+  return function (msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      RefundError = err
+
+      return nil
+    end
+
+    return result
+  end
 end
 
 return mod
@@ -40,6 +173,8 @@ end
 
 local ownership = require "ownership.ownership"
 local validations = require "validations.validations"
+local bot = require "bot.bot"
+local patterns = require "utils.patterns"
 local json = require "json"
 
 -- bot deployment triggered by user from browser
@@ -93,7 +228,10 @@ Handlers.add(
       swapIntervalValue = SwapIntervalValue,
       swapIntervalUnit = SwapIntervalUnit,
       baseTokenBalance = LatestBaseTokenBal,
-      quoteTokenBalance = LatestQuoteTokenBal
+      quoteTokenBalance = LatestQuoteTokenBal,
+      swapExpectedOutput = SwapExpectedOutput,
+      transferId = TransferId,
+      pool = Pool,
     })
     Handlers.utils.reply({
       ["Response-For"] = "GetStatus",
@@ -171,10 +309,85 @@ Handlers.add(
   end
 )
 
+-- TRACK latest price
+
+Handlers.add(
+  'requestLatestPrice',
+  Handlers.utils.hasMatchingTag('Action', 'RequestLatestPrice'),
+  function(msg)
+    ao.send({ Target = Pool, Action = "Get-Price", Token = BaseToken })
+  end
+)
+
+Handlers.add(
+  'latestPriceUpdate',
+  patterns.continue(function(m)
+    return m.Tags.Price ~= nil and m.From == Pool
+  end),
+  function(m)
+    LatestPrice = m.Price
+  end
+)
+
+-- SWAP
+
+-- response to the bot transferring quote token to the pool, in order to prepare the swap
+Handlers.add(
+  "requestSwapOutputOnDebitNotice",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  function(m)
+    -- ensure this was a transfer from the bot to the pool as preliminary to the swap
+    if m.From ~= QuoteToken then return end
+    if m.Recipient ~= Pool then return end
+
+    TransferId = m["Pushed-For"]
+
+    ao.send({
+      Target = Pool,
+      Action = "Get-Price",
+      Token = QuoteToken,
+      Quantity = SwapInAmount
+    })
+  end
+)
+
+-- response to the price request
+Handlers.add(
+  'swapExecOnGetPriceResponse',
+  patterns.continue(function(msg)
+    return msg.From == Pool and msg.Tags.Price ~= nil
+  end),
+  function(msg)
+    SwapExpectedOutput = msg.Tags.Price
+    ao.send({
+      Target = ao.id,
+      Data = "Attempt executing swap with trasnferid: " ..
+          TransferId .. 'and expected output ' .. SwapExpectedOutput
+    })
+    bot.swapExec()
+  end
+)
+
+-- response to successful swap
+Handlers.add(
+  'orderConfirmation',
+  Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
+  function(msg)
+    ao.send({
+      Target = Registry,
+      Action = "Swapped",
+      Input = msg.Tags["From-Quantity"],
+      ExpectedOutput = SwapExpectedOutput,
+      Actual = msg.Tags["To-Quantity"],
+      ConfirmedAt = msg.Timestamp
+    })
+  end
+)
+
 -- TRACK latest QuoteToken BALANCE
 
 Handlers.add(
-  "BalanceUpdateCredit",
+  "balanceUpdateCreditQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
   function(m)
     if m.From ~= QuoteToken then return end
@@ -189,7 +402,7 @@ Handlers.add(
 )
 
 Handlers.add(
-  "BalanceUpdateDebit",
+  "balanceUpdateDebitQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
   function(m)
     if m.From ~= QuoteToken then return end
@@ -209,6 +422,41 @@ Handlers.add(
   function(m)
     LatestQuoteTokenBal = m.Balance
     ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+  end
+)
+
+-- TRACK latest BASE TOKEN BALANCE
+
+Handlers.add(
+  "balanceUpdateCreditBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+Handlers.add(
+  "balanceUpdateDebitBaseToken",
+  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+-- response to the balance request
+Handlers.add(
+  "latestBalanceUpdateBaseToken",
+  function(m)
+    local isMatch = m.Tags.Balance ~= nil
+        and m.From == BaseToken
+        and m.Account == ao.id
+    return isMatch and -1 or 0
+  end,
+  function(m)
+    LatestBaseTokenBal = m.Balance
+    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -256,5 +504,15 @@ Handlers.add(
       ["Response-For"] = "Retire",
       Data = "Success"
     })(msg)
+  end
+)
+
+-- DEBUG / DEV
+
+Handlers.add(
+  "triggerSwapDebug",
+  Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
+  function(msg)
+    bot.swapInit()
   end
 )

@@ -1,4 +1,4 @@
-import { credSymbol } from './agent-utils';
+export const credSymbol = "AOCRED-Test" as const
 
 export const truncateId = (text: string) => {
   if (!text || text.length <= 16) return text
@@ -49,7 +49,7 @@ export const BASE_CURRENCY_PROCESS_MAP: Record<BaseToken, string> = {
   '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"
 }
 
-export const QUOTE_CURRENCIES = [credSymbol, "USDa", "USDT", ] as const
+export const QUOTE_CURRENCIES = [credSymbol, "USDa", "USDT"] as const
 export type QuoteToken = typeof QUOTE_CURRENCIES[number]
 export const QUOTE_CURRENCY_PROCESS_MAP: Record<QuoteToken, string> = {
   [credSymbol]: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",

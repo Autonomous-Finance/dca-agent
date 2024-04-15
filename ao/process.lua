@@ -91,7 +91,7 @@ Handlers.add(
   function(msg)
     -- TODO access control -> can this be trusted? or do we need additional checks
     -- like "has the expected time passed, since the last cron tick"
-    bot.SwapInit()
+    bot.swapInit()
   end
 )
 
@@ -104,7 +104,7 @@ Handlers.add(
     if m.Recipient ~= Pool then return end
 
     local transferId = m["Pushed-For"]
-    bot.SwapExec(transferId)
+    bot.swapExec(transferId)
   end
 )
 

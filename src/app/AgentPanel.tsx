@@ -4,7 +4,7 @@ import { Box, Button, Divider, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { credSymbol, depositToAgent, liquidate, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -13,6 +13,7 @@ import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
 import LiquidateDialog from "@/components/LiquidateDialog"
+import { credSymbol } from "@/utils/data-utils"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
