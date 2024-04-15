@@ -127,7 +127,7 @@ export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
   }
 
   agentInfo.ownedSince = (new Date(agentInfo.TransferredAt ?? agentInfo.CreatedAt).toLocaleString())
-  agentInfo.provenance = agentInfo.TransferredAt ? 'Transfer' : 'Created'
+  agentInfo.provenance = agentInfo.TransferredAt ? 'Transfer' : 'Created by you'
 }
 
 export const enhanceAgentStatus = (agentStatus: AgentStatus) => {

@@ -8,9 +8,10 @@ import { Box, Typography } from '@mui/material';
 function ActiveAgentPanel() {
   const agent = usePolledAgentStatusContext();
   const pathname = usePathname()
+  const isDashboard = pathname === '/'
 
   const texts = ['Loading status...']
-  if (pathname === '/') {
+  if (isDashboard) {
     texts.unshift('You have an active agent.')
   }
 
@@ -22,7 +23,9 @@ function ActiveAgentPanel() {
   return (
     <>
       {(loading) && (
-        <LoadingEmptyState texts={texts}/>
+        <Box margin={isDashboard ? '7rem auto 0' : '4rem auto 0'}>
+          <LoadingEmptyState texts={texts}/>
+        </Box>
       )}
       {(!loading && !status) && (
         <Box position={'relative'} height={400} display={'flex'} gap={4}

@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import { useRouter } from 'next/navigation';
 import { useMyAgents } from '@/hooks/useMyAgents';
 import LoadingEmptyState from './LoadingEmptyState';
-import { Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
 import AgentStatusChip from './AgentStatusChip';
 import { credSymbol } from '@/utils/data-utils';
@@ -63,17 +63,23 @@ export default function AgentsTable() {
   return (
     <>
       {loading && (
-        <LoadingEmptyState texts={['Retrieving your agents']}/>
+        <Box margin={'1rem auto 0'}>
+          <LoadingEmptyState texts={['Retrieving your agents']}/>
+        </Box>
       )}
       {!loading && !agentInfos && (
-        <Typography variant="h5" align="center" gutterBottom>
-          Could not retrieve agents.
-        </Typography>
+        <Box margin={'1rem auto 0'}>
+          <Typography variant="h5" align="center" gutterBottom>
+            Could not retrieve agents.
+          </Typography>
+        </Box>
       )}
       {!loading && agentInfos && !agentInfos.length && (
-        <Typography mt={'8rem'} variant="h5" align="center" gutterBottom>
-          No Agents Found.
-        </Typography>
+        <Box margin={'1rem auto 0'}>
+          <Typography mt={'8rem'} variant="h5" align="center" gutterBottom>
+            No Agents Found.
+          </Typography>
+        </Box>
       )}
       {!loading && !!agentInfos && !!agentInfos.length && (
         <TableContainer component={Paper}>

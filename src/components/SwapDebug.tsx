@@ -32,7 +32,7 @@ function SwapDebug() {
   return (
     <Button onClick={swap} variant="outlined"
       sx={{opacity: 0.6}}>
-      <SwapHorizIcon sx={{marginRight: 1}}/> MANUAL SWAP <BugReport sx={{marginLeft: 1}}/>
+      <SwapHorizIcon/> <BugReport/>
     </Button>
   )
 }

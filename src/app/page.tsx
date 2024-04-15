@@ -16,7 +16,7 @@ import ViewAgent from "@/components/ViewAgent"
 import { wipeRegistry } from "@/utils/agent-utils"
 import WipeDebug from "@/components/WipeDebug"
 
-export default function HomePageServer() {
+export default function HomePage() {
   const latestFromRegistry = useLatestRegisteredAgent();
 
   const {agentId, details, loading, refresh} = latestFromRegistry;
@@ -39,13 +39,17 @@ export default function HomePageServer() {
 
   return (
     <>
-      <Box margin={'8rem auto 0'}>
-        {loading && <LoadingEmptyState texts={['Retrieving your Agents...']}/>}
+      <Box margin={'2rem auto 0'}>
+          {loading && (
+            <Box margin={'7rem auto 0'}>
+              <LoadingEmptyState texts={['Retrieving your Agents...']}/>
+            </Box>
+          )}
         {!loading && foundActiveAgent && (
           <ViewAgent agentId={agentId} />
         )}
         {!loading && !foundActiveAgent && (
-          <Stack gap={8} mx={'auto'} width={600} height={400} justifyContent={'center'} alignItems={'center'}>
+          <Stack gap={8} marginTop={'7rem'} mx={'auto'} width={600} height={400} justifyContent={'center'} alignItems={'center'}>
             <Typography variant="h5" align="center" gutterBottom>
               No Recent Active Agent Found.
             </Typography>

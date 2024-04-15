@@ -2,13 +2,13 @@
 
 import { Box, Divider, Link, Stack, Typography } from "@mui/material"
 import React, { ReactNode } from "react"
-import { enhanceAgentStatus} from "@/utils/agent-utils";
+import { enhanceAgentStatus, enhanceRegisteredAgentInfo} from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
 import { shortenId } from "@/utils/ao-utils";
 import LinkIcon from '@mui/icons-material/Link';
 import AgentStatusChip from "@/components/AgentStatusChip";
 import HelpIcon from "@/components/HelpIcon";
-import { ArrowForward, ArrowRight, ArrowRightAlt, East } from "@mui/icons-material";
+import { East } from "@mui/icons-material";
 import SwapDebug from "@/components/SwapDebug";
 
 
@@ -26,6 +26,7 @@ export function AgentStatusDisplay() {
   if (!status) return <></>
 
   enhanceAgentStatus(status)
+  enhanceRegisteredAgentInfo(status)
 
   return (
     <Stack gap={4} alignItems="flex-start">
@@ -41,7 +42,9 @@ export function AgentStatusDisplay() {
 
       <Stack direction={'row'} width={'100%'}>
         <Stack flex={'grow'} width={'100%'} gap={2}>
-          {/* CONFIG */}
+          <Typography display={'flex'} fontWeight={'bold'}>
+            IDENTITY
+          </Typography>
           <InfoLine
             label={'Process ID'} 
             value={
@@ -60,43 +63,67 @@ export function AgentStatusDisplay() {
               </Link>
             }
           ></InfoLine>
+          <InfoLine
+            label={'Owned since'} 
+            value={status.ownedSince}
+            soft
+          ></InfoLine>
+          <InfoLine
+            label={'Provenance'} 
+            value={status.provenance}
+            soft
+          ></InfoLine>
 
-          <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
+          {/* <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
             -
-          </Typography>
+          </Typography> */}
+          <Box my={'12px'}><Divider /></Box>
+
           <Typography display={'flex'} fontWeight={'bold'}>
-            DCA CONFIGURATION
+            ASSETS
+          </Typography>
+          <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}
+            />
+          <InfoLine label={'Quote Balance'} value={`${status.quoteTokenBalance}`} suffix={status.quoteTokenSymbol}
+            color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
+          <InfoLine label={'Total Value (est.)'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
+
+          <Box sx={{marginTop: 'auto', marginRight: 'auto'}}>
+            <SwapDebug />
+          </Box>
+        </Stack>
+        <Box px={2}>
+          {/* <Divider orientation="vertical"/> */}
+        </Box>
+        <Stack flex={'grow'} width={'100%'} gap={2}>
+          <Typography display={'flex'} fontWeight={'bold'}>
+            DCA CONFIG
           </Typography>
           <InfoLine label='Currencies' value={
             <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'}>
               {status.quoteTokenSymbol} <East /> {status.baseTokenSymbol}
             </Typography>}/>
-          <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue} ${status.swapIntervalUnit}`}></InfoLine>
+          <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
           <InfoLine label={'Swap Amount'} value={`${status.swapInAmount}`} suffix={status.quoteTokenSymbol}></InfoLine>
-          <SwapDebug />
-        </Stack>
-        <Box px={2}>
-          <Divider orientation="vertical"/>
-        </Box>
-        <Stack flex={'grow'} width={'100%'} gap={2}>
-          {/* CURRENT VALUES */}
-          <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}
-            />
-          <InfoLine label={'Quote Balance'} value={`${status.quoteTokenBalance}`} suffix={status.quoteTokenSymbol}
-            color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
+          
           <Box my={'12px'}><Divider /></Box>
-          {/* TODO calculate real value est. based on base token price */}
+
+          <Typography display={'flex'} fontWeight={'bold'}>
+            STATISTICS
+          </Typography>
           <InfoLine label={'Total Deposited'} value={status.TotalDeposited} suffix={status.quoteTokenSymbol}/>
-          <InfoLine label={'Total Swaps'} value={status.DcaBuys.length} />
-          <InfoLine label={'Total Value (est.)'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
-          <InfoLine label={'SPR'} value={`n/A`} suffix={'%'} labelInfo={HELP_TEXT_SPR}/>
+          <InfoLine label={'Total Swaps (Active Cycles)'} value={status.DcaBuys.length} />
+          <InfoLine label={'Average Swap Price'} value={`n/A`} />
+          <InfoLine label={'Current Swap Price'} value={`n/A`}></InfoLine>
+          <InfoLine label={'SPR'} value={`n/A`} suffix={'%'} labelInfo={HELP_TEXT_SPR}/>          
+                   
         </Stack>
       </Stack>
     </Stack>
   )
 }
 
-const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string, color?: string}) => {
+const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string, color?: string, soft?: boolean}) => {
   return (
     <Stack direction={'row'} justifyContent={'space-between'} gap={2}>
       <Typography variant="body1" display={'flex'} alignItems={'center'}
@@ -106,7 +133,7 @@ const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labe
       </Typography>
       <Stack direction={'row'} gap={1}>
         {typeof props.value === 'string' && (
-          <Typography variant="body1" fontWeight={'bold'}>
+          <Typography variant="body1" fontWeight={props.soft ? 'normal' : 'bold'}>
             {props.value}
           </Typography>
         )}

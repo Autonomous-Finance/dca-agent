@@ -127,10 +127,10 @@ export function AgentPanel() {
   const BTN_WIDTH = 150
 
   return (
-    <Box maxWidth={'min-content'} mx={'auto'}>
-      <Paper variant="outlined" sx={{ padding: 4 }}>
-        <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
-          <Stack gap={4} width={696} pr={4} borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
+    <Box maxWidth={'min-content'} mx={'auto'} pb={8}>
+      <Paper variant="outlined" sx={{ padding: 4 }} >
+        <Stack direction={'row'} gap={4} minHeight={600}>
+          <Stack gap={4} width={750} pr={4} borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
             <AgentStatusDisplay/>
             <Divider />
 
@@ -188,34 +188,7 @@ export function AgentPanel() {
                 </Stack>
                 <RetirementDialog disabled={disabledActions} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
               </Stack>
-            </Stack>
-            {/* <Stack direction="row" justifyContent={'space-between'}>
-              <Typography variant="h6">
-                AOCRED-Test
-              </Typography>
-
-              <Button
-                sx={{ height: 40, width: '100%' }}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={14} /> : undefined}
-                variant="contained"
-                onClick={handleWithdrawBase}
-              >
-                Withdraw Base
-              </Button>
-              
-              <Button
-                sx={{ height: 40, width: '100%' }}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={14} /> : undefined}
-                variant="contained"
-                onClick={handleLiquidate}
-              >
-                Liquidate
-              </Button> 
-            </Stack> */}
-            
-            
+            </Stack>            
           </Stack>
           {actionLog.length > 0 && (
             <Stack flexGrow={1} gap={1} width={400}>

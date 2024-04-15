@@ -12,7 +12,7 @@ export default function MyAgents() {
       <Button component={Link} href="/create-agent"
         variant="outlined"
         color="success"
-        sx={{ fontSize: '1.25rem', marginLeft: 'auto' }}>
+        sx={{ fontSize: '1.25rem', margin: 'auto' }}>
         Create Agent <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>
       </Button>
 
