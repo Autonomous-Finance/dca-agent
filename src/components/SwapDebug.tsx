@@ -9,8 +9,6 @@ import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { swapDebug } from '../utils/agent-utils';
 
 function SwapDebug() {
-  const [loading, setLoading] = React.useState(false)
-
   const agent = usePolledAgentStatusContext();
 
   if (!agent) return <></>
@@ -22,9 +20,7 @@ function SwapDebug() {
   enhanceAgentStatus(status)
 
   const swap = async () => {
-    setLoading(true)
     const result = await swapDebug(agent.agentId)
-    setLoading(false)
     if (result?.type === "Success") {
       const msgId = result.result
       console.log('swap triggered. msgId: ', msgId)

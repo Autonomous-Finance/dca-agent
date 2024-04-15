@@ -424,11 +424,13 @@ Handlers.add(
     ao.send({
       Target = Registry,
       Action = "Swapped",
-      Input = msg.Tags["From-Quantity"],
       ExpectedOutput = SwapExpectedOutput,
-      Actual = msg.Tags["To-Quantity"],
-      ConfirmedAt = msg.Timestamp
+      InputAmount = msg.Tags["From-Quantity"],
+      ActualOutput = msg.Tags["To-Quantity"],
+      ConfirmedAt = tostring(msg.Timestamp)
     })
+    SwapExpectedOutput = nil
+    TransferId = nil
   end
 )
 

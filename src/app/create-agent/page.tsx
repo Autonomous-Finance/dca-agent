@@ -53,9 +53,9 @@ export default function CreateAgent() {
 
   const [currency, setCurrency] = React.useState<BaseToken>("BRKTST")
   const [agentName, setAgentName] = React.useState(defaultAgentName)
-  const [swapInAmount, setSwapInAmount] = React.useState("100")
-  const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Days")
-  const [swapIntervalValue, setSwapIntervalValue] = React.useState("10")
+  const [swapInAmount, setSwapInAmount] = React.useState("10")
+  const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Minutes")
+  const [swapIntervalValue, setSwapIntervalValue] = React.useState("1")
   // const [slippage, setSlippage] = React.useState("")
   const [selectedPools, setSelectedPools] = React.useState<LiquidityPool[]>(["Bark"])
 
@@ -461,7 +461,7 @@ export default function CreateAgent() {
               
               {deployed && (
                 <Button
-                  sx={{ height: 40, width: BTN_WIDTH}}
+                  sx={{ height: 40, width: BTN_WIDTH, margin: '1rem auto 0'}}
                   endIcon={<MemoryIcon/>}
                   variant="contained"
                   color="primary"

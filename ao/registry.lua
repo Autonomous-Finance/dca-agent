@@ -256,10 +256,10 @@ Handlers.add(
     end
     local dcaBuys = agentInfo.DcaBuys
     table.insert(dcaBuys, {
-      Timestamp = msg.Tags.ConfirmedAt,
-      Input = msg.Tags.Input,
+      ConfirmedAt = msg.Tags.ConfirmedAt,
+      InAmount = msg.Tags.InAmount,
       ExpectedOutput = msg.Tags.ExpectedOutput,
-      Actual = msg.Tags.Actual,
+      ActualOutput = msg.Tags.ActualOutput,
     })
     Handlers.utils.reply({
       ["Response-For"] = "Swapped",
