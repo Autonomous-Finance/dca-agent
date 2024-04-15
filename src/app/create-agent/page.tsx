@@ -238,7 +238,7 @@ export default function CreateAgent() {
     }
   }
 
-  const BTN_WIDTH = 250
+  const BTN_WIDTH = 315
 
   const selectedPoolChip = ({selPool}: {selPool: LiquidityPool}) => (
     <Chip key={selPool} label={selPool} sx={{fontSize: '1rem', letterSpacing: '0.1rem', height: '23px', padding: '0 4px'}}
@@ -255,224 +255,232 @@ export default function CreateAgent() {
     <Box margin={'4rem auto 0'}>
       <Box maxWidth={'min-content'} mx={'auto'}>
         <Paper variant="outlined" sx={{ padding: 4}}>
-          <Stack gap={4} alignItems={'stretch'} width={600}>
-            <Typography variant="h6">Create New Agent</Typography>
+          <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
 
-            <Stack direction="row" gap={2} alignItems="stretch">
-              <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
-                <FormControl fullWidth>
-                  <TextField
-                    disabled={loading}
-                    size="small"
-                    value={agentName}
-                    onChange={(e) => setAgentName(e.target.value)}
-                    type="text"
-                    label="Name"
-                    placeholder="MrSmith_2143"
-                  />
-                </FormControl>
-                <Stack width={'100%'} gap={3}>
-                  <Typography variant="body1" color="text.primary">Currencies</Typography>
-                  <Stack direction={'row'} gap={1}>
-                    <FormControl fullWidth>
-                      <InputLabel id="base-token-label">Base Token</InputLabel>
-                      <Select
-                        labelId="base-token-label"
-                        id="base-token"
-                        value={currency}
-                        label="Base Token"
-                        disabled={disableForm}
-                        onChange={(e) => setCurrency(e.target.value as BaseToken)}
-                      >
-                        {BASE_CURRENCIES.map((currency) => (
-                          <MenuItem key={currency} value={currency} disabled={currency !== "BRKTST"}>
-                            {currency}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl fullWidth>
-                      <InputLabel id="quote-token-label">Quote Token</InputLabel>
-                      <Select
-                        labelId="quote-token-label"
-                        id="quote-token"
-                        value={credSymbol}
-                        label="quote Token"
-                        disabled={disableForm}
-                      >
-                        {QUOTE_CURRENCIES.map((currency) => (
-                          <MenuItem key={currency} value={currency} disabled={currency !== credSymbol}>
-                            {currency}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Stack>
+            <Stack gap={4} alignItems={'stretch'} width={700} pr={4} borderRight={deployLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
+              <Typography variant="h6">Create New Agent</Typography>
+
+              <Stack direction="row" gap={2} alignItems="stretch">
+                <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
                   <FormControl fullWidth>
-                    <InputLabel id="liquidity-pools">
-                      {`Liquidity Pools for BRKTST/${credSymbol}`}
-                    </InputLabel>
-                    <Select
-                      id="liquidity-pools"
-                      value={selectedPools}
-                      label={`Liquidity Pools for BRKTST/${credSymbol}`}
-                      multiple
-                      required
-                      renderValue={(selected) => (
-                        <Stack gap={1} direction="row" flexWrap="wrap">
-                          {selected.map((selPool) => selectedPoolChip({selPool}))}
-                        </Stack>
-                      )}
-                    >
-                      {LIQUIDITY_POOLS.map((pool) => (
-                        <MenuItem key={pool} value={pool}
-                            disabled={pool !== "Bark"}
-                            sx={{justifyContent: 'space-between'}}
-                            onClick={() => setSelectedPools(pools => pools.includes(pool) ? pools.filter(p => p !== pool) : [...pools, pool])}
-                          >
-                            <Stack direction={'row'} justifyContent={'space-between'} width="100%">
-                              <Typography fontSize={'1.125rem'}>{pool}</Typography>
-                              <Typography fontFamily={'Courier New'} fontSize={'1.125rem'}>
-                                {shortenId(LIQUIDITY_POOL_MAP[pool].processId)}
-                              </Typography>
-                            </Stack>
-                            <CheckIcon color="info" sx={{marginLeft: '0.25rem', opacity : selectedPools.includes(pool) ? 1 : 0}}/>
-                        </MenuItem>
-                      ))}
-                    </Select>
+                    <TextField
+                      disabled={loading}
+                      size="small"
+                      value={agentName}
+                      onChange={(e) => setAgentName(e.target.value)}
+                      type="text"
+                      label="Name"
+                      placeholder="MrSmith_2143"
+                    />
                   </FormControl>
-                  <FormGroup sx={{marginTop: -2}}>
-                    <FormControlLabel disabled control={<Checkbox />} label="Use Global RFQ" />
-                  </FormGroup>
-                </Stack>
-                <Stack width={'100%'} gap={3}>
-                  <Typography variant="body1" color="text.primary">DCA Configuration</Typography>
-                  
-                  <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                  <Stack width={'100%'} gap={3}>
+                    <Typography variant="body1" color="text.primary">Currencies</Typography>
+                    <Stack direction={'row'} gap={1}>
+                      <FormControl fullWidth>
+                        <InputLabel id="base-token-label">Base Token</InputLabel>
+                        <Select
+                          labelId="base-token-label"
+                          id="base-token"
+                          value={currency}
+                          label="Base Token"
+                          disabled={disableForm}
+                          onChange={(e) => setCurrency(e.target.value as BaseToken)}
+                        >
+                          {BASE_CURRENCIES.map((currency) => (
+                            <MenuItem key={currency} value={currency} disabled={currency !== "BRKTST"}>
+                              {currency}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <FormControl fullWidth>
+                        <InputLabel id="quote-token-label">Quote Token</InputLabel>
+                        <Select
+                          labelId="quote-token-label"
+                          id="quote-token"
+                          value={credSymbol}
+                          label="quote Token"
+                          disabled={disableForm}
+                        >
+                          {QUOTE_CURRENCIES.map((currency) => (
+                            <MenuItem key={currency} value={currency} disabled={currency !== credSymbol}>
+                              {currency}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Stack>
                     <FormControl fullWidth>
-                      <TextField
-                        disabled={loading}
-                        required
-                        size="small"
-                        value={swapIntervalValue}
-                        onChange={(e) => setSwapIntervalValue(e.target.value)}
-                        type="number"
-                        label="Interval"
-                        // error={error !== ""}
-                        // helperText={error}
-                      />
-                    </FormControl>
-                    <FormControl fullWidth>
-                      <InputLabel id="interval-unit-label"></InputLabel>
+                      <InputLabel id="liquidity-pools">
+                        {`Liquidity Pools for BRKTST/${credSymbol}`}
+                      </InputLabel>
                       <Select
-                        size="small"
-                        disabled={loading}
-                        labelId="interval-unit-label"
-                        id="interval-unit"
-                        value={swapIntervalUnit}
-                        label=""
-                        onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
+                        id="liquidity-pools"
+                        value={selectedPools}
+                        label={`Liquidity Pools for BRKTST/${credSymbol}`}
+                        multiple
+                        required
+                        renderValue={(selected) => (
+                          <Stack gap={1} direction="row" flexWrap="wrap">
+                            {selected.map((selPool) => selectedPoolChip({selPool}))}
+                          </Stack>
+                        )}
                       >
-                        {INTERVAL_UNITS.map((unit) => (
-                          <MenuItem key={unit} value={unit}>
-                            {unit}
+                        {LIQUIDITY_POOLS.map((pool) => (
+                          <MenuItem key={pool} value={pool}
+                              disabled={pool !== "Bark"}
+                              sx={{justifyContent: 'space-between'}}
+                              onClick={() => setSelectedPools(pools => pools.includes(pool) ? pools.filter(p => p !== pool) : [...pools, pool])}
+                            >
+                              <Stack direction={'row'} justifyContent={'space-between'} width="100%">
+                                <Typography fontSize={'1.125rem'}>{pool}</Typography>
+                                <Typography fontFamily={'Courier New'} fontSize={'1.125rem'}>
+                                  {shortenId(LIQUIDITY_POOL_MAP[pool].processId)}
+                                </Typography>
+                              </Stack>
+                              <CheckIcon color="info" sx={{marginLeft: '0.25rem', opacity : selectedPools.includes(pool) ? 1 : 0}}/>
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
+                    <FormGroup sx={{marginTop: -2}}>
+                      <FormControlLabel disabled control={<Checkbox />} label="Use Global RFQ" />
+                    </FormGroup>
                   </Stack>
-                  <TextField
+                  <Stack width={'100%'} gap={3}>
+                    <Typography variant="body1" color="text.primary">DCA Configuration</Typography>
+                    
+                    <Stack direction="row" gap={1} sx={{width: "100%"}}>
+                      <FormControl fullWidth>
+                        <TextField
+                          disabled={loading}
+                          required
+                          size="small"
+                          value={swapIntervalValue}
+                          onChange={(e) => setSwapIntervalValue(e.target.value)}
+                          type="number"
+                          label="Interval"
+                          // error={error !== ""}
+                          // helperText={error}
+                        />
+                      </FormControl>
+                      <FormControl fullWidth>
+                        <InputLabel id="interval-unit-label"></InputLabel>
+                        <Select
+                          size="small"
+                          disabled={loading}
+                          labelId="interval-unit-label"
+                          id="interval-unit"
+                          value={swapIntervalUnit}
+                          label=""
+                          onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
+                        >
+                          {INTERVAL_UNITS.map((unit) => (
+                            <MenuItem key={unit} value={unit}>
+                              {unit}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Stack>
+                    <TextField
+                      disabled={loading}
+                      required
+                      size="small"
+                      value={swapInAmount}
+                      onChange={(e) => setSwapInAmount(e.target.value)}
+                      type="number"
+                      label="Swap Amount"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">{credSymbol}</InputAdornment>
+                        ),
+                      }}
+                      // error={error !== ""}
+                      // helperText={error}
+                    />
+                  </Stack>
+                  {/* <TextField
                     disabled={loading}
-                    required
                     size="small"
-                    value={swapInAmount}
-                    onChange={(e) => setSwapInAmount(e.target.value)}
+                    sx={{ width: "100%" }}
+                    value={slippage}
+                    onChange={(e) => setSlippage(e.target.value)}
                     type="number"
-                    label="Swap Amount"
+                    label="Max Slippage"
                     InputProps={{
                       endAdornment: (
-                        <InputAdornment position="end">{credSymbol}</InputAdornment>
+                        <InputAdornment position="end">%</InputAdornment>
                       ),
                     }}
-                    // error={error !== ""}
-                    // helperText={error}
-                  />
+                    error={error !== ""}
+                    helperText={error}
+                  /> */}
+                  <Stack width="100%" mt="auto" gap={1}>
+                    {validationError && <Typography color="error">{validationError}</Typography>}
+                    <Button
+                      sx={{ height: 40, width: '100%' }}
+                      disabled={disableForm}
+                      startIcon={loading ? <CircularProgress size={14} /> : undefined}
+                      endIcon={<RocketLaunchIcon />}
+                      variant="contained"
+                      color="success"
+                      onClick={handleDeploy}
+                    >
+                      Deploy DCA Agent
+                    </Button>
+                  </Stack>
                 </Stack>
-                {/* <TextField
-                  disabled={loading}
-                  size="small"
-                  sx={{ width: "100%" }}
-                  value={slippage}
-                  onChange={(e) => setSlippage(e.target.value)}
-                  type="number"
-                  label="Max Slippage"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
-                  error={error !== ""}
-                  helperText={error}
-                /> */}
-                <Stack width="100%" mt="auto" gap={1}>
-                  {validationError && <Typography color="error">{validationError}</Typography>}
-                  <Button
-                    sx={{ height: 40, width: '100%' }}
-                    disabled={disableForm}
-                    startIcon={loading ? <CircularProgress size={14} /> : undefined}
-                    endIcon={<RocketLaunchIcon />}
-                    variant="contained"
-                    color="success"
-                    onClick={handleDeploy}
+                <Box sx={{flexGrow: 1, position: 'relative', transform: 'translateX(8px)' }}>
+                  <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
+                    display={'flex'} flexDirection={'column'} alignItems={'center'} justifyContent={'flex-start'}
+                    sx={{opacity: 0.05}}
                   >
-                    Deploy DCA Agent
-                  </Button>
-                </Stack>
+                    <Box sx={{marginTop: '-50px'}}><Image alt="icon" width={200} height={200} src={'/ao.svg'}/></Box>
+                    <Box sx={{marginTop: '-34px'}}><Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/></Box>
+                  </Box>
+                  <Box
+                    sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="flex-end"
+                    flexDirection="column"
+                  >
+                    {/* <Box> */}
+                      <Typography paragraph>
+                        Deployment will create an agent process as configured.
+                      </Typography>
+                      <Typography paragraph>
+                        You own and control this agent via your connected AR wallet account.
+                      </Typography>
+                    {/* </Box> */}
+                    <AgentCodeModalButton />
+                  </Box>
+                </Box>
               </Stack>
-              <Box sx={{flexGrow: 1, position: 'relative' }}>
-                <Box position={"absolute"} top={0} left={0} width={'100%'} height={'100%'}
-                  display={'flex'} flexDirection={'column'} alignItems={'center'} justifyContent={'flex-start'}
-                  sx={{opacity: 0.05}}
+              
+              {deployed && (
+                <Button
+                  sx={{ height: 40, width: BTN_WIDTH}}
+                  endIcon={<MemoryIcon/>}
+                  variant="contained"
+                  color="primary"
+                  onClick={navigateToDeployedAgent}
                 >
-                  <Box sx={{marginTop: '-50px'}}><Image alt="icon" width={200} height={200} src={'/ao.svg'}/></Box>
-                  <Box sx={{marginTop: '-30px'}}><Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/></Box>
-                </Box>
-                <Box
-                  sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="flex-end"
-                  flexDirection="column"
-                >
-                  {/* <Box> */}
-                    <Typography paragraph>
-                      Deployment will create an agent process as configured.
-                    </Typography>
-                    <Typography paragraph>
-                      You own and control this agent via your connected AR wallet account.
-                    </Typography>
-                  {/* </Box> */}
-                  <AgentCodeModalButton />
-                </Box>
-              </Box>
+                  Control Panel
+                </Button>
+              )}
+
             </Stack>
 
-            {deployLog.length > 0 && <Divider />}
-
-            <Log log={deployLog}/>
-            
-            {deployed && (
-              <Button
-                sx={{ height: 40, width: BTN_WIDTH}}
-                endIcon={<MemoryIcon/>}
-                variant="contained"
-                color="primary"
-                onClick={navigateToDeployedAgent}
-              >
-                Control Panel
-              </Button>
+            {deployLog.length > 0 && (
+              <Stack flexGrow={1} gap={1} width={400}>
+                <Typography variant="h6">
+                  Deploy Log
+                </Typography>
+                <Log log={deployLog}/>
+              </Stack>
             )}
-
           </Stack>
         </Paper>
       </Box>
