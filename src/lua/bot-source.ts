@@ -6,13 +6,9 @@ Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on test
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
-SlippageTolerance = SlippageTolerance or nil -- basis points
-
+SlippageTolerance = SlippageTolerance or nil   -- basis points
 
 SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
-
-LatestPrice = LatestPrice or nil               -- price of BaseToken expressed in QuoteToken
--- used by frontend to express simulated swap results
 
 local bot = {}
 
@@ -23,12 +19,6 @@ bot.init = function()
     Token = BaseToken,
     Quantity = SwapInAmount
   })
-end
-
-bot.updatePrice = function(msg)
-  if msg.From == Pool and msg.Price ~= nil then
-    LatestPrice = msg.Price
-  end
 end
 
 bot.swapInit = function()
@@ -44,7 +34,7 @@ end
 bot.swapExec = function()
   assert(type(TransferId) == 'string', 'transferId is required!')
   -- swap interaction
-  ao.message({
+  ao.send({
     Target = Pool,
     Action = "Swap",
     Transfer = TransferId,
@@ -309,23 +299,80 @@ Handlers.add(
   end
 )
 
--- TRACK latest price
+-- TRACK latest QuoteToken BALANCE -- ! keep these handlers here at the top of the file (continue patterns)
 
 Handlers.add(
-  'requestLatestPrice',
-  Handlers.utils.hasMatchingTag('Action', 'RequestLatestPrice'),
-  function(msg)
-    ao.send({ Target = Pool, Action = "Get-Price", Token = BaseToken })
+  "balanceUpdateCreditQuoteToken",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  function(m)
+    if m.From ~= QuoteToken then return end
+    ao.send({ Target = QuoteToken, Action = "Balance" })
+    if m.Sender == Pool then return end -- do not register pool refunds as deposits
+    ao.send({
+      Target = Registry,
+      Action = "Deposited",
+      Sender = m.Tags.Sender,
+      Quantity = m.Quantity
+    })
   end
 )
 
 Handlers.add(
-  'latestPriceUpdate',
-  patterns.continue(function(m)
-    return m.Tags.Price ~= nil and m.From == Pool
-  end),
+  "balanceUpdateDebitQuoteToken",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
-    LatestPrice = m.Price
+    if m.From ~= QuoteToken then return end
+    ao.send({ Target = QuoteToken, Action = "Balance" })
+  end
+)
+
+-- response to the balance request
+Handlers.add(
+  "latestBalanceUpdateQuoteToken",
+  function(m)
+    local isMatch = m.Tags.Balance ~= nil
+        and m.From == QuoteToken
+        and m.Target == ao.id
+    return isMatch and -1 or 0
+  end,
+  function(m)
+    LatestQuoteTokenBal = m.Balance
+    ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+  end
+)
+
+-- TRACK latest BASE TOKEN BALANCE -- ! keep these handlers here at the top of the file (continue patterns)
+
+Handlers.add(
+  "balanceUpdateCreditBaseToken",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+Handlers.add(
+  "balanceUpdateDebitBaseToken",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  function(m)
+    if m.From ~= BaseToken then return end
+    ao.send({ Target = BaseToken, Action = "Balance" })
+  end
+)
+
+-- response to the balance request
+Handlers.add(
+  "latestBalanceUpdateBaseToken",
+  function(m)
+    local isMatch = m.Tags.Balance ~= nil
+        and m.From == BaseToken
+        and m.Target == ao.id
+    return isMatch and -1 or 0
+  end,
+  function(m)
+    LatestBaseTokenBal = m.Balance
+    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -334,7 +381,7 @@ Handlers.add(
 -- response to the bot transferring quote token to the pool, in order to prepare the swap
 Handlers.add(
   "requestSwapOutputOnDebitNotice",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
   function(m)
     -- ensure this was a transfer from the bot to the pool as preliminary to the swap
     if m.From ~= QuoteToken then return end
@@ -354,13 +401,14 @@ Handlers.add(
 -- response to the price request
 Handlers.add(
   'swapExecOnGetPriceResponse',
-  patterns.continue(function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil
-  end),
+  function(msg)
+    return msg.From == Pool and msg.Tags.Price ~= nil -- the only time we request a price is before a swap
+  end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
     ao.send({
       Target = ao.id,
+      Action = "SelfSignal",
       Data = "Attempt executing swap with trasnferid: " ..
           TransferId .. 'and expected output ' .. SwapExpectedOutput
     })
@@ -381,82 +429,6 @@ Handlers.add(
       Actual = msg.Tags["To-Quantity"],
       ConfirmedAt = msg.Timestamp
     })
-  end
-)
-
--- TRACK latest QuoteToken BALANCE
-
-Handlers.add(
-  "balanceUpdateCreditQuoteToken",
-  Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
-  function(m)
-    if m.From ~= QuoteToken then return end
-    ao.send({ Target = QuoteToken, Action = "Balance" })
-    ao.send({
-      Target = Registry,
-      Action = "Deposited",
-      Sender = m.Tags.Sender,
-      Quantity = m.Quantity
-    })
-  end
-)
-
-Handlers.add(
-  "balanceUpdateDebitQuoteToken",
-  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
-  function(m)
-    if m.From ~= QuoteToken then return end
-    ao.send({ Target = QuoteToken, Action = "Balance" })
-  end
-)
-
--- response to the balance request
-Handlers.add(
-  "latestBalanceUpdateQuoteToken",
-  function(m)
-    local isMatch = m.Tags.Balance ~= nil
-        and m.From == QuoteToken
-        and m.Account == ao.id
-    return isMatch and -1 or 0
-  end,
-  function(m)
-    LatestQuoteTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
-  end
-)
-
--- TRACK latest BASE TOKEN BALANCE
-
-Handlers.add(
-  "balanceUpdateCreditBaseToken",
-  Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
-  function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
-  end
-)
-
-Handlers.add(
-  "balanceUpdateDebitBaseToken",
-  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
-  function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
-  end
-)
-
--- response to the balance request
-Handlers.add(
-  "latestBalanceUpdateBaseToken",
-  function(m)
-    local isMatch = m.Tags.Balance ~= nil
-        and m.From == BaseToken
-        and m.Account == ao.id
-    return isMatch and -1 or 0
-  end,
-  function(m)
-    LatestBaseTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 

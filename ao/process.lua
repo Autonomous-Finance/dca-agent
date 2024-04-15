@@ -77,13 +77,6 @@ Handlers.add(
 
 -- DCA
 
--- to be riggered by dedicated cron
-Handlers.add(
-  "updatePrice",
-  Handlers.utils.hasMatchingTag("Action", "UpdatePrice"),
-  bot.updatePrice()
-)
-
 -- to be triggered by dedicated cron proxy
 Handlers.add(
   "triggerBuy",
