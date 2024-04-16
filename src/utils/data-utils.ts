@@ -66,7 +66,7 @@ export const QUOTE_CURRENCY_PROCESS_MAP: Record<QuoteToken, string> = {
   USDT: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
 }
 
-export const INTERVAL_UNITS = ["Minutes", "Hours", "Days"] as const
+export const INTERVAL_UNITS = ["Seconds", "Minutes", "Hours", "Days"] as const
 export type IntervalUnit = typeof INTERVAL_UNITS[number]
 
 

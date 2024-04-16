@@ -404,6 +404,12 @@ Handlers.add(
     TransferId = m["Pushed-For"]
 
     ao.send({
+      Target = ao.id,
+      Action = "SelfSignalTransferId",
+      Data = "Got TransferId " .. TransferId
+    })
+
+    ao.send({
       Target = Pool,
       Action = "Get-Price",
       Token = QuoteToken,
@@ -422,9 +428,8 @@ Handlers.add(
     SwapExpectedOutput = msg.Tags.Price
     ao.send({
       Target = ao.id,
-      Action = "SelfSignal",
-      Data = "Attempt executing swap with trasnferid: " ..
-          TransferId .. 'and expected output ' .. SwapExpectedOutput
+      Action = "SelfSignalSwapExec",
+      Data = "Attempt executing swap with expected output " .. SwapExpectedOutput
     })
     bot.swapExec()
   end

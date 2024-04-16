@@ -90,7 +90,7 @@ export default function CreateAgent() {
       addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
 
       const cronInterval = cronDuration(swapIntervalUnit, Number.parseInt(swapIntervalValue))
-debugger
+
       const processId = await spawn({
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
         scheduler: "TZ7o7SIZ06ZEJ14lXwVtng1EtSx60QkPy-kh-kdAXog",
