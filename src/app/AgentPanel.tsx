@@ -124,7 +124,7 @@ export function AgentPanel() {
     }
   }
 
-  const BTN_WIDTH = 150
+  const BTN_WIDTH = 165
 
   return (
     <Box maxWidth={'min-content'} mx={'auto'} pb={8}>

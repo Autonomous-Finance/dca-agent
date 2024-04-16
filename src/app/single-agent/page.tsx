@@ -19,7 +19,7 @@ export default function SingleAgent() {
 
   const canGoBack = noback !== "1"
 
-  const {loading, isOwn, registeredAgent} = useSingleRegisteredAgent(id)
+  const {loading, isOwn } = useSingleRegisteredAgent(id)
 
   const displayNotMyAgent = !!id && !loading && !isOwn
   const displayAgentPanel = !!id && !loading && isOwn

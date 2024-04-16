@@ -512,7 +512,7 @@ export const swapDebug = async (agentId: string) => {
     const swapMsgId = await ao.message({
       process: agentId,
       tags: [
-        { name: "Action", value: "TriggerSwapDebug" },
+        { name: "Action", value: "TriggerSwap" },
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })

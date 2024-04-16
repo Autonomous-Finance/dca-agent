@@ -218,6 +218,17 @@ Handlers.add(
 
 -- SWAP
 
+Handlers.add(
+  "triggerSwap",
+  Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
+  function(msg)
+    -- if msg.Sender ~= CronTriggerProcess then return end
+    ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
+    bot.swapInit()
+  end
+)
+
+
 -- response to the bot transferring quote token to the pool, in order to prepare the swap
 Handlers.add(
   "requestSwapOutputOnDebitNotice",
@@ -318,15 +329,5 @@ Handlers.add(
       ["Response-For"] = "Retire",
       Data = "Success"
     })(msg)
-  end
-)
-
--- DEBUG / DEV
-
-Handlers.add(
-  "triggerSwapDebug",
-  Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
-  function(msg)
-    bot.swapInit()
   end
 )

@@ -22,7 +22,7 @@ import {
 import React from "react"
 
 
-import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP, credSymbol } from '@/utils/data-utils';
+import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP, credSymbol, cronDuration } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -31,6 +31,7 @@ import {
   dryrun,
   message,
   spawn,
+  monitor,
   result,
 } from "@permaweb/aoconnect/browser"
 import { BOT_SOURCE } from "@/lua/bot-source"
@@ -88,12 +89,17 @@ export default function CreateAgent() {
 
       addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
 
+      const cronInterval = cronDuration(swapIntervalUnit, Number.parseInt(swapIntervalValue))
+debugger
       const processId = await spawn({
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
         scheduler: "TZ7o7SIZ06ZEJ14lXwVtng1EtSx60QkPy-kh-kdAXog",
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Process-Type", value: "AF-DCA-Agent" },
+          { name: "Name", value: agentName },
+          { name: "Cron-Interval", value: cronInterval },
+          { name: "Cron-Tag-Action", value: "TriggerSwap" },
           { name: "Deployer", value: await window.arweaveWallet?.getActiveAddress()}
         ],
       })
@@ -124,7 +130,7 @@ export default function CreateAgent() {
 
       // Initialize (& Config)
 
-      addToLog({text: 'Initializing...', hasLink: false})
+      addToLog({text: 'Initializing Agent...', hasLink: false})
 
       const initMsgId = await message({
         process: processId,
@@ -154,10 +160,22 @@ export default function CreateAgent() {
         setLoading(false);
         return
       }
+      
+      // cron monitoring
 
+      addToLog({text: 'Starting cron monitor...', hasLink: false})
+      
+      const monitorMsgId = await monitor({
+        process: processId,
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+      
+      console.log('📜 LOG > monitorMsgId:', monitorMsgId)
+      
+      // Register with Registry
+      
       addToLog({text: 'Registering agent...', hasLink: false})
 
-      // Register with Registry
       const registerMsgId = await message({
         process: REGISTRY,
         signer: createDataItemSigner(window.arweaveWallet),
@@ -254,7 +272,7 @@ export default function CreateAgent() {
 
   return (
     <Box margin={'4rem auto 0'}>
-      <Box maxWidth={'min-content'} mx={'auto'}>
+      <Box maxWidth={'min-content'} mx={'auto'} pb={8}>
         <Paper variant="outlined" sx={{ padding: 4}}>
           <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
 
@@ -441,6 +459,12 @@ export default function CreateAgent() {
                     <Box sx={{marginTop: '-50px'}}><Image alt="icon" width={200} height={200} src={'/ao.svg'}/></Box>
                     <Box sx={{marginTop: '-34px'}}><Image alt="icon" width={200} height={200} src={TYPE_ICON_MAP["Process"]}/></Box>
                   </Box>
+                  {loading && (
+                    <Box position={"absolute"} top={'191px'} left={0} width={'100%'}
+                      display={'flex'} justifyContent={'center'}>
+                      <CircularProgress size={64}/>
+                    </Box>
+                  )}
                   <Box
                     sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
                     display="flex"

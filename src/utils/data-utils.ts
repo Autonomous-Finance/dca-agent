@@ -15,6 +15,15 @@ export function hashString(str: string) {
   return hash
 }
 
+export function cronDuration(unit: IntervalUnit, value: number ) {
+
+  // account for singular/plural
+  const unitAdjusted = value === 1
+    ? unit.slice(0, -1)
+    : unit
+  return `${value}-${unitAdjusted.toLocaleLowerCase()}`
+}
+
 export const TYPE_ICON_MAP: Record<string, any> = {
   Process: "/process.svg",
   Message: "/message.svg",

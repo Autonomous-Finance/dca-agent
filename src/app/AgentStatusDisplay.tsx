@@ -1,6 +1,6 @@
 "use client"
 
-import { Box, Divider, Link, Stack, Typography } from "@mui/material"
+import { Box, Divider, Link, Paper, Stack, Typography } from "@mui/material"
 import React, { ReactNode } from "react"
 import { enhanceAgentStatus, enhanceRegisteredAgentInfo} from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
