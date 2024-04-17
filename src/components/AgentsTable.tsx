@@ -15,7 +15,7 @@ import LoadingEmptyState from './LoadingEmptyState';
 import { Box, Typography } from '@mui/material';
 import { enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
 import AgentStatusChip from './AgentStatusChip';
-import { credSymbol } from '@/utils/data-utils';
+import { credSymbol, displayableCurrency } from '@/utils/data-utils';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -108,7 +108,7 @@ export default function AgentsTable() {
                   </StyledTableCell>
                   <StyledTableCell align="right">
                     <Typography component='span'>
-                      <Typography component='span' fontWeight={'bold'} color="text.primary">{agentInfo.QuoteTokenBalance}</Typography>
+                      <Typography component='span' fontWeight={'medium'} color="text.primary">{displayableCurrency(agentInfo.QuoteTokenBalance)}</Typography>
                       <Typography component='span' variant="body1" color="text.secondary">{" "}{credSymbol}</Typography>
                     </Typography>
                   </StyledTableCell>

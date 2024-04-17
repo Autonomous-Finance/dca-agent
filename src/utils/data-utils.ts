@@ -15,6 +15,16 @@ export function hashString(str: string) {
   return hash
 }
 
+// ! assumes 3 decimals (token denomination == 3)
+export function displayableCurrency(amount: string) {
+  return (Number.parseFloat(amount) / 1000).toFixed(2)
+}
+
+
+export function submittableCurrency(amount: string) {
+  return (Number.parseFloat(amount) * 1000).toFixed(0)
+}
+
 export function cronDuration(unit: IntervalUnit, value: number ) {
 
   // account for singular/plural

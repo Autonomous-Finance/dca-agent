@@ -67,7 +67,12 @@ export default function RetirementDialog(props: {loading: boolean, disabled?: bo
             <Stack gap={1}>
               <Typography color="text.primary">You are about to retire your agent.</Typography>
               <Typography color="text.primary">After retiring you will no longer be able to use it.</Typography>
-              {hasFunds && <Typography color="error">Your agent has non-zero balances. Please liquidate in order to perform this action.</Typography>}
+              {hasFunds && (
+                <>
+                  <Typography color="error">Your agent has non-zero balances.</Typography>
+                  <Typography color="error">Please LIQUIDATE in order to perform this action.</Typography>
+                </>
+              )}
             </Stack>
           </DialogContentText>
         </DialogContent>

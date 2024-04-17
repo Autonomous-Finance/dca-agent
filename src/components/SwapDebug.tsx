@@ -7,9 +7,11 @@ import { enhanceAgentStatus } from '@/utils/agent-utils';
 import { BugReport } from '@mui/icons-material';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { swapDebug } from '../utils/agent-utils';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 function SwapDebug() {
   const agent = usePolledAgentStatusContext();
+  const [loading, setLoading] = React.useState(false)
 
   if (!agent) return <></>
 
@@ -20,7 +22,9 @@ function SwapDebug() {
   enhanceAgentStatus(status)
 
   const swap = async () => {
+    setLoading(true)
     const result = await swapDebug(agent.agentId)
+    setLoading(false)
     if (result?.type === "Success") {
       const msgId = result.result
       console.log('swap triggered. msgId: ', msgId)
@@ -32,7 +36,7 @@ function SwapDebug() {
   return (
     <Button onClick={swap} variant="outlined"
       sx={{opacity: 0.6}}>
-      <SwapHorizIcon/> <BugReport/>
+      <SwapHorizIcon/> <BugReport/> {loading && <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>}
     </Button>
   )
 }

@@ -3,9 +3,10 @@ Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on test
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
-SlippageTolerance = SlippageTolerance or nil   -- percentage value (22.33 for 22.33%)
+SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.33 for 22.33%)
 
-SwapExpectedOutput = SwapExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
+SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
 local bot = {}
 
@@ -29,7 +30,7 @@ bot.swapInit = function()
 end
 
 bot.swapExec = function()
-  assert(type(TransferId) == 'string', 'transferId is required!')
+  assert(type(TransferId) == 'string', 'TransferId is missing!')
   -- swap interaction
   ao.send({
     Target = Pool,
@@ -38,6 +39,29 @@ bot.swapExec = function()
     Pool = Pool,
     ["Slippage-Tolerance"] = SlippageTolerance or "1",
     ["Expected-Output"] = SwapExpectedOutput,
+  })
+end
+
+bot.swapBackInit = function()
+  -- prepare swap back
+  ao.send({
+    Target = BaseToken,
+    Action = "Transfer",
+    Quantity = LatestBaseTokenBal,
+    Recipient = Pool
+  })
+end
+
+bot.swapBackExec = function()
+  assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
+  -- swap interaction
+  ao.send({
+    Target = Pool,
+    Action = "Swap",
+    Transfer = TransferIdSwapBack,
+    Pool = Pool,
+    ["Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["Expected-Output"] = SwapBackExpectedOutput,
   })
 end
 

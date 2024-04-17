@@ -19,6 +19,24 @@ LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 
 Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
+
+-- helper
+
+local withdrawToken = function(type, quantity)
+  local Token = type == 'quote' and QuoteToken or BaseToken
+  return function(msg)
+    ownership.onlyOwner(msg)
+    validations.optionalQuantity(msg)
+    ao.send({
+      Target = Token,
+      Action = "Transfer",
+      Quantity = quantity,
+      Recipient = Owner
+    })
+  end
+end
+
+
 -- INIT & CONFIG
 
 Handlers.add(
@@ -57,8 +75,10 @@ Handlers.add(
       baseTokenBalance = LatestBaseTokenBal,
       quoteTokenBalance = LatestQuoteTokenBal,
       swapExpectedOutput = SwapExpectedOutput,
+      swapBackExpectedOutput = SwapBackExpectedOutput,
       slippageTolerance = SlippageTolerance,
       transferId = TransferId,
+      transferIdSwapBack = TransferIdSwapBack,
       pool = Pool,
     })
     Handlers.utils.reply({
@@ -74,6 +94,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
     ownership.onlyOwner(msg)
+    -- initialize Controller, too
+    -- Controller = msg.Tags.Controller
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
@@ -229,12 +251,12 @@ Handlers.add(
 )
 
 
--- response to the bot transferring quote token to the pool, in order to prepare the swap
+-- response to the bot transferring quote token to the pool, in order to prepare the SWAP
 Handlers.add(
   "requestSwapOutputOnDebitNotice",
   Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
   function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the swap
+    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP
     if m.From ~= QuoteToken then return end
     if m.Recipient ~= Pool then return end
 
@@ -242,8 +264,8 @@ Handlers.add(
 
     ao.send({
       Target = ao.id,
-      Action = "SelfSignalTransferId",
-      Data = "Got TransferId " .. TransferId
+      Action = "SelfSignalTransferIdSwap",
+      Data = "Got TransferId " .. (TransferId or 'nil')
     })
 
     ao.send({
@@ -259,7 +281,7 @@ Handlers.add(
 Handlers.add(
   'swapExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil -- the only time we request a price is before a swap
+    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferId
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
@@ -277,6 +299,7 @@ Handlers.add(
   'orderConfirmation',
   Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
   function(msg)
+    if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
       Target = Registry,
       Action = "Swapped",
@@ -290,39 +313,113 @@ Handlers.add(
   end
 )
 
--- FEATURES
+-- SWAP BACK (TO LIQUIDATE)
 
-local withdrawToken = function(type)
-  local Token = type == 'quote' and QuoteToken or BaseToken
-  local quantity = type == 'quote' and LatestQuoteTokenBal or LatestBaseTokenBal
-  return function(msg)
-    ownership.onlyOwner(msg)
-    validations.optionalQuantity(msg)
+-- response to the bot transferring quote token to the pool, in order to prepare the SWAP BACK
+Handlers.add(
+  "requestSwapBackOutputOnDebitNotice",
+  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  function(m)
+    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP BACK
+    if m.From ~= BaseToken then return end
+    if m.Recipient ~= Pool then return end
+
+    TransferIdSwapBack = m["Pushed-For"]
+
     ao.send({
-      Target = Token,
-      Action = "Transfer",
-      Quantity = quantity,
-      Recipient = Owner
+      Target = ao.id,
+      Action = "SelfSignalTransferIdSwapBack",
+      Data = "Got TransferId for swap back" .. (TransferIdSwapBack or 'nil')
+    })
+
+    ao.send({
+      Target = Pool,
+      Action = "Get-Price",
+      Token = BaseToken,
+      Quantity = SwapInAmount
     })
   end
-end
+)
+
+-- response to the price request for SWAP BACK
+Handlers.add(
+  'swapBackExecOnGetPriceResponse',
+  function(msg)
+    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferIdSwapBack
+  end,
+  function(msg)
+    SwapBackExpectedOutput = msg.Tags.Price
+    ao.send({
+      Target = ao.id,
+      Action = "SelfSignalSwapExec",
+      Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
+    })
+    bot.swapBackExec()
+  end
+)
+
+-- response to successful SWAP BACK
+Handlers.add(
+  'orderConfirmationSwapBack',
+  Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
+  function(msg)
+    if (msg.Tags["From-Token"] ~= BaseToken) then return end
+    ao.send({
+      Target = Registry,
+      Action = "SwappedBack",
+      ExpectedOutput = SwapBackExpectedOutput,
+      InputAmount = msg.Tags["From-Quantity"],
+      ActualOutput = msg.Tags["To-Quantity"],
+      ConfirmedAt = tostring(msg.Timestamp)
+    })
+    SwapBackExpectedOutput = nil
+    TransferIdSwapBack = nil
+
+    withdrawToken('quote', LatestQuoteTokenBal)
+    withdrawToken('base', LatestBaseTokenBal)
+  end
+)
+
+-- FEATURES
 
 Handlers.add(
   "withdrawQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
-  withdrawToken('quote')
+  function(msg)
+    local quantity = msg.Tags.Quantity or LatestQuoteTokenBal
+    assert(quantity ~= nil and type(quantity) == 'string', 'quantity is required!')
+    withdrawToken('quote', quantity)
+  end
 )
 
 Handlers.add(
   "withdrawBaseToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
-  withdrawToken('base')
+  function(msg)
+    local quantity = msg.Tags.Quantity or LatestBaseTokenBal
+    assert(quantity ~= nil and type(quantity) == 'string', 'quantity is required!')
+    withdrawToken('base', quantity)
+  end
 )
+
+-- LIQUIDATE
+
+Handlers.add(
+  "liquidate",
+  Handlers.utils.hasMatchingTag("Action", "Liquidate"),
+  function(msg)
+    ownership.onlyOwner(msg)
+    ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+    bot.swapBackInit()
+  end
+)
+
+
 
 -- RETIRE
 
 Handlers.add(
-  "Retire",
+  "retire",
   Handlers.utils.hasMatchingTag("Action", "Retire"),
   function(msg)
     ownership.onlyOwner(msg)

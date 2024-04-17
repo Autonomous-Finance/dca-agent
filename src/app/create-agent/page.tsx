@@ -22,7 +22,7 @@ import {
 import React from "react"
 
 
-import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP, credSymbol, cronDuration } from '@/utils/data-utils';
+import { IntervalUnit, BASE_CURRENCIES, INTERVAL_UNITS, BaseToken, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, QUOTE_CURRENCIES, LiquidityPool, TYPE_ICON_MAP, credSymbol, cronDuration, submittableCurrency } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -54,10 +54,10 @@ export default function CreateAgent() {
 
   const [currency, setCurrency] = React.useState<BaseToken>("BRKTST")
   const [agentName, setAgentName] = React.useState(defaultAgentName)
-  const [swapInAmount, setSwapInAmount] = React.useState("10")
+  const [swapInAmount, setSwapInAmount] = React.useState("0.1")
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Minutes")
   const [swapIntervalValue, setSwapIntervalValue] = React.useState("1")
-  const [slippage, setSlippage] = React.useState("1")
+  const [slippage, setSlippage] = React.useState("1.5")
   const [selectedPools, setSelectedPools] = React.useState<LiquidityPool[]>(["Bark"])
 
   const [validationError, setValidationError] = React.useState("");
@@ -84,12 +84,27 @@ export default function CreateAgent() {
       return
     }
 
+    let values
+    try {
+      values = {
+        agentName: agentName || defaultAgentName,
+        currency: BASE_CURRENCY_PROCESS_MAP[currency],
+        swapInAmount: submittableCurrency(swapInAmount),
+        swapIntervalValue: Number.parseInt(swapIntervalValue).toString(),
+        cronInterval: cronDuration(swapIntervalUnit, Number.parseInt(swapIntervalValue)),
+        swapIntervalUnit,
+        slippage,
+        selectedPools
+      }
+    } catch (e) {
+      console.log('incorrect values', e)
+      return
+    }
+
     try {
       setLoading(true);
 
       addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
-
-      const cronInterval = cronDuration(swapIntervalUnit, Number.parseInt(swapIntervalValue))
 
       const processId = await spawn({
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
@@ -97,8 +112,8 @@ export default function CreateAgent() {
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Process-Type", value: "AF-DCA-Agent" },
-          { name: "Name", value: agentName },
-          { name: "Cron-Interval", value: cronInterval },
+          { name: "Name", value: values.agentName },
+          { name: "Cron-Interval", value: values.cronInterval },
           { name: "Cron-Tag-Action", value: "TriggerSwap" },
           { name: "Deployer", value: await window.arweaveWallet?.getActiveAddress()}
         ],
@@ -139,12 +154,12 @@ export default function CreateAgent() {
           { name: "Action", value: "Initialize" },
           { name: "Process-Type", value: "AF-DCA-Agent" },
           { name: "Initializer", value: await window.arweaveWallet?.getActiveAddress()},
-          { name: "AgentName", value: agentName || defaultAgentName },
-          { name: "BaseToken", value: BASE_CURRENCY_PROCESS_MAP[currency] },
-          { name: "SwapInAmount", value: swapInAmount },
-          { name: "SwapIntervalValue", value: swapIntervalValue },
-          { name: "SwapIntervalUnit", value: swapIntervalUnit },
-          { name: "Slippage", value: slippage },
+          { name: "AgentName", value: values.agentName },
+          { name: "BaseToken", value: values.currency },
+          { name: "SwapInAmount", value: values.swapInAmount },
+          { name: "SwapIntervalValue", value: values.swapIntervalValue },
+          { name: "SwapIntervalUnit", value: values.swapIntervalUnit },
+          { name: "Slippage", value: values.slippage },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
@@ -165,6 +180,8 @@ export default function CreateAgent() {
 
       addToLog({text: 'Starting cron monitor...', hasLink: false})
       
+      await new Promise(resolve => setTimeout(resolve, 3000)) // monitor issues ? 
+
       const monitorMsgId = await monitor({
         process: processId,
         signer: createDataItemSigner(window.arweaveWallet),
@@ -182,10 +199,10 @@ export default function CreateAgent() {
         tags: [
           { name: "Action", value: "RegisterAgent" },
           { name: "Agent", value: processId },
-          { name: "AgentName", value: agentName || defaultAgentName},
-          { name: "SwapInAmount", value: swapInAmount },
-          { name: "SwapIntervalValue", value: swapIntervalValue },
-          { name: "SwapIntervalUnit", value: swapIntervalUnit },
+          { name: "AgentName", value: values.agentName},
+          { name: "SwapInAmount", value: values.swapInAmount },
+          { name: "SwapIntervalValue", value: values.swapIntervalValue },
+          { name: "SwapIntervalUnit", value: values.swapIntervalUnit },
         ]
       })
       console.log("📜 LOG > registerMsg:", registerMsgId)
@@ -380,7 +397,7 @@ export default function CreateAgent() {
                           type="number"
                           label="Interval"
                           // error={error !== ""}
-                          // helperText={error}
+                          // helperText={`Integer value`}
                         />
                       </FormControl>
                       <FormControl fullWidth>
@@ -409,7 +426,7 @@ export default function CreateAgent() {
                       size="small"
                       value={swapInAmount}
                       onChange={(e) => setSwapInAmount(e.target.value)}
-                      type="number"
+                      // type="number"
                       label="Swap Amount"
                       InputProps={{
                         endAdornment: (
@@ -417,7 +434,7 @@ export default function CreateAgent() {
                         ),
                       }}
                       // error={error !== ""}
-                      // helperText={error}
+                      helperText={`Minimum: 0.1 ${credSymbol}`}
                     />
                     <TextField
                       disabled={loading}
@@ -425,7 +442,7 @@ export default function CreateAgent() {
                       sx={{ width: "100%" }}
                       value={slippage}
                       onChange={(e) => setSlippage(e.target.value)}
-                      type="number"
+                      // type="number"
                       label="Max Slippage"
                       InputProps={{
                         endAdornment: (

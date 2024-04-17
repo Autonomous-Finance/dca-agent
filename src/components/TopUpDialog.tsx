@@ -10,6 +10,7 @@ import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/m
 import AddIcon from '@mui/icons-material/Add';
 import { useAccountBalance } from '@/hooks/useAccountBalance';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
+import { displayableCurrency, submittableCurrency } from '@/utils/data-utils';
 
 
 export default function TopUpDialog(props: {
@@ -33,15 +34,27 @@ export default function TopUpDialog(props: {
   const isRetired = status.retired
 
   const handleClickOpen = () => {
-    setOpen(true);
+    setOpen(true)
+  }
+
+  const handleClose = () => {
+    setOpen(false)
+    setAmount("")
+    setError("")
   };
 
-  const handleClose = (amount?: string) => {
-    if (amount) topUp(amount);
-    setOpen(false);
-    setAmount("");
-    setError("");
-  };
+  const handleCloseWithAction = () => {
+    try {
+      const conv = submittableCurrency(amount)
+      if (Number.parseInt(conv) < 100) {
+        throw new Error()
+      }
+      topUp(conv)
+      handleClose()
+    } catch (e) {
+      setError('Invalid amount. Please enter a number >= 0.1')
+    }
+  }
 
   const FORM_WIDTH = '22.5rem';
 
@@ -63,13 +76,7 @@ export default function TopUpDialog(props: {
           component: 'form',
           onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            // TODO validation (string representing positive integer)
-            // const parsed = parseFloat(amount)
-            // if (isNaN(parsed) || parsed < 10_000) {
-            //   setError("Amount must be a number greater than or equal to 10,000")
-            //   return
-            // }
-            handleClose(amount);
+            handleCloseWithAction();
           },
         }}
       >
@@ -112,7 +119,7 @@ export default function TopUpDialog(props: {
             display={'flex'} justifyContent={'space-between'}>
             Agent Balance: {" "}
             <Typography component='span'>
-              <Typography component='span' fontWeight={'bold'} color="text.primary">{tokenBalance}</Typography>
+              <Typography component='span' fontWeight={'bold'} color="text.primary">{displayableCurrency(tokenBalance)}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>
             </Typography>
           </Typography>
@@ -120,14 +127,14 @@ export default function TopUpDialog(props: {
             display={'flex'} justifyContent={'space-between'}>
             Your Available Balance: {" "}
             <Typography component='span'>
-              <Typography component='span' fontWeight={'bold'} color="text.primary">{tokenBalanceUser}</Typography>
+              <Typography component='span' fontWeight={'bold'} color="text.primary">{displayableCurrency(tokenBalanceUser.toString())}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>
             </Typography>
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => handleClose()}>Cancel</Button>
-          <Button type="submit">Deposit</Button>
+          <Button type="submit" disabled={!amount}>Deposit</Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

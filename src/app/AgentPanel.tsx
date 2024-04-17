@@ -13,7 +13,7 @@ import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
 import LiquidateDialog from "@/components/LiquidateDialog"
-import { credSymbol } from "@/utils/data-utils"
+import { credSymbol, displayableCurrency } from "@/utils/data-utils"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -90,7 +90,7 @@ export function AgentPanel() {
     setLoadingLiquidate(false)
     if (liquidationResult?.type === "Success") {
       const msgId = liquidationResult.result
-      addToLog({ text: 'Liquidation successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
+      addToLog({ text: 'Liquidation initiated. Please wait a few seconds for completion. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
       addToLog({ text: `Failed to liquidate. Please try again.`, isError: true, hasLink: false}, liquidationResult.result)
     }
@@ -153,8 +153,6 @@ export function AgentPanel() {
                   {status.baseTokenSymbol}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  {/* <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
-                    liquidate={handleLiquidate}/> */}
                   <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
                     tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawQuote}/>

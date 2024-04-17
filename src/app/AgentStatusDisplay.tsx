@@ -1,23 +1,28 @@
 "use client"
 
-import { Box, Divider, Link, Paper, Stack, Typography } from "@mui/material"
-import React, { ReactNode } from "react"
-import { enhanceAgentStatus, enhanceRegisteredAgentInfo} from "@/utils/agent-utils";
+import { Box, Button, Divider, Link, Paper, Stack, Typography } from "@mui/material"
+import React, { ReactNode, useEffect, useState } from "react"
+import { enhanceAgentStatus, enhanceRegisteredAgentInfo, getCurrentSwapOutput, getTotalValue } from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
 import { shortenId } from "@/utils/ao-utils";
 import LinkIcon from '@mui/icons-material/Link';
 import AgentStatusChip from "@/components/AgentStatusChip";
 import HelpIcon from "@/components/HelpIcon";
-import { East } from "@mui/icons-material";
+import { East, WaterDrop } from "@mui/icons-material";
 import SwapDebug from "@/components/SwapDebug";
+import { useAgentPerformance } from "@/hooks/useAgentPerformance";
+import { displayableCurrency } from "@/utils/data-utils";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
 const HELP_TEXT_TOTAL_DEPOSITED = 'Total amount of quote tokens deposited to the agent.'
+const HELP_AVG_SWAP_PRICE = 'Your historical average swap price (base token for quote token).'
+const HELP_CURRENT_SWAP_PRICE = 'Current price for a swap (base token for quote token) with your configured quote token amount.'
 
 export function AgentStatusDisplay() {
-
   const agent = usePolledAgentStatusContext();
+
+  const agentPerformance = useAgentPerformance({agentStatus: agent?.status || null});
 
   if (!agent) return <></>
 
@@ -27,6 +32,10 @@ export function AgentStatusDisplay() {
 
   enhanceAgentStatus(status)
   enhanceRegisteredAgentInfo(status)
+
+  const agentPerformanceInfo = agentPerformance?.performanceInfo || null
+
+  const currentValue = agentPerformanceInfo ? getTotalValue(status, agentPerformanceInfo) : null
 
   return (
     <Stack gap={4} alignItems="flex-start">
@@ -84,10 +93,9 @@ export function AgentStatusDisplay() {
           </Typography>
           <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}
             />
-          <InfoLine label={'Quote Balance'} value={`${status.quoteTokenBalance}`} suffix={status.quoteTokenSymbol}
+          <InfoLine label={'Quote Balance'} value={`${displayableCurrency(status.quoteTokenBalance)}`} suffix={status.quoteTokenSymbol}
             color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
-          <InfoLine label={'Total Value (est.)'} value={`n/A`} suffix={status.quoteTokenSymbol}/>
-
+          <InfoLine label={'Total Value (est.)'} value={currentValue ? displayableCurrency(currentValue) : `n/A`} suffix={currentValue ? status.quoteTokenSymbol : ''}/>
           <Box sx={{marginTop: 'auto', marginRight: 'auto'}}>
             <SwapDebug />
           </Box>
@@ -104,19 +112,35 @@ export function AgentStatusDisplay() {
               {status.quoteTokenSymbol} <East /> {status.baseTokenSymbol}
             </Typography>}/>
           <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
-          <InfoLine label={'Swap Amount'} value={`${status.swapInAmount}`} suffix={status.quoteTokenSymbol}></InfoLine>
+          <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenSymbol}></InfoLine>
           <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}></InfoLine>
           
           <Box my={'12px'}><Divider /></Box>
 
           <Typography display={'flex'} fontWeight={'bold'}>
-            STATISTICS
+            STATS
           </Typography>
-          <InfoLine label={'Total Deposited'} value={status.TotalDeposited} suffix={status.quoteTokenSymbol}/>
+          <InfoLine label={'Total Deposited'}
+            value={displayableCurrency(status.TotalDeposited)}
+            suffix={status.quoteTokenSymbol}
+            labelInfo={HELP_TEXT_TOTAL_DEPOSITED}
+          />
           <InfoLine label={'Total Swaps (Active Cycles)'} value={status.DcaBuys.length} />
-          <InfoLine label={'Average Swap Price'} value={`n/A`} />
-          <InfoLine label={'Current Swap Price'} value={`n/A`}></InfoLine>
-          <InfoLine label={'SPR'} value={`n/A`} suffix={'%'} labelInfo={HELP_TEXT_SPR}/>          
+          <InfoLine label={'Average Swap Price'}
+            value={status.averagePrice || 'n/A'}
+            suffix={status.averagePrice ? status.quoteTokenSymbol : ''}
+            labelInfo={HELP_AVG_SWAP_PRICE}
+          />
+          <InfoLine label={'Current Swap Price'}
+            value={agentPerformanceInfo?.currentPrice || `n/A`}
+            suffix={agentPerformanceInfo?.currentPrice ? status.quoteTokenSymbol : ''}
+            labelInfo={HELP_CURRENT_SWAP_PRICE}
+          />
+          <InfoLine label={'SPR'}
+            value={agentPerformanceInfo?.spr || `n/A`} 
+            suffix={agentPerformanceInfo?.spr ? '%' : ''}
+            labelInfo={HELP_TEXT_SPR}
+          />          
                    
         </Stack>
       </Stack>

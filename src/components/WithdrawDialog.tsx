@@ -9,6 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/material';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
+import { displayableCurrency, submittableCurrency } from '@/utils/data-utils';
 
 
 export default function WithdrawDialog(props: {
@@ -43,11 +44,24 @@ export default function WithdrawDialog(props: {
     setOpen(true);
   };
 
-  const handleClose = (amount?: string) => {
-    setOpen(false);
-    if (amount) withdraw(amount);
-    setAmount("");
+  const handleClose = () => {
+    setOpen(false)
+    setAmount("")
+    setError("")
   };
+
+  const handleCloseWithAction = () => {
+    try {
+      const conv = submittableCurrency(amount)
+      if (Number.parseInt(conv) < 100) {
+        throw new Error()
+      }
+      withdraw(conv)
+      handleClose()
+    } catch (e) {
+      setError('Invalid amount. Please enter a number >= 0.1')
+    }
+  }
 
   const FORM_WIDTH = '22.5rem';
 
@@ -68,14 +82,8 @@ export default function WithdrawDialog(props: {
         PaperProps={{
           component: 'form',
           onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
-            event.preventDefault();
-            // TODO validation (string representing positive integer)
-            // const parsed = parseFloat(amount)
-            // if (isNaN(parsed) || parsed < 10_000) {
-            //   setError("Amount must be a number greater than or equal to 10,000")
-            //   return
-            // }
-            handleClose(amount);
+            event.preventDefault()
+            handleCloseWithAction()
           },
         }}
       >
@@ -97,7 +105,7 @@ export default function WithdrawDialog(props: {
               disabled={loading}
               size="small"
               required
-              label="Deposit Amount"
+              label="Withdraw Amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               type="number"
@@ -114,14 +122,14 @@ export default function WithdrawDialog(props: {
             display={'flex'} justifyContent={'space-between'}>
             Agent Balance: {" "}
             <Typography component='span'>
-              <Typography component='span' fontWeight={'bold'} color="text.primary">{tokenBalance}</Typography>
+              <Typography component='span' fontWeight={'bold'} color="text.primary">{displayableCurrency(tokenBalance)}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>
             </Typography>
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => handleClose()}>Cancel</Button>
-          <Button type="submit">Withdraw</Button>
+          <Button type="submit" disabled={!amount}>Withdraw</Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

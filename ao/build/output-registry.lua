@@ -129,7 +129,7 @@ Handlers.add(
       WithdrawalsQuoteToken = {},
       WithdrawalsBaseToken = {},
       DcaBuys = {},
-      LiquidationSells = {},
+      SwapsBack = {},
       Retired = false,
       FromTransfer = false,
       TransferredAt = nil
@@ -273,12 +273,37 @@ Handlers.add(
     local dcaBuys = agentInfo.DcaBuys
     table.insert(dcaBuys, {
       ConfirmedAt = msg.Tags.ConfirmedAt,
-      InAmount = msg.Tags.InAmount,
+      InputAmount = msg.Tags.InputAmount,
       ExpectedOutput = msg.Tags.ExpectedOutput,
       ActualOutput = msg.Tags.ActualOutput,
     })
     Handlers.utils.reply({
       ["Response-For"] = "Swapped",
+      Data = "Success"
+    })(msg)
+  end
+)
+
+-- message to be sent by agent itself
+Handlers.add(
+  'swappedBack',
+  Handlers.utils.hasMatchingTag('Action', 'SwappedBack'),
+  function(msg)
+    onlyAgent(msg)
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    if agentInfo == nil then
+      error("Internal: Agent not found")
+    end
+    local swapsBack = agentInfo.SwapsBack
+    table.insert(swapsBack, {
+      ConfirmedAt = msg.Tags.ConfirmedAt,
+      InputAmount = msg.Tags.InputAmount,
+      ExpectedOutput = msg.Tags.ExpectedOutput,
+      ActualOutput = msg.Tags.ActualOutput,
+    })
+    Handlers.utils.reply({
+      ["Response-For"] = "SwappedBack",
       Data = "Success"
     })(msg)
   end

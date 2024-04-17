@@ -18,22 +18,22 @@ function LiquidateDialog({loading, disabled, width, liquidate}: {loading: boolea
   const isRetired = status.retired
 
   const handleClickOpen = () => {
-    setOpen(true);
-  };
+    setOpen(true)
+  }
 
   const handleClose = () => {
-    setOpen(false);
-  };
+    setOpen(false)
+  }
 
   const handleCloseWithAction = () => {
-    liquidate();
-    setOpen(false);
+    liquidate()
+    setOpen(false)
   }
 
   return (
     <React.Fragment>
       <Button
-        sx={{ height: 40, width }}
+        sx={{ height: 40, width: width }}
         disabled={loading || hasNoFunds || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
@@ -67,7 +67,7 @@ function LiquidateDialog({loading, disabled, width, liquidate}: {loading: boolea
         </DialogContent>
         <DialogActions>
           <Button onClick={() => handleClose()}>Cancel</Button>
-          <Button type="submit">Withdraw</Button>
+          <Button type="submit" disabled={disabled}>Liquidate</Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>
