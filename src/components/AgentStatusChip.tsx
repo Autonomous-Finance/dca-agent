@@ -20,7 +20,9 @@ function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, larg
       fontWeight: 'bold'
     }
 
-  const helpText = statusX === 'No Funds' ? 'Agent is active but has insufficient funds to perform DCA orders.' : ''
+  const helpText = statusX === 'Paused' 
+    ? 'Agent has been paused by the user.'
+    : ('No Funds' ? 'Agent is active but has insufficient funds to perform DCA orders.' : '')
 
   return (
     <Box position={'relative'}>
@@ -45,8 +47,14 @@ function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, larg
             sx={sx} 
         />
       )}
+      {statusX === 'Paused' && (
+        <Chip label="Paused" variant="outlined" color="warning" 
+            icon={noIcon ? <></> : <Pause />} 
+            sx={sx}  
+        />
+      )}
       {statusX === 'No Funds' && (
-        <Chip label="No Funds" variant="outlined" color="warning" 
+        <Chip label="No Funds" variant="outlined" color="error" 
             icon={noIcon ? <></> : <Pause />} 
             sx={sx}  
         />

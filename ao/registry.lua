@@ -115,6 +115,7 @@ Handlers.add(
       DcaBuys = {},
       SwapsBack = {},
       Retired = false,
+      Paused = false,
       FromTransfer = false,
       TransferredAt = nil
     })
@@ -288,6 +289,22 @@ Handlers.add(
     })
     Handlers.utils.reply({
       ["Response-For"] = "SwappedBack",
+      Data = "Success"
+    })(msg)
+  end
+)
+
+-- msg to be sent by agent itself
+Handlers.add(
+  'pauseToggleAgent',
+  Handlers.utils.hasMatchingTag('Action', 'PauseToggleAgent'),
+  function(msg)
+    onlyAgent(msg)
+    local agentId = msg.From
+    local agentInfo = getAgentInfoAndIndex(agentId)
+    agentInfo.Paused = true
+    Handlers.utils.reply({
+      ["Response-For"] = "PauseToggleAgent",
       Data = "Success"
     })(msg)
   end

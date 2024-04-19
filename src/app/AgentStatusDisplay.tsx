@@ -20,7 +20,7 @@ const HELP_AVG_SWAP_PRICE = 'Your historical average swap price (base token for 
 const HELP_CURRENT_SWAP_PRICE = 'Current price for a swap (base token for quote token) with your configured quote token amount.'
 
 export function AgentStatusDisplay() {
-  const agent = usePolledAgentStatusContext();
+  const agent = usePolledAgentStatusContext()
 
   const agentPerformance = useAgentPerformance({agentStatus: agent?.status || null});
 
@@ -35,7 +35,9 @@ export function AgentStatusDisplay() {
 
   const agentPerformanceInfo = agentPerformance?.performanceInfo || null
 
-  const currentValue = agentPerformanceInfo ? getTotalValue(status, agentPerformanceInfo) : null
+  const currentValue = agentPerformanceInfo
+    ? getTotalValue(status.quoteTokenBalance, agentPerformanceInfo.currentSwapBackOutput)
+    : null
 
   return (
     <Stack gap={4} alignItems="flex-start">
@@ -91,12 +93,19 @@ export function AgentStatusDisplay() {
           <Typography display={'flex'} fontWeight={'bold'}>
             ASSETS
           </Typography>
-          <InfoLine label={'Base Balance'} value={`${status.baseTokenBalance}`} suffix={status.baseTokenSymbol}
+          <InfoLine label={'Base Balance'} value={`${displayableCurrency(status.baseTokenBalance)}`} suffix={status.baseTokenSymbol}
             />
-          <InfoLine label={'Quote Balance'} value={`${displayableCurrency(status.quoteTokenBalance)}`} suffix={status.quoteTokenSymbol}
-            color={status.statusX === 'No Funds' ? 'var(--mui-palette-warning-main)' : ''}/>
-          <InfoLine label={'Total Value (est.)'} value={currentValue ? displayableCurrency(currentValue) : `n/A`} suffix={currentValue ? status.quoteTokenSymbol : ''}/>
-          <Box sx={{marginTop: 'auto', marginRight: 'auto'}}>
+          <InfoLine label={'Quote Balance'} 
+            value={`${displayableCurrency(status.quoteTokenBalance)}`} 
+            suffix={status.quoteTokenSymbol}
+            color={status.statusX === 'No Funds' ? 'var(--mui-palette-error-main)' : ''}
+          />
+          <InfoLine label={'Total Value (est.)'}
+            value={currentValue ? displayableCurrency(currentValue) : `n/A`} 
+            suffix={currentValue ? status.quoteTokenSymbol : ''}
+            soft={!currentValue}
+          />
+          <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto'}}>
             <SwapDebug />
           </Box>
         </Stack>
@@ -111,7 +120,7 @@ export function AgentStatusDisplay() {
             <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'}>
               {status.quoteTokenSymbol} <East /> {status.baseTokenSymbol}
             </Typography>}/>
-          <InfoLine label={'Swap Frequency'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
+          <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
           <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenSymbol}></InfoLine>
           <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}></InfoLine>
           
@@ -129,16 +138,19 @@ export function AgentStatusDisplay() {
           <InfoLine label={'Average Swap Price'}
             value={status.averagePrice || 'n/A'}
             suffix={status.averagePrice ? status.quoteTokenSymbol : ''}
+            soft={!status.averagePrice}
             labelInfo={HELP_AVG_SWAP_PRICE}
           />
           <InfoLine label={'Current Swap Price'}
             value={agentPerformanceInfo?.currentPrice || `n/A`}
             suffix={agentPerformanceInfo?.currentPrice ? status.quoteTokenSymbol : ''}
+            soft={!agentPerformanceInfo?.currentPrice}
             labelInfo={HELP_CURRENT_SWAP_PRICE}
           />
           <InfoLine label={'SPR'}
             value={agentPerformanceInfo?.spr || `n/A`} 
             suffix={agentPerformanceInfo?.spr ? '%' : ''}
+            soft={!agentPerformanceInfo?.spr}
             labelInfo={HELP_TEXT_SPR}
           />          
                    

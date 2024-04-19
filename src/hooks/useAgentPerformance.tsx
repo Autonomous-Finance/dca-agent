@@ -2,49 +2,75 @@ import { AgentPerformance, AgentStatus, createAgentPerformanceInfo, getCurrentSw
 import React from "react";
 
 
+export const AGENT_PERFORMANCE_POLL_INTERVAL = 8000
+
 export const useAgentPerformance = (props: {agentStatus: AgentStatus & RegisteredAgent | null}) => {
   const {agentStatus} = props
+  const {pool, quoteToken, swapInAmount, baseToken, baseTokenBalance, averagePrice} = agentStatus || {}
   const [performanceInfo, setPerformanceInfo] = React.useState<AgentPerformance | null>(null)
+  const [initialized, setInitialized] = React.useState(false)
+  const [tick, setTick] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
 
-  const getInfo = async () => {
-    if (agentStatus) {
-      const respCurrentSwapOutProm = getCurrentSwapOutput(agentStatus)
-      const respCurrentSwapBackOutProm = getCurrentSwapBackOutput(agentStatus)
-      const [respCurrentSwapOut, respCurrentSwapBackOut] = await Promise.all([respCurrentSwapOutProm, respCurrentSwapBackOutProm])
-      if (respCurrentSwapOut) {
-        setPerformanceInfo(
-          createAgentPerformanceInfo(
-            respCurrentSwapOut,
-            agentStatus,
-            respCurrentSwapBackOut
-          )
-        )
-      } else {
-        console.error("Failed to get current swap output")
-      }
-    }
-  }
 
   // instant initialization
   React.useEffect(() => {
+    const interval = setInterval(() => setTick((tick) => tick + 1), AGENT_PERFORMANCE_POLL_INTERVAL)
+    
     const getInitial = async () => {
-      await getInfo()
-      setLoading(false)
+      // run exactly once, when all values are available
+      if (pool && quoteToken && swapInAmount && baseToken && baseTokenBalance && !initialized) {
+        setInitialized(true)
+        const respCurrentSwapOutProm = getCurrentSwapOutput(pool!, quoteToken!, swapInAmount!)
+        const respCurrentSwapBackOutProm = getCurrentSwapBackOutput(pool!, baseToken!, baseTokenBalance!)
+        const [respCurrentSwapOut, respCurrentSwapBackOut] = await Promise.all([respCurrentSwapOutProm, respCurrentSwapBackOutProm])
+        if (respCurrentSwapOut) {
+          setPerformanceInfo(
+            createAgentPerformanceInfo(
+              respCurrentSwapOut,
+              respCurrentSwapBackOut,
+              swapInAmount,
+              averagePrice
+            )
+          )
+        } else {
+          console.error("Failed to get current swap output & calc performance data")
+        }
+        setLoading(false)
+      }
     }
     getInitial()
-  }, [agentStatus?.Agent])
+
+    return () => clearInterval(interval)
+  }, [pool, quoteToken, swapInAmount, baseToken, baseTokenBalance, initialized])
+
 
   // start polling after interval
   React.useEffect(() => {
-    if (!agentStatus?.Agent) return;
+    if (!initialized || tick === 0) return
 
-    const interval = setInterval(() => {
-      getInfo()
-    }, 12000)
+    const update = async () => {
+      if (pool && quoteToken && swapInAmount && baseToken && baseTokenBalance) {
+        const respCurrentSwapOutProm = getCurrentSwapOutput(pool!, quoteToken!, swapInAmount!)
+        const respCurrentSwapBackOutProm = getCurrentSwapBackOutput(pool!, baseToken!, baseTokenBalance!)
+        const [respCurrentSwapOut, respCurrentSwapBackOut] = await Promise.all([respCurrentSwapOutProm, respCurrentSwapBackOutProm])
+        if (respCurrentSwapOut) {
+          setPerformanceInfo(
+            createAgentPerformanceInfo(
+              respCurrentSwapOut,
+              respCurrentSwapBackOut,
+              swapInAmount,
+              averagePrice
+            )
+          )
+        } else {
+          console.error("Failed to get current swap output & calc performance data")
+        }
+      }
+    }
 
-    return () => clearInterval(interval)
-  }, [agentStatus?.Agent])
+    update()
+  }, [pool, quoteToken, swapInAmount, baseToken, baseTokenBalance, initialized, tick])
 
   return {loading, performanceInfo};
 }

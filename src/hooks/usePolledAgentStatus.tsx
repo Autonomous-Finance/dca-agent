@@ -3,6 +3,7 @@ import React from "react";
 import { Agent } from "../queries/agent.queries";
 import { set } from "date-fns";
 
+export const AGENT_STATUS_POLL_INTERVAL = 6000
 
 export const usePolledAgentStatus = (props: {agentId: string}) => {
   const {agentId} = props
@@ -39,7 +40,7 @@ export const usePolledAgentStatus = (props: {agentId: string}) => {
 
     const interval = setInterval(() => {
       getAgent(agentId)
-    }, 3000)
+    }, AGENT_STATUS_POLL_INTERVAL)
 
     return () => clearInterval(interval)
   }, [agentId])

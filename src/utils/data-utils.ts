@@ -17,7 +17,7 @@ export function hashString(str: string) {
 
 // ! assumes 3 decimals (token denomination == 3)
 export function displayableCurrency(amount: string) {
-  return (Number.parseFloat(amount) / 1000).toFixed(2)
+  return (Number.parseFloat(amount) / 1000).toFixed(3)
 }
 
 

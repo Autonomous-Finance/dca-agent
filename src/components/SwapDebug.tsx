@@ -1,13 +1,12 @@
 'use client'
 
-import { Button } from '@mui/material'
+import { Button, CircularProgress } from '@mui/material'
 import React from 'react'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { enhanceAgentStatus } from '@/utils/agent-utils';
 import { BugReport } from '@mui/icons-material';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { swapDebug } from '../utils/agent-utils';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 function SwapDebug() {
   const agent = usePolledAgentStatusContext();
@@ -36,7 +35,7 @@ function SwapDebug() {
   return (
     <Button onClick={swap} variant="outlined"
       sx={{opacity: 0.6}}>
-      <SwapHorizIcon/> <BugReport/> {loading && <AddCircleOutlineIcon sx={{marginLeft: '0.5rem'}}/>}
+      <SwapHorizIcon/> <BugReport/> {loading && <CircularProgress size={14} sx={{marginLeft: '0.5rem'}} /> }
     </Button>
   )
 }

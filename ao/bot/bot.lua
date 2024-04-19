@@ -29,6 +29,17 @@ bot.swapInit = function()
   })
 end
 
+bot.swapInitByCron = function()
+  -- prepare swap
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Quantity = SwapInAmount,
+    Recipient = Pool,
+    ["Pushed-For"] = ao.id
+  })
+end
+
 bot.swapExec = function()
   assert(type(TransferId) == 'string', 'TransferId is missing!')
   -- swap interaction
@@ -53,12 +64,12 @@ bot.swapBackInit = function()
 end
 
 bot.swapBackExec = function()
-  assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
+  -- assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
   -- swap interaction
   ao.send({
     Target = Pool,
     Action = "Swap",
-    Transfer = TransferIdSwapBack,
+    Transfer = TransferIdSwapBack or 'nil',
     Pool = Pool,
     ["Slippage-Tolerance"] = SlippageTolerance or "1",
     ["Expected-Output"] = SwapBackExpectedOutput,

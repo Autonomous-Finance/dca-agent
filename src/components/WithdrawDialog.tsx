@@ -35,9 +35,7 @@ export default function WithdrawDialog(props: {
   if (!status) return <></>
 
   const tokenBalance = type === 'quote' ? status.quoteTokenBalance : status.baseTokenBalance;
-  const hasNoFunds = type === 'quote'
-    ? Number.parseInt(tokenBalance) < Number.parseInt(status.swapInAmount)
-    : Number.parseInt(tokenBalance) === 0
+  const hasZeroFunds = Number.parseInt(tokenBalance) === 0
   const isRetired = status.retired
 
   const handleClickOpen = () => {
@@ -53,13 +51,13 @@ export default function WithdrawDialog(props: {
   const handleCloseWithAction = () => {
     try {
       const conv = submittableCurrency(amount)
-      if (Number.parseInt(conv) < 100) {
+      if (Number.parseInt(conv) < 10) {
         throw new Error()
       }
       withdraw(conv)
       handleClose()
     } catch (e) {
-      setError('Invalid amount. Please enter a number >= 0.1')
+      setError('Invalid amount. Please enter a number >= 0.01')
     }
   }
 
@@ -69,7 +67,7 @@ export default function WithdrawDialog(props: {
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || hasNoFunds || isRetired || disabled}
+        disabled={loading || hasZeroFunds || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"
         onClick={handleClickOpen}

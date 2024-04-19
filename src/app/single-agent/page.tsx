@@ -31,17 +31,27 @@ export default function SingleAgent() {
   }
 
   return (
-    <Stack mt={2} gap={2} mx={'auto'} px={'16px'} pt={'2rem'}> 
-      <Box position={'fixed'} width={'100%'}>
+    <Stack mt={2} gap={2} mx={'auto'} px={'16px'} pt={'2rem'} position={'relative'}> 
+      <Box position={'absolute'} width={'100%'}>
 
         {canGoBack && (
           <Button component={Link} href="#"
             variant="outlined"
+            size="small"
             onClick={navigateBack}
-            sx={theme => ({
-              fontSize: '1.25rem', marginRight: 'auto', 
-              color: `var(--mui-customColors-naviLink-inactive-${theme.palette.mode})`,
-            })}>
+            sx={[
+              theme => ({
+                backgroundColor: theme.palette.mode === 'dark' ? 'var(--mui-palette-primary-contrastText)' : 'var(--mui-palette-primary-contrastText)',
+                fontSize: '1.25rem', marginRight: 'auto', 
+                color: `var(--mui-customColors-naviLink-inactive-${theme.palette.mode})`,
+              }),
+              theme => ({
+                '&:hover' : {
+                  color: theme.palette.mode === 'dark' ? 'var(--mui-palette-primary-light)' : 'var(--mui-palette-primary-dark)',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'var(--mui-palette-primary-contrastText)' : 'var(--mui-palette-primary-contrastText)'
+                }
+              })
+              ]}>
             <Stack direction={'row'} gap={1} alignItems={'center'}>
               <ArrowBack/> Back
             </Stack>

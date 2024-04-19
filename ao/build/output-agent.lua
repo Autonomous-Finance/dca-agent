@@ -32,6 +32,17 @@ bot.swapInit = function()
   })
 end
 
+bot.swapInitByCron = function()
+  -- prepare swap
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Quantity = SwapInAmount,
+    Recipient = Pool,
+    ["Pushed-For"] = ao.id
+  })
+end
+
 bot.swapExec = function()
   assert(type(TransferId) == 'string', 'TransferId is missing!')
   -- swap interaction
@@ -56,12 +67,12 @@ bot.swapBackInit = function()
 end
 
 bot.swapBackExec = function()
-  assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
+  -- assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
   -- swap interaction
   ao.send({
     Target = Pool,
     Action = "Swap",
-    Transfer = TransferIdSwapBack,
+    Transfer = TransferIdSwapBack or 'nil',
     Pool = Pool,
     ["Slippage-Tolerance"] = SlippageTolerance or "1",
     ["Expected-Output"] = SwapBackExpectedOutput,
@@ -99,7 +110,7 @@ local mod = {}
 ---@param fn fun(msg: Message)
 ---@return PatternFunction
 function mod.continue(fn)
-  return function (msg)
+  return function(msg)
     local patternResult = fn(msg)
 
     if not patternResult or patternResult == 0 or patternResult == "skip" then
@@ -115,7 +126,7 @@ end
 ---@param values string[] Tag values
 ---@return PatternFunction
 function mod.hasMatchingTagOf(name, values)
-  return function (msg)
+  return function(msg)
     for _, value in ipairs(values) do
       local patternResult = Handlers.utils.hasMatchingTag(name, value)(msg)
 
@@ -130,15 +141,12 @@ end
 
 -- Handlers wrapped with this function will not throw Lua errors.
 -- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global RefundError to the error message.
--- We use this to refund the user if anything goes wrong with an
--- interaction that involves incoming transfers (such as swap or
--- provide)
+-- catch that and set the global SwapError to the error message.
 ---@param handler HandlerFunction
 ---@return HandlerFunction
-function mod.catchWrapper(handler)
+function mod.catchWrapperSwap(handler)
   -- return the wrapped handler
-  return function (msg, env)
+  return function(msg, env)
     -- execute the provided handler
     local status, result = pcall(handler, msg, env)
 
@@ -148,7 +156,59 @@ function mod.catchWrapper(handler)
 
       -- set the global RefundError variable
       -- this needs to be reset in the refund later
-      RefundError = err
+      SwapError = err
+
+      return nil
+    end
+
+    return result
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global SwapError to the error message.
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapperSwapBack(handler)
+  -- return the wrapped handler
+  return function(msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      SwapBackError = err
+
+      return nil
+    end
+
+    return result
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global SwapError to the error message.
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapperLiquidate(handler)
+  -- return the wrapped handler
+  return function(msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      LiquidateError = err
 
       return nil
     end
@@ -186,7 +246,6 @@ end
 end
 
 local ownership = require "ownership.ownership"
-local validations = require "validations.validations"
 local bot = require "bot.bot"
 local patterns = require "utils.patterns"
 local json = require "json"
@@ -197,32 +256,26 @@ Owner = Owner or ao.env.Process.Owner
 
 Initialized = Initialized or false
 Retired = Retired or false
+Paused = Paused or false
+
 
 AgentName = AgentName or ""
 QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AOcred on testnet
 BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ"   -- BARK on testnet
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
+LiquidationAmountQuote = LiquidationAmountQuote or nil
+LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
 Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
-
--- helper
-
-local withdrawToken = function(type, quantity)
-  local Token = type == 'quote' and QuoteToken or BaseToken
-  return function(msg)
-    ownership.onlyOwner(msg)
-    validations.optionalQuantity(msg)
-    ao.send({
-      Target = Token,
-      Action = "Transfer",
-      Quantity = quantity,
-      Recipient = Owner
-    })
-  end
-end
-
+-- flags for helping the frontend properly display the process status
+IsWithdrawing = IsWithdrawing or false
+IsDepositing = IsDepositing or false
+IsLiquidating = IsLiquidating or false
+LastWithdrawalNoticeId = LastWithdrawalNoticeId or nil
+LastDepositNoticeId = LastDepositNoticeId or nil
+LastLiquidationNoticeId = LastLiquidationNoticeId or nil
 
 -- INIT & CONFIG
 
@@ -254,6 +307,7 @@ Handlers.add(
       initialized = true,
       agentName = AgentName,
       retired = Retired,
+      paused = Paused,
       baseToken = BaseToken,
       quoteToken = QuoteToken,
       swapInAmount = SwapInAmount,
@@ -267,6 +321,12 @@ Handlers.add(
       transferId = TransferId,
       transferIdSwapBack = TransferIdSwapBack,
       pool = Pool,
+      isDepositing = IsDepositing,
+      isWithdrawing = IsWithdrawing,
+      isLiquidating = IsLiquidating,
+      lastDepositNoticeId = LastDepositNoticeId,
+      lastWithdrawalNoticeId = LastWithdrawalNoticeId,
+      lastLiquidationNoticeId = LastLiquidationNoticeId
     })
     Handlers.utils.reply({
       ["Response-For"] = "GetStatus",
@@ -425,23 +485,83 @@ Handlers.add(
   end
 )
 
+-- PROCESS IN PROGRESS FLAGS
+
+Handlers.add(
+  "startDepositing",
+  Handlers.utils.hasMatchingTag("Action", "StartDepositing"),
+  function(msg)
+    IsDepositing = true
+  end
+)
+
+Handlers.add(
+  "concludeDeposit",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  function(msg)
+    if msg.From ~= QuoteToken or IsLiquidating then return end
+    IsDepositing = false
+    LastDepositNoticeId = msg.Id
+  end
+)
+
+Handlers.add(
+  "concludeWithdraw",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  function(msg)
+    local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
+    local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
+    if not (isQuoteWithdrawal or isBaseWithdrawal) then return end
+    IsWithdrawing = false
+    LastWithdrawalNoticeId = msg.Id
+  end
+)
+
+Handlers.add(
+  "concludeLiquidation",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  function(msg)
+    local isLiquidation = msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+    if not (isLiquidation) then return end
+    IsLiquidating = false
+    LastLiquidationNoticeId = msg.Id
+  end
+)
+
+-- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
+-- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
+Handlers.add(
+  'resetProcessFlags',
+  Handlers.utils.hasMatchingTag('Action', 'ResetProcessFlags'),
+  function(msg)
+    IsWithdrawing = false
+    IsDepositing = false
+    IsLiquidating = false
+    LastDepositNoticeId = nil
+    LastWithdrawalNoticeId = nil
+    LastLiquidationNoticeId = nil
+  end
+)
+
 -- SWAP
 
 Handlers.add(
   "triggerSwap",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
-    -- if msg.Sender ~= CronTriggerProcess then return end
+    if not msg.Cron then return end
+    assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
-    bot.swapInit()
+    -- bot.swapInitByCron()
+    ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
   end
 )
 
 
 -- response to the bot transferring quote token to the pool, in order to prepare the SWAP
 Handlers.add(
-  "requestSwapOutputOnDebitNotice",
-  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  "requestSwapOutput",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
     -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP
     if m.From ~= QuoteToken then return end
@@ -484,7 +604,7 @@ Handlers.add(
 -- response to successful swap
 Handlers.add(
   'orderConfirmation',
-  Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
+  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
   function(msg)
     if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
@@ -504,8 +624,8 @@ Handlers.add(
 
 -- response to the bot transferring quote token to the pool, in order to prepare the SWAP BACK
 Handlers.add(
-  "requestSwapBackOutputOnDebitNotice",
-  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  "requestSwapBackOutput",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
     -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP BACK
     if m.From ~= BaseToken then return end
@@ -516,14 +636,14 @@ Handlers.add(
     ao.send({
       Target = ao.id,
       Action = "SelfSignalTransferIdSwapBack",
-      Data = "Got TransferId for swap back" .. (TransferIdSwapBack or 'nil')
+      Data = "Got TransferId for swap back " .. (TransferIdSwapBack or 'nil')
     })
 
     ao.send({
       Target = Pool,
       Action = "Get-Price",
       Token = BaseToken,
-      Quantity = SwapInAmount
+      Quantity = LatestBaseTokenBal
     })
   end
 )
@@ -538,7 +658,7 @@ Handlers.add(
     SwapBackExpectedOutput = msg.Tags.Price
     ao.send({
       Target = ao.id,
-      Action = "SelfSignalSwapExec",
+      Action = "SelfSignalSwapBackExec",
       Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
     })
     bot.swapBackExec()
@@ -548,7 +668,7 @@ Handlers.add(
 -- response to successful SWAP BACK
 Handlers.add(
   'orderConfirmationSwapBack',
-  Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation'),
+  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
   function(msg)
     if (msg.Tags["From-Token"] ~= BaseToken) then return end
     ao.send({
@@ -561,21 +681,56 @@ Handlers.add(
     })
     SwapBackExpectedOutput = nil
     TransferIdSwapBack = nil
-
-    withdrawToken('quote', LatestQuoteTokenBal)
-    withdrawToken('base', LatestBaseTokenBal)
   end
 )
 
--- FEATURES
+-- last step of the liquidation process
+Handlers.add(
+  "withdrawAfterSwapBack",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  function(m)
+    if m.From ~= QuoteToken then return end
+    if m.Sender ~= Pool then return end
+    --[[
+      Sender == Pool indicates this credit-notice is from either
+        A. a pool payout after swap back (last step of the liquidation process)
+        OR
+        B. refund after failed dca swap
+    --]]
+    if LiquidationAmountQuote == nil then
+      -- this is B. a refund
+      ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(m) })
+      return
+    else
+      -- this is A. a payout after swap back
+      LiquidationAmountBaseToQuote = m.Tags["Quantity"]
+
+      ao.send({
+        Target = QuoteToken,
+        Action = "Transfer",
+        Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
+        Recipient = Owner
+      })
+      LiquidationAmountQuote = nil
+      LiquidationAmountBaseToQuote = nil
+    end
+  end
+)
+
+-- WITHDRAW
 
 Handlers.add(
   "withdrawQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
-    local quantity = msg.Tags.Quantity or LatestQuoteTokenBal
-    assert(quantity ~= nil and type(quantity) == 'string', 'quantity is required!')
-    withdrawToken('quote', quantity)
+    ownership.onlyOwner(msg)
+    IsWithdrawing = true
+    ao.send({
+      Target = QuoteToken,
+      Action = "Transfer",
+      Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
+      Recipient = Owner
+    })
   end
 )
 
@@ -583,9 +738,14 @@ Handlers.add(
   "withdrawBaseToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
-    local quantity = msg.Tags.Quantity or LatestBaseTokenBal
-    assert(quantity ~= nil and type(quantity) == 'string', 'quantity is required!')
-    withdrawToken('base', quantity)
+    ownership.onlyOwner(msg)
+    IsWithdrawing = true
+    ao.send({
+      Target = BaseToken,
+      Action = "Transfer",
+      Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
+      Recipient = Owner
+    })
   end
 )
 
@@ -596,12 +756,35 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
     ownership.onlyOwner(msg)
+    IsLiquidating = true
     ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+    --[[
+      we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
+      instead we remember quote token balance before the swap back
+        => after swap back, we add it to the output quote amount and transfer the whole sum to the owner
+      this setup is in order to avoid two separate withdrawals, which would have been the other option
+        (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
+    --]]
+    LiquidationAmountQuote = LatestQuoteTokenBal
     bot.swapBackInit()
   end
 )
 
+-- PAUSE
 
+Handlers.add(
+  "pauseToggle",
+  Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
+  function(msg)
+    ownership.onlyOwner(msg)
+    Paused = msg.Tags.Value == 'true'
+    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = msg.Tags.Value })
+    Handlers.utils.reply({
+      ["Response-For"] = "PauseToggle",
+      Data = "Success"
+    })(msg)
+  end
+)
 
 -- RETIRE
 
@@ -618,5 +801,19 @@ Handlers.add(
       ["Response-For"] = "Retire",
       Data = "Success"
     })(msg)
+  end
+)
+
+-- DEBUG / DEV
+
+Handlers.add(
+  "triggerSwapDebug",
+  Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
+  function(msg)
+    if msg.From ~= ao.id then
+      ownership.onlyOwner(msg)
+    end
+    ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
+    bot.swapInit()
   end
 )

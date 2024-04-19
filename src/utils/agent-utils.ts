@@ -11,6 +11,7 @@ export type AgentStatus = {
   initialized: boolean
   agentName: string
   retired: boolean
+  paused: boolean
   baseToken: string
   quoteToken: string
   pool: string
@@ -22,6 +23,12 @@ export type AgentStatus = {
   quoteTokenBalance: string
   baseTokenBalance: string
   slippageTolerance: string
+  isLiquidating: boolean
+  isWithdrawing: boolean
+  isDepositing: boolean
+  lastDepositNoticeId: string
+  lastWithdrawalNoticeId: string
+  lastLiquidationNoticeId: string
 
   // added on Frontend
   statusX?: AgentStatusX
@@ -29,7 +36,7 @@ export type AgentStatus = {
   baseTokenSymbol?: string
 }
 
-export const AGENT_STATUS_X_VALUES = ["Active", "Retired", "No Funds"] as const
+export const AGENT_STATUS_X_VALUES = ["Active", "Retired", "No Funds", "Paused"] as const
 export type AgentStatusX = typeof AGENT_STATUS_X_VALUES[number]
 
 export type DcaBuy = {
@@ -57,6 +64,7 @@ export type RegisteredAgent = {
   DcaBuys:  DcaBuy[],
   SwapsBack:  any[],
   Retired:  boolean,
+  Paused: boolean,
   FromTransfer:  boolean,
   TransferredAt?:  number,
   // -- added on frontend
@@ -103,21 +111,21 @@ const extractResponse = (result: DryRunResult, actionName: string) => {
   }
 }
 
-export const getCurrentSwapOutput = async (agent: AgentStatus) => {
+export const getCurrentSwapOutput = async (pool: string, quoteToken: string, swapInAmount: string) => {
   try {
     const msgId = await ao.message({
-      process: agent.pool,
+      process: pool,
       tags: [
         { name: "Action", value: "Get-Price" },
-        { name: "Token", value: agent.quoteToken},
-        { name: "Quantity", value: agent.swapInAmount }
+        { name: "Token", value: quoteToken},
+        { name: "Quantity", value: swapInAmount }
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
 
     const res = await ao.result({
       message: msgId,
-      process: agent.pool,
+      process: pool,
     })
 
     console.log("Get Current Swap Price Result: ", res)
@@ -133,21 +141,22 @@ export const getCurrentSwapOutput = async (agent: AgentStatus) => {
   }
 }
 
-export const getCurrentSwapBackOutput = async (agent: AgentStatus) => {
+export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, baseTokenBalance: string) => {
+  if (baseTokenBalance == '0') return Promise.resolve('0')
   try {
     const msgId = await ao.message({
-      process: agent.pool,
+      process: pool,
       tags: [
         { name: "Action", value: "Get-Price" },
-        { name: "Token", value: agent.baseToken},
-        { name: "Quantity", value: agent.baseTokenBalance }
+        { name: "Token", value: baseToken},
+        { name: "Quantity", value: baseTokenBalance }
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
 
     const res = await ao.result({
       message: msgId,
-      process: agent.pool,
+      process: pool,
     })
 
     console.log("Get Current Swap Back Price Result: ", res)
@@ -198,6 +207,8 @@ export const getLatestAgent = async () => {
 export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
   if (agentInfo.Retired) {
     agentInfo.statusX = 'Retired'
+  } else if (agentInfo.Paused) {
+    agentInfo.statusX = 'Paused'
   } else if (Number.parseInt(agentInfo.QuoteTokenBalance) < Number.parseInt(agentInfo.SwapInAmount)) {
     agentInfo.statusX = 'No Funds'
   } else {
@@ -219,6 +230,8 @@ export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
 
   if (agentStatus.retired) {
     agentStatus.statusX = 'Retired'
+  } else if (agentStatus.paused) {
+    agentStatus.statusX = 'Paused'
   } else if (!hasFunds) {
     agentStatus.statusX = 'No Funds'
   } else {
@@ -231,12 +244,13 @@ export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
 
 export const createAgentPerformanceInfo = (
   swapOutputAmount: string, 
-  agentStatus: AgentStatus & RegisteredAgent, 
-  swapBackOutputAmount: string
+  swapBackOutputAmount: string,
+  swapInAmount: string,
+  averagePrice: string | undefined | null
 ): AgentPerformance => {
-  const price = (Number.parseInt(agentStatus.swapInAmount ?? "0")) / Number.parseInt(swapOutputAmount)
-  const spr = agentStatus?.averagePrice
-    ? price / Number.parseFloat(agentStatus.averagePrice) * 100 
+  const price = (Number.parseInt(swapInAmount ?? "0")) / Number.parseInt(swapOutputAmount)
+  const spr = averagePrice
+    ? price / Number.parseFloat(averagePrice) * 100 
     : null
   return {
     spr: spr?.toFixed(2) ?? "",
@@ -342,7 +356,28 @@ export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatu
 export const depositToAgent = async (agent: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Depositing ", amount);
-  
+    
+    const prepFlagMsgId = await ao.message({
+      process: agent,
+      tags: [{ name: "Action", value: "StartDepositing"}],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Prep flag message sent: ", prepFlagMsgId)
+    
+    const prepRes = await ao.result({
+      message: prepFlagMsgId,
+      process: agent,
+    })
+
+    console.log("Prep Result: ", prepRes)
+
+    if (prepRes.Error) {
+      return {
+        type: "Failure",
+        result: prepRes.Error
+      }
+    }
+    
     const msgId = await ao.message({
       process: CRED_ADDR,
       tags: [
@@ -352,7 +387,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
-    console.log("Message sent: ", msgId)
+    console.log("Transfer Message sent: ", msgId)
   
     const res = await ao.result({
       message: msgId,
@@ -409,54 +444,54 @@ export const withdrawAsset = async (agent: string, amount: string, tokenType: 'q
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
     console.log("Message sent: ", msgId)
-  debugger
+
     const res = await ao.result({
       message: msgId,
       process: agent,
     })
     console.log("Result: ", res)
-    
+
     /**
     * We account for possibly failed withdrawals
     *  wrong quantity set by the agent when requesting transfer => 
     *  insufficient balance => 
     *  QuoteToken process will send msg to agent Action = "Transfer-Error" etc.
     */
-debugger
+
     if (res.Error) {
       return {
         type: "Failure",
         result: res.Error
       }
     } else if (res.Messages.length) {
-      // message from agent to token process
-      const transferMessage = res.Messages.find(
-        msg => msg.Tags.some(
-          (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer')
-      );
-      const transferMsgId = transferMessage?.ID
-      const transferResult = await ao.result({
-        message: transferMsgId,
-        process: tokenProcess,
-      })
-      console.log("Transfer Result: ", transferResult)
-debugger
-      // messages resulting from the token process handling the transfer message
-      if (transferResult.Messages.length) {
-        const errorMessage = transferMessage.Messages.find(
-          (msg: any) => msg.Tags.some(
-            (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer-Error')
-        );
-        if (errorMessage) {
-          const errorTag = errorMessage.Tags.find(
-            (tag: AoMsgTag) => tag.name === 'Error'
-          );
-          return {
-            type: "Failure",
-            result: 'Token Process: ' + errorTag?.value
-          }
-        }
-      }
+      // // message from agent to token process
+      // const transferMessage = res.Messages.find(
+      //   msg => msg.Tags.some(
+      //     (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer')
+      // );
+      // const transferMsgId = transferMessage?.ID
+      // const transferResult = await ao.result({
+      //   message: transferMsgId,
+      //   process: tokenProcess,
+      // })
+      // console.log("Transfer Result: ", transferResult)
+
+      // // messages resulting from the token process handling the transfer message
+      // if (transferResult.Messages.length) {
+      //   const errorMessage = transferMessage.Messages.find(
+      //     (msg: any) => msg.Tags.some(
+      //       (tag: AoMsgTag) => tag.name === 'Action' && tag.value === 'Transfer-Error')
+      //   );
+      //   if (errorMessage) {
+      //     const errorTag = errorMessage.Tags.find(
+      //       (tag: AoMsgTag) => tag.name === 'Error'
+      //     );
+      //     return {
+      //       type: "Failure",
+      //       result: 'Token Process: ' + errorTag?.value
+      //     }
+      //   }
+      // }
     }
 
 
@@ -528,6 +563,46 @@ export const transferOwnership = async (agent: string, newOwnerId: string): Prom
       tags: [
         { name: "Action", value: "TransferOwnership" },
         { name: "NewOwner", value: newOwnerId }
+      ],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Message sent: ", msgId)
+  
+    const res = await ao.result({
+      message: msgId,
+      process: agent,
+    })
+  
+    console.log("Result: ", res)
+
+    if (res.Error) {
+      return {
+        type: "Failure",
+        result: res.Error
+      }
+    }
+
+    return {
+      type: "Success", 
+      result: msgId
+    }
+  } catch (e) {
+    console.error(e)
+    return {
+      type: "Failure",
+      result: `Error: ${e}`
+    }
+  }
+}
+
+export const pauseAgent = async (agent: string): Promise<Receipt<string>> => {
+  try {
+    console.log("Pausing");
+  
+    const msgId = await ao.message({
+      process: agent,
+      tags: [
+        { name: "Action", value: "Pause" },
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
@@ -642,7 +717,7 @@ export const swapDebug = async (agentId: string) => {
     const swapMsgId = await ao.message({
       process: agentId,
       tags: [
-        { name: "Action", value: "TriggerSwap" },
+        { name: "Action", value: "TriggerSwapDebug" },
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
@@ -673,8 +748,8 @@ export const swapDebug = async (agentId: string) => {
 }
 
 
-export const getTotalValue = (status: AgentStatus & RegisteredAgent, performanceInfo: AgentPerformance) => {
-  if (status.quoteTokenBalance == null || performanceInfo.currentSwapBackOutput == null) return null
-  const totalValue = Number.parseInt(status.quoteTokenBalance) + Number.parseInt(performanceInfo.currentSwapBackOutput)
+export const getTotalValue = (quoteTokenBalance: string | null | undefined, swapBackOutput: string | null | undefined) => {
+  if (quoteTokenBalance == null || swapBackOutput == null) return null
+  const totalValue = Number.parseInt(quoteTokenBalance) + Number.parseInt(swapBackOutput)
   return totalValue.toFixed(2)
 }

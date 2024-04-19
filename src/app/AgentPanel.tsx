@@ -1,10 +1,10 @@
 "use client"
 
-import { Box, Button, Divider, Paper, Stack, Typography } from "@mui/material"
+import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from "@mui/material"
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -14,6 +14,8 @@ import RetirementDialog from "@/components/RetirementDialog"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
 import LiquidateDialog from "@/components/LiquidateDialog"
 import { credSymbol, displayableCurrency } from "@/utils/data-utils"
+import PauseDialog from "@/components/PauseDialog"
+import { Agent } from '../queries/agent.queries';
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -24,16 +26,42 @@ export function AgentPanel() {
   const [loadingLiquidate, setLoadingLiquidate] = React.useState(false)
   const [loadingTransferOwnership, setLoadingTransferOwnership] = React.useState(false)
   const [loadingRetirement, setLoadingRetirement] = React.useState(false)
+  const [loadingPause, setLoadingPause] = React.useState(false)
+  const [executionMessage, setExecutionMessage] = React.useState("")
 
   const [disabledActions, setDisabledActions] = React.useState(false)
 
   const agent = usePolledAgentStatusContext();
+
+  const { isWithdrawing, isDepositing, isLiquidating } = agent?.status ?? {}
+debugger
+  React.useEffect(() => {
+    if (!agent?.status?.Agent) return
+debugger
+    if (!isDepositing && loadingTopUp) {
+      setLoadingTopUp(false)
+      setExecutionMessage(``)
+      addToLog({ text: 'Deposit successful. MessageId', hasLink: true, linkId: agent.status.lastDepositNoticeId, isMessage: true})
+    }
+    if (!isWithdrawing && (loadingWithdrawQuote || loadingWithdrawBase)) {
+      setLoadingWithdrawQuote(false)
+      setLoadingWithdrawBase(false)
+      setExecutionMessage(``)
+      addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: agent.status.lastWithdrawalNoticeId, isMessage: true})
+    }
+    if (!isLiquidating && loadingLiquidate) {
+      setLoadingLiquidate(false)
+      setExecutionMessage(``)
+      addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: agent.status.lastLiquidationNoticeId, isMessage: true})
+    }
+  }, [isWithdrawing, isDepositing, isLiquidating, agent?.status?.Agent])
 
   if (!agent) return <></>
 
   const status = agent.status
 
   if (!status) return <></>
+  const executingOnAssets = loadingTopUp || loadingWithdrawQuote || loadingWithdrawBase || loadingLiquidate
 
   const addToLog = (entry: LogEntry, error?: string) => {
     if (error && isLocalDev()) {
@@ -44,12 +72,12 @@ export function AgentPanel() {
 
   const handleDeposit = async (amount: string) => {
     setLoadingTopUp(true)
-    addToLog({text: `Depositing ${amount} ${credSymbol} to agent...`, hasLink: false})
+    setExecutionMessage(`Depositing ${displayableCurrency(amount)} ${credSymbol} to agent...`)
+    addToLog({text: `Depositing ${displayableCurrency(amount)} ${credSymbol} to agent...`, hasLink: false})
     const depositResult = await depositToAgent(agent.agentId, amount)
-    setLoadingTopUp(false)
     if (depositResult?.type === "Success") {
       const msgId = depositResult.result
-      addToLog({ text: 'Deposit successful. MessageID', hasLink: true, linkId: msgId, isMessage: true})
+      addToLog({ text: 'Deposit initiated. MessageID', hasLink: true, linkId: msgId, isMessage: true})
     } else {
       addToLog({text: `Failed to deposit ${credSymbol}. Please try again.`, hasLink: false, isError: true}, depositResult.result)
     }
@@ -57,12 +85,12 @@ export function AgentPanel() {
 
   const handleWithdrawQuote = async (amount: string) => {
     setLoadingWithdrawQuote(true)
-    addToLog({ text: `Withdrawing ${amount} ${credSymbol} from agent...`, hasLink: false})
+    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${credSymbol} from agent...`)
+    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${credSymbol} from agent...`, hasLink: false})
     const withdrawResult = await withdrawQuote(agent.agentId, amount, status.quoteToken)
-    setLoadingWithdrawQuote(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
-      addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
+      addToLog({ text: 'Withdrawal initiated. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
       addToLog({ text: `Failed to withdraw ${credSymbol}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
@@ -71,9 +99,9 @@ export function AgentPanel() {
   const handleWithdrawBase = async (amount: string) => {
     // TODO
     setLoadingWithdrawBase(true)
-    addToLog({ text: `Withdrawing ${amount} ${status.baseTokenSymbol} from agent...`, hasLink: false})
+    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${status.baseTokenSymbol} from agent...`)
+    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${status.baseTokenSymbol} from agent...`, hasLink: false})
     const withdrawResult = await withdrawBase(agent.agentId, amount, status.baseToken)
-    setLoadingWithdrawBase(false)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
@@ -85,9 +113,9 @@ export function AgentPanel() {
   const handleLiquidate = async () => {
     // TODO 
     setLoadingLiquidate(true)
+    setExecutionMessage(`Liquidating agent assets...`)
     addToLog({ text: `Liquidating agent. Selling base token and withdrawing...`, hasLink: false})
     const liquidationResult = await liquidate(agent.agentId)
-    setLoadingLiquidate(false)
     if (liquidationResult?.type === "Success") {
       const msgId = liquidationResult.result
       addToLog({ text: 'Liquidation initiated. Please wait a few seconds for completion. MessageID', linkId: msgId, isMessage: true, hasLink: true})
@@ -110,6 +138,20 @@ export function AgentPanel() {
     }
   }
 
+  const handlePause = async () => {
+    setLoadingPause(true)
+    addToLog({text: `Pausing agent...`, hasLink: false})
+    setLoadingPause(false)
+    const pauseResult = await pauseAgent(agent.agentId)
+    if (pauseResult.type === "Success") {
+      const msgId = pauseResult.result
+      addToLog({text: `Pause agent initiated. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
+      setDisabledActions(true)
+    } else {
+      addToLog({text: `Failed to pause agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, pauseResult.result)
+    }
+  }
+
   const handleRetirement = async () => {
     setLoadingRetirement(true)
     addToLog({text: `Retiring agent...`, hasLink: false})
@@ -125,16 +167,31 @@ export function AgentPanel() {
   }
 
   const BTN_WIDTH = 165
+  const OVERLAY_OFFSET_PX = 16
 
   return (
     <Box maxWidth={'min-content'} mx={'auto'} pb={8}>
       <Paper variant="outlined" sx={{ padding: 4 }} >
         <Stack direction={'row'} gap={4} minHeight={600}>
-          <Stack gap={4} width={750} pr={4} borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
+          <Stack gap={4} width={750}
+            pr={actionLog.length > 0 ? 4 : 0}
+            borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}
+          >
             <AgentStatusDisplay/>
             <Divider />
 
-            <Stack gap={2}>
+            <Stack gap={2} position={'relative'}>
+              {/* overlay */}
+              {executingOnAssets && (
+                <Stack position={'absolute'} top={`${-OVERLAY_OFFSET_PX}px`} left={`${-OVERLAY_OFFSET_PX}px`} p={`${OVERLAY_OFFSET_PX}px`}
+                  height={`calc(100% + ${2 * OVERLAY_OFFSET_PX}px)`} width={`calc(100% + ${2 * OVERLAY_OFFSET_PX}px)`} 
+                  zIndex={10}
+                  display={'flex'} justifyContent={'center'} alignItems={'center'} gap={4}
+                  sx={(theme) => ({backgroundColor: `var(--mui-palette-primary-contrastText)`, opacity: 0.9})}>
+                  <Typography variant="h6">{executionMessage}</Typography>
+                  <CircularProgress size={32} />
+                </Stack>
+              )}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
                 <Typography variant="h6">
                   {status.quoteTokenSymbol}
@@ -155,7 +212,7 @@ export function AgentPanel() {
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
                     tokenSymbol={status.quoteTokenSymbol!}
-                    withdraw={handleWithdrawQuote}/>
+                    withdraw={handleWithdrawBase}/>
                 </Stack>
               </Stack>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
@@ -169,6 +226,14 @@ export function AgentPanel() {
             
             <Divider/>
             <Stack gap={2} mt={'auto'}>
+              <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
+                <Stack>
+                  <Typography variant="h6">
+                    Status
+                  </Typography>
+                </Stack>
+                <PauseDialog disabled={disabledActions} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePause}/>
+              </Stack>     
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>
                   <Typography variant="h6">
