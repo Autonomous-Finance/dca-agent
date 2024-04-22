@@ -2,21 +2,13 @@ import * as ao from "@permaweb/aoconnect/browser"
 import { CRED_ADDR } from "./agent-utils"
 
 export async function readCredBalance(userAddr: string) {
-
-  // using regular message + result instead of dryrun until dryrun is fixed
-  const msgId = await ao.message({
+  const result = await ao.dryrun({
     process: CRED_ADDR,
     data: "",
     tags: [
       { name: "Action", value: "Balance" },
-      { name: "Target", value: userAddr },
+      { name: "Recipient", value: userAddr },
     ],
-    signer: ao.createDataItemSigner(window.arweaveWallet),
-  })
-
-  const result = await ao.result({
-    message: msgId,
-    process: CRED_ADDR,
   })
 
   try {

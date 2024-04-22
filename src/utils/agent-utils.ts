@@ -6,6 +6,12 @@ export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 
 export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
+
+const {dryrun} = ao.connect({
+  CU_URL: "https://cu45.ao-testnet.xyz"
+})
+
+
 // AGENT INFO AS RETURNED BY AGENT PROCESS
 export type AgentStatus = {
   initialized: boolean
@@ -262,7 +268,7 @@ export const createAgentPerformanceInfo = (
 
 export const getOneAgent = async (agentId: string) => {
   try {
-    const res = await ao.dryrun({
+    const res = await dryrun({
       process: REGISTRY,
       tags: [
         { name: "Action", value: "GetOneAgent" },
@@ -324,8 +330,9 @@ export const getAllAgents = async () => {
 }
 
 export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatus | null>> {
+
   try {
-    const result = await ao.dryrun({
+    const result = await dryrun({
       process: agent,
       data: "",
       tags: [{ name: "Action", value: "GetStatus" }],
