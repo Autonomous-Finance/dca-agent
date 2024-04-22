@@ -1,8 +1,14 @@
 import * as ao from "@permaweb/aoconnect/browser"
 import { CRED_ADDR } from "./agent-utils"
 
+
+const {dryrun} = ao.connect({
+  CU_URL: "https://cu45.ao-testnet.xyz"
+})
+
+
 export async function readCredBalance(userAddr: string) {
-  const result = await ao.dryrun({
+  const result = await dryrun({
     process: CRED_ADDR,
     data: "",
     tags: [

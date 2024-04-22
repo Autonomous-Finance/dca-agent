@@ -181,7 +181,7 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
 
 export const getLatestAgent = async () => {
   try {
-    const res = await ao.dryrun({
+    const res = await dryrun({
       process: REGISTRY,
       tags: [
         { name: "Action", value: "GetLatestAgent" },
@@ -300,7 +300,7 @@ export const getOneAgent = async (agentId: string) => {
 
 export const getAllAgents = async () => {
   try {
-    const res = await ao.dryrun({
+    const res = await dryrun({
       process: REGISTRY,
       tags: [
         { name: "Action", value: "GetAllAgents" },
