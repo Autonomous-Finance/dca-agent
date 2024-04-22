@@ -34,10 +34,10 @@ export function AgentPanel() {
   const agent = usePolledAgentStatusContext();
 
   const { isWithdrawing, isDepositing, isLiquidating } = agent?.status ?? {}
-debugger
+
   React.useEffect(() => {
     if (!agent?.status?.Agent) return
-debugger
+
     if (!isDepositing && loadingTopUp) {
       setLoadingTopUp(false)
       setExecutionMessage(``)
@@ -232,7 +232,7 @@ debugger
                     Status
                   </Typography>
                 </Stack>
-                <PauseDialog disabled={disabledActions} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePause}/>
+                <PauseDialog disabled={disabledActions || executingOnAssets} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePause}/>
               </Stack>     
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>
@@ -240,7 +240,7 @@ debugger
                     Ownership
                   </Typography>
                 </Stack>
-                <TransferOwnershipDialog disabled={disabledActions} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
+                <TransferOwnershipDialog disabled={disabledActions || executingOnAssets} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
               </Stack>
               {/* <Divider/> */}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
@@ -249,7 +249,7 @@ debugger
                     Retirement
                   </Typography>
                 </Stack>
-                <RetirementDialog disabled={disabledActions} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
+                <RetirementDialog disabled={disabledActions || executingOnAssets} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
               </Stack>
             </Stack>            
           </Stack>

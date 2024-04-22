@@ -108,7 +108,7 @@ export default function CreateAgent() {
 
       const processId = await spawn({
         module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
-        scheduler: "TZ7o7SIZ06ZEJ14lXwVtng1EtSx60QkPy-kh-kdAXog",
+        scheduler: "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA",
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Process-Type", value: "AF-DCA-Agent" },

@@ -2,6 +2,8 @@ import { readCredBalance } from "@/utils/ao-utils"
 import { useActiveAddress } from "arweave-wallet-kit"
 import React from "react"
 
+export const POLL_INTERVAL_CRED_BALANCE = 6000
+
 const useBalance = () => {
   const address = useActiveAddress()
   const [balance, setBalance] = React.useState(0)
@@ -21,7 +23,7 @@ const useBalance = () => {
       setLoading(false)
       interval = setInterval(() => {
         readCredBalance(address).then(setBalance)
-      }, 6000)
+      }, POLL_INTERVAL_CRED_BALANCE)
     }
 
     syncBalance()

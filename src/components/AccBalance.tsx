@@ -23,7 +23,7 @@ export function AccBalance() {
         {loading ? (
           <Skeleton width={120} />
         ) : (
-          <Typography>{balance} AOCRED-Test</Typography>
+          <Typography>{balance / 1000} AOCRED-Test</Typography>
         )}
       </Stack>
     </Paper>
