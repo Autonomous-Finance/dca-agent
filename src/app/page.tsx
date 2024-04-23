@@ -13,13 +13,13 @@ import Link from "next/link"
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewAgent from "@/components/ViewAgent"
-import { wipeRegistry } from "@/utils/agent-utils"
+import { wipeBackend } from "@/utils/agent-utils"
 import WipeDebug from "@/components/WipeDebug"
 
 export default function HomePage() {
-  const latestFromRegistry = useLatestRegisteredAgent();
+  const latestAgentFromBackend = useLatestRegisteredAgent();
 
-  const {agentId, details, loading, refresh} = latestFromRegistry;
+  const {agentId, details, loading, refresh} = latestAgentFromBackend;
 
   const foundActiveAgent = agentId && !details?.Retired;
 
@@ -27,13 +27,13 @@ export default function HomePage() {
 
   const wipe = async () => {
     setWiping(true);
-    await wipeRegistry();
+    await wipeBackend();
     window.location.reload();
   }
 
   if (wiping) return (
     <Box margin={'8rem auto 0'}>
-      <LoadingEmptyState texts={['Wiping Registry...']}/>
+      <LoadingEmptyState texts={['Wiping Agent Backend...']}/>
     </Box>
   )
 

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build-lua-registry": "chmod +x lua-registry-source.sh && ./lua-registry-source.sh", 
+    "build-lua-backend": "chmod +x lua-backend-source.sh && ./lua-backend-source.sh", 
     "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh"
   },
   "dependencies": {

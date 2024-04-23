@@ -20,7 +20,7 @@ LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
-Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
+Backend = Backend or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
 -- flags for helping the frontend properly display the process status
 IsWithdrawing = IsWithdrawing or false
@@ -151,7 +151,7 @@ Handlers.add(
     local newOwner = msg.Tags.NewOwner
     assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
     Owner = newOwner
-    ao.send({ Target = Registry, Action = "TransferAgent", NewOwner = newOwner })
+    ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
     Handlers.utils.reply({
       ["Response-For"] = "TransferOwnership",
       Data = "Success"
@@ -169,7 +169,7 @@ Handlers.add(
     ao.send({ Target = QuoteToken, Action = "Balance" })
     if m.Sender == Pool then return end -- do not register pool refunds as deposits
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "Deposited",
       Sender = m.Tags.Sender,
       Quantity = m.Quantity
@@ -197,7 +197,7 @@ Handlers.add(
   end,
   function(m)
     LatestQuoteTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+    ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -232,7 +232,7 @@ Handlers.add(
   end,
   function(m)
     LatestBaseTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
+    ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -359,7 +359,7 @@ Handlers.add(
   function(msg)
     if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "Swapped",
       ExpectedOutput = SwapExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
@@ -423,7 +423,7 @@ Handlers.add(
   function(msg)
     if (msg.Tags["From-Token"] ~= BaseToken) then return end
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "SwappedBack",
       ExpectedOutput = SwapBackExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
@@ -529,7 +529,7 @@ Handlers.add(
   function(msg)
     ownership.onlyOwner(msg)
     Paused = not Paused
-    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = tostring(Paused) })
+    ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     Handlers.utils.reply({
       ["Response-For"] = "PauseToggle",
       Data = "Success"
@@ -547,7 +547,7 @@ Handlers.add(
     assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
-    ao.send({ Target = Registry, Action = "RetireAgent" })
+    ao.send({ Target = Backend, Action = "RetireAgent" })
     Handlers.utils.reply({
       ["Response-For"] = "Retire",
       Data = "Success"

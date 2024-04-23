@@ -37,7 +37,7 @@ import {
 import { BOT_SOURCE } from "@/lua/bot-source"
 import { BASE_CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
 import Log, { LogEntry } from "@/components/Log";
-import { REGISTRY } from "@/utils/agent-utils";
+import { AGENT_BACKEND } from "@/utils/agent-utils";
 import { useRouter } from "next/navigation";
 import { shortenId } from '../../utils/ao-utils';
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -189,12 +189,12 @@ export default function CreateAgent() {
       
       console.log('📜 LOG > monitorMsgId:', monitorMsgId)
       
-      // Register with Registry
+      // Register with Agent Backend
       
       addToLog({text: 'Registering agent...', hasLink: false})
 
       const registerMsgId = await message({
-        process: REGISTRY,
+        process: AGENT_BACKEND,
         signer: createDataItemSigner(window.arweaveWallet),
         tags: [
           { name: "Action", value: "RegisterAgent" },
@@ -208,11 +208,11 @@ export default function CreateAgent() {
       console.log("📜 LOG > registerMsg:", registerMsgId)
       const res = await result({
         message: registerMsgId,
-        process: REGISTRY,
+        process: AGENT_BACKEND,
       })
       console.log('📜 LOG > Registration result: ', res)
       if (res.Error) {
-        addToLog({text: "Failed to register agent with Registry. Please try again.", isError: true, hasLink: false})
+        addToLog({text: "Failed to register with Agent Backend. Please try again.", isError: true, hasLink: false})
         setLoading(false);
         return
       }
@@ -225,7 +225,7 @@ export default function CreateAgent() {
       console.log("📜 LOG > dryRun Status:", status)
 
       const allAgents = await dryrun({
-        process: REGISTRY,
+        process: AGENT_BACKEND,
         data: "",
         tags: [
           { name: "Action", value: "GetAllAgents" },

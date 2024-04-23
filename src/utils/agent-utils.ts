@@ -4,7 +4,7 @@ import AgentsTable from "@/components/AgentsTable"
 
 export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 
-export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
+export const AGENT_BACKEND = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
 
 const {dryrun} = ao.connect({
@@ -52,9 +52,9 @@ export type DcaBuy = {
   ConfirmedAt: string
 }
 
-// AGENT INFO AS RETURNED BY REGISTRY PROCESS
+// AGENT INFO AS RETURNED BY AGENT BACKEND PROCESS
 export type RegisteredAgent = {
-  // -- tracked in registry
+  // -- tracked in agent backend
   Owner: string,
   Agent: string,
   AgentName: string,
@@ -182,7 +182,7 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
 export const getLatestAgent = async () => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetLatestAgent" },
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
@@ -269,7 +269,7 @@ export const createAgentPerformanceInfo = (
 export const getOneAgent = async (agentId: string) => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetOneAgent" },
         { name: "Agent", value: agentId },
@@ -301,7 +301,7 @@ export const getOneAgent = async (agentId: string) => {
 export const getAllAgents = async () => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetAllAgents" },
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
@@ -683,12 +683,12 @@ export const retireAgent = async (agent: string): Promise<Receipt<string>> => {
 }
 
 // only for debugging
-export const wipeRegistry = async () => {
+export const wipeBackend = async () => {
   try {
-    console.log("!!! Wiping Registry");
+    console.log("!!! Wiping Agent Backend");
   
     const msgId = await ao.message({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "Wipe" },
       ],
@@ -698,7 +698,7 @@ export const wipeRegistry = async () => {
   
     const res = await ao.result({
       message: msgId,
-      process: REGISTRY,
+      process: AGENT_BACKEND,
     })
   
     console.log("Result: ", res)
