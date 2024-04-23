@@ -6,8 +6,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { CircularProgress, Stack, Typography } from '@mui/material';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
+import { PauseCircleOutlined } from '@mui/icons-material';
 
 export default function PauseDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, pause: () => void}) {
   const {loading, disabled, btnWidth, pause} = props
@@ -46,7 +46,7 @@ export default function PauseDialog(props: {loading: boolean, disabled?: boolean
         variant="contained"
         onClick={handleClickOpen}
       >
-        Pause <DoneAllIcon sx={{marginLeft: '0.25rem'}}/>
+        Pause <PauseCircleOutlined sx={{marginLeft: '0.25rem'}}/>
       </Button>
       <Dialog
         open={open}
