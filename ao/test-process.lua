@@ -11,7 +11,6 @@ Initialized = Initialized or false
 Retired = Retired or false
 Paused = Paused or false
 
-
 AgentName = AgentName or ""
 QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AOcred on testnet
 BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ"   -- BARK on testnet
@@ -23,6 +22,7 @@ LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
 -- flags for helping the frontend properly display the process status
+IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
 IsLiquidating = IsLiquidating or false
@@ -71,9 +71,8 @@ Handlers.add(
       swapExpectedOutput = SwapExpectedOutput,
       swapBackExpectedOutput = SwapBackExpectedOutput,
       slippageTolerance = SlippageTolerance,
-      transferId = TransferId,
-      transferIdSwapBack = TransferIdSwapBack,
       pool = Pool,
+      isSwapping = IsSwapping,
       isDepositing = IsDepositing,
       isWithdrawing = IsWithdrawing,
       isLiquidating = IsLiquidating,
@@ -305,35 +304,8 @@ Handlers.add(
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
-    -- bot.swapInitByCron()
-    ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
-  end
-)
-
-
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP
-Handlers.add(
-  "requestSwapOutput",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP
-    if m.From ~= QuoteToken then return end
-    if m.Recipient ~= Pool then return end
-
-    TransferId = m["Pushed-For"]
-
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalTransferIdSwap",
-      Data = "Got TransferId " .. (TransferId or 'nil')
-    })
-
-    ao.send({
-      Target = Pool,
-      Action = "Get-Price",
-      Token = QuoteToken,
-      Quantity = SwapInAmount
-    })
+    -- IsSwapping = true
+    -- bot.requestSwapOutput()
   end
 )
 
@@ -341,16 +313,11 @@ Handlers.add(
 Handlers.add(
   'swapExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferId
+    return msg.From == Pool and msg.Tags.Price ~= nil and IsSwapping
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalSwapExec",
-      Data = "Attempt executing swap with expected output " .. SwapExpectedOutput
-    })
-    bot.swapExec()
+    bot.swap()
   end
 )
 
@@ -369,52 +336,21 @@ Handlers.add(
       ConfirmedAt = tostring(msg.Timestamp)
     })
     SwapExpectedOutput = nil
-    TransferId = nil
+    IsSwapping = false
   end
 )
 
 -- SWAP BACK (TO LIQUIDATE)
 
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP BACK
-Handlers.add(
-  "requestSwapBackOutput",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP BACK
-    if m.From ~= BaseToken then return end
-    if m.Recipient ~= Pool then return end
-
-    TransferIdSwapBack = m["Pushed-For"]
-
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalTransferIdSwapBack",
-      Data = "Got TransferId for swap back " .. (TransferIdSwapBack or 'nil')
-    })
-
-    ao.send({
-      Target = Pool,
-      Action = "Get-Price",
-      Token = BaseToken,
-      Quantity = LatestBaseTokenBal
-    })
-  end
-)
-
 -- response to the price request for SWAP BACK
 Handlers.add(
   'swapBackExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferIdSwapBack
+    return msg.From == Pool and msg.Tags.Price ~= nil and IsLiquidating
   end,
   function(msg)
     SwapBackExpectedOutput = msg.Tags.Price
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalSwapBackExec",
-      Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
-    })
-    bot.swapBackExec()
+    bot.swapBack()
   end
 )
 
@@ -433,7 +369,6 @@ Handlers.add(
       ConfirmedAt = tostring(msg.Timestamp)
     })
     SwapBackExpectedOutput = nil
-    TransferIdSwapBack = nil
   end
 )
 
@@ -519,7 +454,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    bot.swapBackInit()
+    bot.requestSwapBackOutput()
   end
 )
 
@@ -530,8 +465,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
     ownership.onlyOwner(msg)
-    Paused = msg.Tags.Value == 'true'
-    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = msg.Tags.Value })
+    Paused = ~Paused
+    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     Handlers.utils.reply({
       ["Response-For"] = "PauseToggle",
       Data = "Success"
@@ -567,6 +502,7 @@ Handlers.add(
       ownership.onlyOwner(msg)
     end
     ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
-    bot.swapInit()
+    IsSwapping = true
+    bot.requestSwapOutput()
   end
 )

@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, pauseAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -138,17 +138,22 @@ export function AgentPanel() {
     }
   }
 
-  const handlePause = async () => {
+  const handlePauseToggle = async () => {
+    const isPaused = status.paused
     setLoadingPause(true)
-    addToLog({text: `Pausing agent...`, hasLink: false})
+    addToLog({text: `${isPaused ? 'Resuming' : 'Pausing'} agent...`, hasLink: false})
+    const pauseToggleResult = await pauseToggleAgent(agent.agentId)
     setLoadingPause(false)
-    const pauseResult = await pauseAgent(agent.agentId)
-    if (pauseResult.type === "Success") {
-      const msgId = pauseResult.result
-      addToLog({text: `Pause agent initiated. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
+    if (pauseToggleResult.type === "Success") {
+      const msgId = pauseToggleResult.result
+      addToLog({text: `Agent ${isPaused ? 'resumed' : 'paused'}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
       setDisabledActions(true)
     } else {
-      addToLog({text: `Failed to pause agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, pauseResult.result)
+      addToLog({
+        text: `Failed to ${isPaused ? 'resume' : 'pause'} agent.`, 
+        hasLink: false, 
+        isError: true
+      }, pauseToggleResult.result)
     }
   }
 
@@ -232,7 +237,7 @@ export function AgentPanel() {
                     Status
                   </Typography>
                 </Stack>
-                <PauseDialog disabled={disabledActions || executingOnAssets} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePause}/>
+                <PauseDialog disabled={disabledActions || executingOnAssets} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePauseToggle}/>
               </Stack>     
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>

@@ -19,62 +19,49 @@ bot.init = function()
   })
 end
 
-bot.swapInit = function()
-  -- prepare swap
-  ao.send({
-    Target = QuoteToken,
-    Action = "Transfer",
-    Quantity = SwapInAmount,
-    Recipient = Pool
-  })
-end
-
-bot.swapInitByCron = function()
-  -- prepare swap
-  ao.send({
-    Target = QuoteToken,
-    Action = "Transfer",
-    Quantity = SwapInAmount,
-    Recipient = Pool,
-    ["Pushed-For"] = ao.id
-  })
-end
-
-bot.swapExec = function()
-  assert(type(TransferId) == 'string', 'TransferId is missing!')
-  -- swap interaction
+bot.requestSwapOutput = function()
   ao.send({
     Target = Pool,
-    Action = "Swap",
-    Transfer = TransferId,
-    Pool = Pool,
-    ["Slippage-Tolerance"] = SlippageTolerance or "1",
-    ["Expected-Output"] = SwapExpectedOutput,
+    Action = "Get-Price",
+    Token = QuoteToken,
+    Quantity = SwapInAmount
   })
 end
 
-bot.swapBackInit = function()
+bot.swap = function()
+  -- prepare swap
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Recipient = Pool,
+    Quantity = SwapInAmount,
+    ["X-Action"] = "Swap",
+    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["X-Expected-Output"] = SwapExpectedOutput,
+  })
+end
+
+bot.requestSwapBackOutput = function()
+  ao.send({
+    Target = Pool,
+    Action = "Get-Price",
+    Token = BaseToken,
+    Quantity = LatestBaseTokenBal
+  })
+end
+
+
+bot.swapBack = function()
   -- prepare swap back
   ao.send({
     Target = BaseToken,
     Action = "Transfer",
     Quantity = LatestBaseTokenBal,
-    Recipient = Pool
+    Recipient = Pool,
+    ["X-Action"] = "Swap",
+    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["X-Expected-Output"] = SwapBackExpectedOutput,
   })
 end
-
-bot.swapBackExec = function()
-  -- assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
-  -- swap interaction
-  ao.send({
-    Target = Pool,
-    Action = "Swap",
-    Transfer = TransferIdSwapBack or 'nil',
-    Pool = Pool,
-    ["Slippage-Tolerance"] = SlippageTolerance or "1",
-    ["Expected-Output"] = SwapBackExpectedOutput,
-  })
-end
-
 
 return bot

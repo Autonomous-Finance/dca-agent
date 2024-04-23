@@ -604,12 +604,12 @@ export const transferOwnership = async (agent: string, newOwnerId: string): Prom
 
 export const pauseAgent = async (agent: string): Promise<Receipt<string>> => {
   try {
-    console.log("Pausing");
+    console.log("Toggling Paused");
   
     const msgId = await ao.message({
       process: agent,
       tags: [
-        { name: "Action", value: "Pause" },
+        { name: "Action", value: "PauseToggle" },
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })

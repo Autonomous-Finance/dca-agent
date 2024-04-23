@@ -302,7 +302,7 @@ Handlers.add(
     onlyAgent(msg)
     local agentId = msg.From
     local agentInfo = getAgentInfoAndIndex(agentId)
-    agentInfo.Paused = true
+    agentInfo.Paused = msg.Tags.Paused == "true"
     Handlers.utils.reply({
       ["Response-For"] = "PauseToggleAgent",
       Data = "Success"
