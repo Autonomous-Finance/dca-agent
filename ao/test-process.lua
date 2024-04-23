@@ -528,8 +528,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
     ownership.onlyOwner(msg)
-    Paused = msg.Tags.Value == 'true'
-    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = msg.Tags.Value })
+    Paused = not Paused
+    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     Handlers.utils.reply({
       ["Response-For"] = "PauseToggle",
       Data = "Success"

@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, pauseAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -15,7 +15,6 @@ import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvi
 import LiquidateDialog from "@/components/LiquidateDialog"
 import { credSymbol, displayableCurrency } from "@/utils/data-utils"
 import PauseDialog from "@/components/PauseDialog"
-import { Agent } from '../queries/agent.queries';
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -29,7 +28,7 @@ export function AgentPanel() {
   const [loadingPause, setLoadingPause] = React.useState(false)
   const [executionMessage, setExecutionMessage] = React.useState("")
 
-  const [disabledActions, setDisabledActions] = React.useState(false)
+  const [keepActionsDisabled, setKeepActionsDisabled] = React.useState(false)
 
   const agent = usePolledAgentStatusContext();
 
@@ -54,6 +53,7 @@ export function AgentPanel() {
       setExecutionMessage(``)
       addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: agent.status.lastLiquidationNoticeId, isMessage: true})
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawing, isDepositing, isLiquidating, agent?.status?.Agent])
 
   if (!agent) return <></>
@@ -61,7 +61,10 @@ export function AgentPanel() {
   const status = agent.status
 
   if (!status) return <></>
+
   const executingOnAssets = loadingTopUp || loadingWithdrawQuote || loadingWithdrawBase || loadingLiquidate
+  const tempDisablingActions = executingOnAssets || loadingTransferOwnership || loadingPause || loadingRetirement
+  const areActionsDisabled = keepActionsDisabled || tempDisablingActions
 
   const addToLog = (entry: LogEntry, error?: string) => {
     if (error && isLocalDev()) {
@@ -132,23 +135,27 @@ export function AgentPanel() {
     if (transferResult.type === "Success") {
       const msgId = transferResult.result
       addToLog({text: `Ownership transferred to ${id}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
-      setDisabledActions(true)
+      setKeepActionsDisabled(true)
     } else {
       addToLog({text: `Failed to transfer ownership to ${id}. Please try again.`, hasLink: false, isError: true}, transferResult.result)
     }
   }
 
-  const handlePause = async () => {
+  const handlePauseToggle = async () => {
+    const isPaused = status.paused
     setLoadingPause(true)
-    addToLog({text: `Pausing agent...`, hasLink: false})
+    addToLog({text: `${isPaused ? 'Resuming' : 'Pausing'} agent...`, hasLink: false})
+    const pauseToggleResult = await pauseToggleAgent(agent.agentId)
     setLoadingPause(false)
-    const pauseResult = await pauseAgent(agent.agentId)
-    if (pauseResult.type === "Success") {
-      const msgId = pauseResult.result
-      addToLog({text: `Pause agent initiated. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
-      setDisabledActions(true)
+    if (pauseToggleResult.type === "Success") {
+      const msgId = pauseToggleResult.result
+      addToLog({text: `Agent ${isPaused ? 'resumed' : 'paused'}. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
     } else {
-      addToLog({text: `Failed to pause agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, pauseResult.result)
+      addToLog({
+        text: `Failed to ${isPaused ? 'resume' : 'pause'} agent.`, 
+        hasLink: false, 
+        isError: true
+      }, pauseToggleResult.result)
     }
   }
 
@@ -160,7 +167,7 @@ export function AgentPanel() {
     if (retirementResult.type === "Success") {
       const msgId = retirementResult.result
       addToLog({text: `Agent retired. MessageID`, linkId: msgId, isMessage: false, hasLink: true})
-      setDisabledActions(true)
+      setKeepActionsDisabled(true)
     } else {
       addToLog({text: `Failed to retire agent. Please make sure it has zero balances and retry.`, hasLink: false, isError: true}, retirementResult.result)
     }
@@ -197,10 +204,10 @@ export function AgentPanel() {
                   {status.quoteTokenSymbol}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  <TopUpDialog disabled={disabledActions} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
+                  <TopUpDialog disabled={areActionsDisabled} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
                     tokenSymbol={status.quoteTokenSymbol!} tokenBalance={status.quoteTokenBalance}
                     topUp={handleDeposit}/>
-                  <WithdrawDialog type="quote" disabled={disabledActions} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="quote" disabled={areActionsDisabled} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
                     tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
@@ -210,7 +217,7 @@ export function AgentPanel() {
                   {status.baseTokenSymbol}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  <WithdrawDialog type="base" disabled={disabledActions} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="base" disabled={areActionsDisabled} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
                     tokenSymbol={status.quoteTokenSymbol!}
                     withdraw={handleWithdrawBase}/>
                 </Stack>
@@ -219,7 +226,7 @@ export function AgentPanel() {
                 <Typography variant="h6">
                     {"All Assets"}
                 </Typography>
-                <LiquidateDialog disabled={disabledActions} loading={loadingLiquidate} width={BTN_WIDTH}
+                <LiquidateDialog disabled={areActionsDisabled} loading={loadingLiquidate} width={BTN_WIDTH}
                   liquidate={handleLiquidate}/>
               </Stack>
             </Stack>
@@ -232,7 +239,7 @@ export function AgentPanel() {
                     Status
                   </Typography>
                 </Stack>
-                <PauseDialog disabled={disabledActions || executingOnAssets} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePause}/>
+                <PauseDialog disabled={areActionsDisabled} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePauseToggle}/>
               </Stack>     
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>
@@ -240,7 +247,7 @@ export function AgentPanel() {
                     Ownership
                   </Typography>
                 </Stack>
-                <TransferOwnershipDialog disabled={disabledActions || executingOnAssets} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
+                <TransferOwnershipDialog disabled={areActionsDisabled} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
               </Stack>
               {/* <Divider/> */}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
@@ -249,7 +256,7 @@ export function AgentPanel() {
                     Retirement
                   </Typography>
                 </Stack>
-                <RetirementDialog disabled={disabledActions || executingOnAssets} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
+                <RetirementDialog disabled={areActionsDisabled} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
               </Stack>
             </Stack>            
           </Stack>

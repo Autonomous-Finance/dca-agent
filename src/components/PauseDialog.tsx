@@ -7,7 +7,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { CircularProgress, Stack, Typography } from '@mui/material';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
-import { PauseCircleOutlined } from '@mui/icons-material';
+import { PauseCircleOutlined, PlayCircleOutlined } from '@mui/icons-material';
 
 export default function PauseDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, pause: () => void}) {
   const {loading, disabled, btnWidth, pause} = props
@@ -40,13 +40,13 @@ export default function PauseDialog(props: {loading: boolean, disabled?: boolean
     <React.Fragment>
       <Button
         sx={{ height: 40, width: btnWidth }}
-        disabled={loading || isPaused || disabled}
+        disabled={loading || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         color="secondary"
         variant="contained"
         onClick={handleClickOpen}
       >
-        Pause <PauseCircleOutlined sx={{marginLeft: '0.25rem'}}/>
+        {isPaused ? 'Resume' : 'Pause'} {isPaused ? <PlayCircleOutlined sx={{marginLeft: '0.25rem'}}/> : <PauseCircleOutlined sx={{marginLeft: '0.25rem'}}/>}
       </Button>
       <Dialog
         open={open}
@@ -64,8 +64,13 @@ export default function PauseDialog(props: {loading: boolean, disabled?: boolean
         <DialogContent>
           <DialogContentText>
             <Stack gap={1}>
-              <Typography color="text.primary">You are about to {`${isPaused ? 'resume' : 'pause'}`} the activity of your agent.</Typography>
-              {!isPaused && <Typography color="text.primary">While paused it will no longer perform DCA swaps.</Typography>}
+              <Typography color="text.primary">
+                You are about to {`${isPaused ? 'resume' : 'pause'}`} the activity of your agent.
+              </Typography>
+              <Typography color={isPaused ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"}>
+                {isPaused ? 'It will perform a buy at the next DCA tick. ' : ' While paused it will no longer perform DCA swaps.'}
+              </Typography>
+              {/* {!isPaused && <Typography color="text.primary">While paused it will no longer perform DCA swaps.</Typography>} */}
             </Stack>
           </DialogContentText>
         </DialogContent>
