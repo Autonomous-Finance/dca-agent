@@ -340,9 +340,7 @@ Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
-    ownership.onlyOwner(msg)
-    -- initialize Controller, too
-    -- Controller = msg.Tags.Controller
+    Owner = msg.Sender
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
