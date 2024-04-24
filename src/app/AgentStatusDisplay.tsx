@@ -1,17 +1,17 @@
 "use client"
 
-import { Box, Button, Divider, Link, Paper, Stack, Typography } from "@mui/material"
-import React, { ReactNode, useEffect, useState } from "react"
-import { enhanceAgentStatus, enhanceRegisteredAgentInfo, getCurrentSwapOutput, getTotalValue } from "@/utils/agent-utils";
+import { Box, Divider, Link, Stack, Tooltip, Typography, Zoom } from "@mui/material"
+import React, { ReactNode } from "react"
+import { enhanceAgentStatus, enhanceRegisteredAgentInfo, getTotalValue } from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
 import { shortenId } from "@/utils/ao-utils";
 import LinkIcon from '@mui/icons-material/Link';
 import AgentStatusChip from "@/components/AgentStatusChip";
 import HelpIcon from "@/components/HelpIcon";
-import { East, WaterDrop } from "@mui/icons-material";
+import { Close, East, MoreHoriz, } from "@mui/icons-material";
 import SwapDebug from "@/components/SwapDebug";
 import { useAgentPerformance } from "@/hooks/useAgentPerformance";
-import { displayableCurrency } from "@/utils/data-utils";
+import { displayableCurrency, truncateId } from "@/utils/data-utils";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
@@ -73,7 +73,7 @@ export function AgentStatusDisplay() {
                 <LinkIcon/>
               </Link>
             }
-          ></InfoLine>
+          />
           <InfoLine
             label={'Owned since'} 
             value={status.ownedSince}
@@ -93,16 +93,16 @@ export function AgentStatusDisplay() {
           <Typography display={'flex'} fontWeight={'bold'}>
             ASSETS
           </Typography>
-          <InfoLine label={'Base Balance'} value={`${displayableCurrency(status.baseTokenBalance)}`} suffix={status.baseTokenSymbol}
+          <InfoLine label={'Base Balance'} value={`${displayableCurrency(status.baseTokenBalance)}`} suffix={status.baseTokenTicker}
             />
           <InfoLine label={'Quote Balance'} 
             value={`${displayableCurrency(status.quoteTokenBalance)}`} 
-            suffix={status.quoteTokenSymbol}
+            suffix={status.quoteTokenTicker}
             color={status.statusX === 'No Funds' ? 'var(--mui-palette-error-main)' : ''}
           />
           <InfoLine label={'Total Value (est.)'}
             value={currentValue ? displayableCurrency(currentValue) : `n/A`} 
-            suffix={currentValue ? status.quoteTokenSymbol : ''}
+            suffix={currentValue ? status.quoteTokenTicker : ''}
             soft={!currentValue}
           />
           <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto'}}>
@@ -118,11 +118,18 @@ export function AgentStatusDisplay() {
           </Typography>
           <InfoLine label='Currencies' value={
             <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'}>
-              {status.quoteTokenSymbol} <East /> {status.baseTokenSymbol}
+              {status.quoteTokenTicker} <East /> {status.baseTokenTicker}
             </Typography>}/>
-          <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}></InfoLine>
-          <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenSymbol}></InfoLine>
-          <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}></InfoLine>
+          <InfoLine label='Pools' value={
+            <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} flexDirection={'row'} gap={1} width={'100%'} fontWeight={'medium'} >
+              {status.dex}
+              <PoolsDetails agent={agent.status}/>
+            </Typography>
+            }
+          />
+          <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}/>
+          <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenTicker}/>
+          <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}/>
           
           <Box my={'12px'}><Divider /></Box>
 
@@ -131,19 +138,19 @@ export function AgentStatusDisplay() {
           </Typography>
           <InfoLine label={'Total Deposited'}
             value={displayableCurrency(status.TotalDeposited)}
-            suffix={status.quoteTokenSymbol}
+            suffix={status.quoteTokenTicker}
             labelInfo={HELP_TEXT_TOTAL_DEPOSITED}
           />
           <InfoLine label={'Total Swaps (Active Cycles)'} value={status.DcaBuys.length} />
           <InfoLine label={'Average Swap Price'}
             value={status.averagePrice || 'n/A'}
-            suffix={status.averagePrice ? status.quoteTokenSymbol : ''}
+            suffix={status.averagePrice ? status.quoteTokenTicker : ''}
             soft={!status.averagePrice}
             labelInfo={HELP_AVG_SWAP_PRICE}
           />
           <InfoLine label={'Current Swap Price'}
             value={agentPerformanceInfo?.currentPrice || `n/A`}
-            suffix={agentPerformanceInfo?.currentPrice ? status.quoteTokenSymbol : ''}
+            suffix={agentPerformanceInfo?.currentPrice ? status.quoteTokenTicker : ''}
             soft={!agentPerformanceInfo?.currentPrice}
             labelInfo={HELP_CURRENT_SWAP_PRICE}
           />
@@ -185,5 +192,52 @@ const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labe
         </Typography>}
       </Stack>
     </Stack>
+  )
+}
+
+
+const PoolsDetails = ({agent}: {agent: any}) => {
+  const [show, setShow] = React.useState(false)
+
+  return (
+    <Box overflow={'visible'} position={'relative'} display={'flex'} alignItems={'center'}>
+      <MoreHoriz onClick={() => setShow(!show)} sx={{cursor: 'pointer'}}/>
+      {show && (
+        <Box position={'absolute'} width={'400px'} maxHeight={'300px'} top={'100%'} right={'100%'}
+          sx={{backgroundColor: 'var(--mui-palette-background-default)'}} boxShadow={4} p={2}
+          display={'flex'} flexDirection={'column'} justifyContent={'flex-start'} alignItems={'stretch'} gap={1}>
+          <Close sx={{position: 'absolute', right: '1rem', top: '1rem', cursor: 'pointer'}} 
+            onClick={() => setShow(false)}
+          />
+          <Stack direction={'row'} gap={1} mb={2}>
+            <Typography fontWeight={'bold'}>
+              {`${agent.quoteTokenTicker} / ${agent.baseTokenTicker}`}
+            </Typography>
+            <Typography color={'text.secondary'}>
+              using pools from
+            </Typography>
+          </Stack>
+          <InfoLine
+            label={`${agent.dex}`} 
+            value={
+              <Link href={`https://www.ao.link/entity/${agent.pool}`} target="_blank"
+                variant="body1" fontFamily={'Courier New'}
+                color={'text.primary'}
+                sx={(theme) => ({
+                  overflowWrap: 'anywhere',
+                  display: 'inline-flex', 
+                  alignItems: 'center', gap: 1, 
+                  color: theme.palette.info.main
+                  })}
+                >
+                {truncateId(agent.pool)}
+                <LinkIcon/>
+              </Link>
+            }
+          />
+        </Box>
+      )}
+    </Box>
+    
   )
 }

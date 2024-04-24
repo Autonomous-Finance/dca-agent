@@ -1,5 +1,3 @@
-Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
-
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil

@@ -13,7 +13,7 @@ import { isLocalDev } from "@/utils/debug-utils"
 import RetirementDialog from "@/components/RetirementDialog"
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider"
 import LiquidateDialog from "@/components/LiquidateDialog"
-import { credSymbol, displayableCurrency } from "@/utils/data-utils"
+import { AO_CRED_SYMBOL, displayableCurrency } from "@/utils/data-utils"
 import PauseDialog from "@/components/PauseDialog"
 
 export function AgentPanel() {
@@ -75,41 +75,41 @@ export function AgentPanel() {
 
   const handleDeposit = async (amount: string) => {
     setLoadingTopUp(true)
-    setExecutionMessage(`Depositing ${displayableCurrency(amount)} ${credSymbol} to agent...`)
-    addToLog({text: `Depositing ${displayableCurrency(amount)} ${credSymbol} to agent...`, hasLink: false})
-    const depositResult = await depositToAgent(agent.agentId, amount)
+    setExecutionMessage(`Depositing ${displayableCurrency(amount)} ${AO_CRED_SYMBOL} to agent...`)
+    addToLog({text: `Depositing ${displayableCurrency(amount)} ${AO_CRED_SYMBOL} to agent...`, hasLink: false})
+    const depositResult = await depositToAgent(agent.agentId, agent.status!.quoteToken, amount)
     if (depositResult?.type === "Success") {
       const msgId = depositResult.result
       addToLog({ text: 'Deposit initiated. MessageID', hasLink: true, linkId: msgId, isMessage: true})
     } else {
-      addToLog({text: `Failed to deposit ${credSymbol}. Please try again.`, hasLink: false, isError: true}, depositResult.result)
+      addToLog({text: `Failed to deposit ${AO_CRED_SYMBOL}. Please try again.`, hasLink: false, isError: true}, depositResult.result)
     }
   }
 
   const handleWithdrawQuote = async (amount: string) => {
     setLoadingWithdrawQuote(true)
-    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${credSymbol} from agent...`)
-    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${credSymbol} from agent...`, hasLink: false})
+    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${AO_CRED_SYMBOL} from agent...`)
+    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${AO_CRED_SYMBOL} from agent...`, hasLink: false})
     const withdrawResult = await withdrawQuote(agent.agentId, amount, status.quoteToken)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal initiated. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
-      addToLog({ text: `Failed to withdraw ${credSymbol}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
+      addToLog({ text: `Failed to withdraw ${AO_CRED_SYMBOL}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
   }
 
   const handleWithdrawBase = async (amount: string) => {
     // TODO
     setLoadingWithdrawBase(true)
-    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${status.baseTokenSymbol} from agent...`)
-    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${status.baseTokenSymbol} from agent...`, hasLink: false})
+    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${status.baseTokenTicker} from agent...`)
+    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${status.baseTokenTicker} from agent...`, hasLink: false})
     const withdrawResult = await withdrawBase(agent.agentId, amount, status.baseToken)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
-      addToLog({ text: `Failed to withdraw ${status.baseTokenSymbol}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
+      addToLog({ text: `Failed to withdraw ${status.baseTokenTicker}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
   }
 
@@ -201,24 +201,24 @@ export function AgentPanel() {
               )}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
                 <Typography variant="h6">
-                  {status.quoteTokenSymbol}
+                  {status.quoteTokenTicker}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   <TopUpDialog disabled={areActionsDisabled} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
-                    tokenSymbol={status.quoteTokenSymbol!} tokenBalance={status.quoteTokenBalance}
+                    tokenSymbol={status.quoteTokenTicker!} tokenBalance={status.quoteTokenBalance}
                     topUp={handleDeposit}/>
                   <WithdrawDialog type="quote" disabled={areActionsDisabled} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
-                    tokenSymbol={status.quoteTokenSymbol!}
+                    tokenSymbol={status.quoteTokenTicker!}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
               </Stack>
               <Stack direction="row" justifyContent={'space-between'} alignItems={'center'} gap={2}>
                 <Typography variant="h6">
-                  {status.baseTokenSymbol}
+                  {status.baseTokenTicker}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
                   <WithdrawDialog type="base" disabled={areActionsDisabled} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
-                    tokenSymbol={status.quoteTokenSymbol!}
+                    tokenSymbol={status.quoteTokenTicker!}
                     withdraw={handleWithdrawBase}/>
                 </Stack>
               </Stack>

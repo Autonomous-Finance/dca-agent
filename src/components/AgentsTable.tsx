@@ -15,7 +15,7 @@ import LoadingEmptyState from './LoadingEmptyState';
 import { Box, Typography } from '@mui/material';
 import { enhanceRegisteredAgentInfo } from '@/utils/agent-utils';
 import AgentStatusChip from './AgentStatusChip';
-import { credSymbol, displayableCurrency } from '@/utils/data-utils';
+import { AO_CRED_SYMBOL, displayableCurrency } from '@/utils/data-utils';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -109,7 +109,7 @@ export default function AgentsTable() {
                   <StyledTableCell align="right">
                     <Typography component='span'>
                       <Typography component='span' fontWeight={'medium'} color="text.primary">{displayableCurrency(agentInfo.QuoteTokenBalance)}</Typography>
-                      <Typography component='span' variant="body1" color="text.secondary">{" "}{credSymbol}</Typography>
+                      <Typography component='span' variant="body1" color="text.secondary">{" "}{AO_CRED_SYMBOL}</Typography>
                     </Typography>
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.ownedSince}</StyledTableCell>

@@ -1,8 +1,6 @@
 export const BOT_SOURCE = `do
 local _ENV = _ENV
 package.preload[ "bot.bot" ] = function( ... ) local arg = _G.arg;
-Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
-
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -260,8 +258,14 @@ Paused = Paused or false
 
 
 AgentName = AgentName or ""
-QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AOcred on testnet
-BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ"   -- BARK on testnet
+QuoteToken = QuoteToken or ""
+BaseToken = BaseToken or ""
+QuoteTokenTicker = QuoteTokenTicker or ""
+BaseTokenTicker = BaseTokenTicker or ""
+
+Pool = Pool or ""
+Dex = Dex or ""
+
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 LiquidationAmountQuote = LiquidationAmountQuote or nil
@@ -310,6 +314,8 @@ Handlers.add(
       paused = Paused,
       baseToken = BaseToken,
       quoteToken = QuoteToken,
+      baseTokenTicker = BaseTokenTicker,
+      quoteTokenTicker = QuoteTokenTicker,
       swapInAmount = SwapInAmount,
       swapIntervalValue = SwapIntervalValue,
       swapIntervalUnit = SwapIntervalUnit,
@@ -321,6 +327,7 @@ Handlers.add(
       transferId = TransferId,
       transferIdSwapBack = TransferIdSwapBack,
       pool = Pool,
+      dex = Dex,
       isDepositing = IsDepositing,
       isWithdrawing = IsWithdrawing,
       isLiquidating = IsLiquidating,
@@ -344,6 +351,11 @@ Handlers.add(
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+    assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
+    assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
+    assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
+    assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
+    assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
     assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
     assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
     assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
@@ -351,6 +363,11 @@ Handlers.add(
 
     AgentName = msg.Tags.AgentName
     BaseToken = msg.Tags.BaseToken
+    QuoteToken = msg.Tags.QuoteToken
+    BaseTokenTicker = msg.Tags.BaseTokenTicker
+    QuoteTokenTicker = msg.Tags.QuoteTokenTicker
+    Pool = msg.Tags.Pool
+    Dex = msg.Tags.Dex
     SwapInAmount = msg.Tags.SwapInAmount
     SwapIntervalValue = msg.Tags.SwapIntervalValue
     SwapIntervalUnit = msg.Tags.SwapIntervalUnit

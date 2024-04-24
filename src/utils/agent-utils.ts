@@ -1,9 +1,4 @@
 import * as ao from "@permaweb/aoconnect/browser"
-import { credSymbol, findCurrencyById } from "./data-utils"
-import AgentsTable from "@/components/AgentsTable"
-
-export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
-
 export const AGENT_BACKEND = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
 
@@ -20,7 +15,10 @@ export type AgentStatus = {
   paused: boolean
   baseToken: string
   quoteToken: string
+  baseTokenTicker: string
+  quoteTokenTicker: string
   pool: string
+  dex: string
   swapInAmount: string
   swapIntervalValue: string
   swapIntervalUnit: string
@@ -38,8 +36,6 @@ export type AgentStatus = {
 
   // added on Frontend
   statusX?: AgentStatusX
-  quoteTokenSymbol?: string
-  baseTokenSymbol?: string
 }
 
 export const AGENT_STATUS_X_VALUES = ["Active", "Retired", "No Funds", "Paused"] as const
@@ -243,9 +239,6 @@ export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
   } else {
     agentStatus.statusX = 'Active'
   }
-
-  agentStatus.quoteTokenSymbol = credSymbol
-  agentStatus.baseTokenSymbol = findCurrencyById(agentStatus.baseToken)
 }
 
 export const createAgentPerformanceInfo = (
@@ -360,7 +353,7 @@ export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatu
   }
 }
 
-export const depositToAgent = async (agent: string, amount: string): Promise<Receipt<string>> => {
+export const depositToAgent = async (agent: string, tokenProcess: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Depositing ", amount);
     
@@ -386,7 +379,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
     }
     
     const msgId = await ao.message({
-      process: CRED_ADDR,
+      process: tokenProcess,
       tags: [
         { name: "Action", value: "Transfer" },
         { name: "Quantity", value: amount },
@@ -398,7 +391,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
   
     const res = await ao.result({
       message: msgId,
-      process: CRED_ADDR,
+      process: tokenProcess,
     })
   
     console.log("Result: ", res)
