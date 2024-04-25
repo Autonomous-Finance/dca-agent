@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export'
+  reactStrictMode: false,
+  skipMiddlewareUrlNormalize: true,
+  distDir: "dist",
+  modularizeImports: {
+    "@mui/icons-material": {
+      transform: "@mui/icons-material/{{member}}",
+    },
+  },
+  output: "export",
 };
 
 export default nextConfig;
