@@ -15,7 +15,7 @@ import { displayableCurrency, submittableCurrency } from '@/utils/data-utils';
 export default function WithdrawDialog(props: {
   loading: boolean, 
   disabled?: boolean, 
-  btnWidth: number, 
+  btnWidth: string, 
   tokenSymbol: string, 
   type: 'base' | 'quote',
   withdraw: (id: string) => void

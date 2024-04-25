@@ -54,7 +54,7 @@ export function AgentPanel() {
     }
     if (!isWithdrawing && (loadingWithdrawQuote || loadingWithdrawBase)) {
       setTimeout(() => {
-          setLoadingWithdrawQuote(false)
+        setLoadingWithdrawQuote(false)
         setLoadingWithdrawBase(false)
         setExecutionMessage(``)
         addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: status.lastWithdrawalNoticeId, isMessage: true})
@@ -188,14 +188,14 @@ export function AgentPanel() {
     }
   }
 
-  const BTN_WIDTH = 165
-  const OVERLAY_OFFSET_PX = 16
+  const BTN_WIDTH_REM = 10
+  const OVERLAY_OFFSET_REM = 1
 
   return (
     <Box maxWidth={'min-content'} mx={'auto'} pb={8}>
       <Paper variant="outlined" sx={{ padding: 4 }} >
-        <Stack direction={'row'} gap={4} minHeight={600}>
-          <Stack gap={4} width={750}
+        <Stack direction={'row'} gap={4} minHeight={'37.5rem'}>
+          <Stack gap={4} width={'46.875rem'}
             pr={actionLog.length > 0 ? 4 : 0}
             borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}
           >
@@ -205,8 +205,8 @@ export function AgentPanel() {
             <Stack gap={2} position={'relative'}>
               {/* overlay */}
               {executingOnAssets && (
-                <Stack position={'absolute'} top={`${-OVERLAY_OFFSET_PX}px`} left={`${-OVERLAY_OFFSET_PX}px`} p={`${OVERLAY_OFFSET_PX}px`}
-                  height={`calc(100% + ${2 * OVERLAY_OFFSET_PX}px)`} width={`calc(100% + ${2 * OVERLAY_OFFSET_PX}px)`} 
+                <Stack position={'absolute'} top={`${-OVERLAY_OFFSET_REM}rem`} left={`${-OVERLAY_OFFSET_REM}rem`} p={`${OVERLAY_OFFSET_REM}rem`}
+                  height={`calc(100% + ${2 * OVERLAY_OFFSET_REM}rem)`} width={`calc(100% + ${2 * OVERLAY_OFFSET_REM}rem)`} 
                   zIndex={10}
                   display={'flex'} justifyContent={'center'} alignItems={'center'} gap={4}
                   sx={(theme) => ({backgroundColor: `var(--mui-palette-primary-contrastText)`, opacity: 0.9})}>
@@ -219,10 +219,10 @@ export function AgentPanel() {
                   {status.quoteTokenTicker}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  <TopUpDialog disabled={areActionsDisabled} loading={loadingTopUp} btnWidth={BTN_WIDTH} 
+                  <TopUpDialog disabled={areActionsDisabled} loading={loadingTopUp} btnWidth={`${BTN_WIDTH_REM}rem`} 
                     tokenSymbol={status.quoteTokenTicker!} tokenBalance={status.quoteTokenBalance}
                     topUp={handleDeposit}/>
-                  <WithdrawDialog type="quote" disabled={areActionsDisabled} loading={loadingWithdrawQuote} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="quote" disabled={areActionsDisabled} loading={loadingWithdrawQuote} btnWidth={`${BTN_WIDTH_REM}rem`}
                     tokenSymbol={status.quoteTokenTicker!}
                     withdraw={handleWithdrawQuote}/>
                 </Stack>
@@ -232,7 +232,7 @@ export function AgentPanel() {
                   {status.baseTokenTicker}
                 </Typography>
                 <Stack direction="row" gap={2} alignItems={'center'}>
-                  <WithdrawDialog type="base" disabled={areActionsDisabled} loading={loadingWithdrawBase} btnWidth={BTN_WIDTH}
+                  <WithdrawDialog type="base" disabled={areActionsDisabled} loading={loadingWithdrawBase} btnWidth={`${BTN_WIDTH_REM}rem`}
                     tokenSymbol={status.quoteTokenTicker!}
                     withdraw={handleWithdrawBase}/>
                 </Stack>
@@ -241,7 +241,7 @@ export function AgentPanel() {
                 <Typography variant="h6">
                     {"All Assets"}
                 </Typography>
-                <LiquidateDialog disabled={areActionsDisabled} loading={loadingLiquidate} width={BTN_WIDTH}
+                <LiquidateDialog disabled={areActionsDisabled} loading={loadingLiquidate} btnWidth={`${BTN_WIDTH_REM}rem`}
                   liquidate={handleLiquidate}/>
               </Stack>
             </Stack>
@@ -254,7 +254,7 @@ export function AgentPanel() {
                     Status
                   </Typography>
                 </Stack>
-                <PauseDialog disabled={areActionsDisabled} loading={loadingPause} btnWidth={BTN_WIDTH} pause={handlePauseToggle}/>
+                <PauseDialog disabled={areActionsDisabled} loading={loadingPause} btnWidth={`${BTN_WIDTH_REM}rem`} pause={handlePauseToggle}/>
               </Stack>     
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
                 <Stack>
@@ -262,7 +262,7 @@ export function AgentPanel() {
                     Ownership
                   </Typography>
                 </Stack>
-                <TransferOwnershipDialog disabled={areActionsDisabled} loading={loadingTransferOwnership} btnWidth={BTN_WIDTH} transferTo={handleTransferOwnership}/>
+                <TransferOwnershipDialog disabled={areActionsDisabled} loading={loadingTransferOwnership} btnWidth={`${BTN_WIDTH_REM}rem`} transferTo={handleTransferOwnership}/>
               </Stack>
               {/* <Divider/> */}
               <Stack direction="row" justifyContent={'space-between'} alignItems={'flex-end'}>
@@ -271,12 +271,12 @@ export function AgentPanel() {
                     Retirement
                   </Typography>
                 </Stack>
-                <RetirementDialog disabled={areActionsDisabled} loading={loadingRetirement} btnWidth={BTN_WIDTH} retire={handleRetirement}/>
+                <RetirementDialog disabled={areActionsDisabled} loading={loadingRetirement} btnWidth={`${BTN_WIDTH_REM}rem`} retire={handleRetirement}/>
               </Stack>
             </Stack>            
           </Stack>
           {actionLog.length > 0 && (
-            <Stack flexGrow={1} gap={1} width={400}>
+            <Stack flexGrow={1} gap={1} width={'25rem'}>
               <Typography variant="h6">
                 Action Log
               </Typography>

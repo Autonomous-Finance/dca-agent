@@ -291,7 +291,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
     }
   }
 
-  const BTN_WIDTH = 315
+  const BTN_WIDTH_REM = 20
 
   const selectedPoolChip = ({selPool}: {selPool: LiquidityPool}) => (
     <Chip key={selPool} label={selPool} sx={{fontSize: '1rem', letterSpacing: '0.1rem', height: '23px', padding: '0 4px'}}
@@ -310,13 +310,13 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
     <Box margin={'4rem auto 0'}>
       <Box maxWidth={'min-content'} mx={'auto'} pb={8}>
         <Paper variant="outlined" sx={{ padding: 4}}>
-          <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
+          <Stack direction={'row'} gap={4} minHeight={'37.5rem'} maxHeight={'50rem'} overflow={'auto'}>
 
-            <Stack gap={4} alignItems={'stretch'} width={700} pr={4} borderRight={deployLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
+            <Stack gap={4} alignItems={'stretch'} width={'43.75'} pr={4} borderRight={deployLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
               <Typography variant="h5">Create New Agent</Typography>
 
               <Stack direction="row" gap={2} alignItems="stretch">
-                <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
+                <Stack direction="column" sx={{minWidth: `${BTN_WIDTH_REM}rem`}} gap={3} alignItems="flex-start">
                   <FormControl fullWidth>
                     <TextField
                       disabled={loading}
@@ -505,7 +505,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                     </Box>
                   )}
                   <Box
-                    sx={{ mx: 'auto', width: BTN_WIDTH, height: "100%" }}
+                    sx={{ mx: 'auto', width: `${BTN_WIDTH_REM}rem`, height: "100%" }}
                     display="flex"
                     alignItems="center"
                     justifyContent="flex-end"
@@ -526,7 +526,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
               
               {deployed && (
                 <Button
-                  sx={{ height: 40, width: BTN_WIDTH, margin: '1rem auto 0'}}
+                  sx={{ height: 40, width: `${BTN_WIDTH_REM}rem`, margin: '1rem auto 0'}}
                   endIcon={<MemoryIcon/>}
                   variant="contained"
                   color="primary"

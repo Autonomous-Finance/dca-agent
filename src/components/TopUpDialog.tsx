@@ -14,7 +14,7 @@ import { displayableCurrency, submittableCurrency } from '@/utils/data-utils';
 
 
 export default function TopUpDialog(props: {
-  loading: boolean, disabled?: boolean, btnWidth: number, tokenSymbol: string, tokenBalance: string, topUp: (id: string) => void
+  loading: boolean, disabled?: boolean, btnWidth: string, tokenSymbol: string, tokenBalance: string, topUp: (id: string) => void
 }) {
   const {loading, disabled, btnWidth, tokenSymbol, tokenBalance, topUp} = props;
   const [open, setOpen] = React.useState(false);

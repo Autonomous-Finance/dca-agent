@@ -9,7 +9,7 @@ import { CircularProgress, Stack, Typography } from '@mui/material';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { PauseCircleOutlined, PlayCircleOutlined } from '@mui/icons-material';
 
-export default function PauseDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, pause: () => void}) {
+export default function PauseDialog(props: {loading: boolean, disabled?: boolean, btnWidth: string, pause: () => void}) {
   const {loading, disabled, btnWidth, pause} = props
   const [open, setOpen] = React.useState(false);
 

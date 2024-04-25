@@ -3,7 +3,7 @@ import React from 'react'
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { WaterDrop } from '@mui/icons-material';
 
-function LiquidateDialog({loading, disabled, width, liquidate}: {loading: boolean, disabled?: boolean, width: number, liquidate: () => {}}) {
+function LiquidateDialog({loading, disabled, btnWidth, liquidate}: {loading: boolean, disabled?: boolean, btnWidth: string, liquidate: () => {}}) {
   const [open, setOpen] = React.useState(false);
 
   const agent = usePolledAgentStatusContext();
@@ -33,7 +33,7 @@ function LiquidateDialog({loading, disabled, width, liquidate}: {loading: boolea
   return (
     <React.Fragment>
       <Button
-        sx={{ height: 40, width: width }}
+        sx={{ height: 40, width: btnWidth }}
         disabled={loading || hasNoFunds || isRetired || disabled}
         startIcon={loading ? <CircularProgress size={14} /> : undefined}
         variant="contained"

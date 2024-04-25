@@ -40,16 +40,16 @@ export default function HomePage() {
   return (
     <>
       <Box margin={'2rem auto 0'}>
-          {loading && (
-            <Box margin={'7rem auto 0'}>
-              <LoadingEmptyState texts={['Retrieving your Agents...']}/>
-            </Box>
-          )}
+        {loading && (
+          <Box margin={'7rem auto 0'}>
+            <LoadingEmptyState texts={['Retrieving your Agents...']}/>
+          </Box>
+        )}
         {!loading && foundActiveAgent && (
           <ViewAgent agentId={agentId} />
         )}
         {!loading && !foundActiveAgent && (
-          <Stack gap={8} marginTop={'7rem'} mx={'auto'} width={600} height={400} justifyContent={'center'} alignItems={'center'}>
+          <Stack gap={8} marginTop={'7rem'} mx={'auto'} width={'37.5rem'} height={'25rem'} justifyContent={'center'} alignItems={'center'}>
             <Typography variant="h5" align="center" gutterBottom>
               No Recent Active Agent Found.
             </Typography>
