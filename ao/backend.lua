@@ -161,7 +161,7 @@ Handlers.add(
     local owner = msg.Tags["Owned-By"]
     ao.send({
       Target = msg.From,
-      ["Response-For"] = "GetAllAgents",
+      ["Response-For"] = "GetAllAgentsPerUser",
       Data = json.encode(AgentInfosPerUser[owner] or {}),
     })
   end
@@ -171,10 +171,11 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-    Handlers.utils.reply({
+    ao.send({
+      Target = msg.From,
       ["Response-For"] = "GetAllAgents",
       Data = json.encode(getAllAgentsNotRetired()),
-    })(msg)
+    })
   end
 )
 

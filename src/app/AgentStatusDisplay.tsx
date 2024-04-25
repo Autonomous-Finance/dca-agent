@@ -19,7 +19,7 @@ const HELP_TEXT_TOTAL_DEPOSITED = 'Total amount of quote tokens deposited to the
 const HELP_AVG_SWAP_PRICE = 'Your historical average swap price (base token for quote token).'
 const HELP_CURRENT_SWAP_PRICE = 'Current price for a swap (base token for quote token) with your configured quote token amount.'
 
-export function AgentStatusDisplay() {
+export function AgentStatusDisplay({loading} : {loading: boolean}) {
   const agent = usePolledAgentStatusContext()
 
   const agentPerformance = useAgentPerformance({agentStatus: agent?.status || null});
@@ -75,7 +75,6 @@ export function AgentStatusDisplay() {
 
       <Divider flexItem/>
 
-
       <Stack direction={'row'} width={'100%'}>
         <Stack flex={'grow'} width={'100%'} gap={2}>
           <Typography display={'flex'} fontWeight={'bold'}>
@@ -109,12 +108,24 @@ export function AgentStatusDisplay() {
             value={status.provenance}
             soft
           ></InfoLine>
+        </Stack>
+        <Box px={2}>
+          {/* <Divider orientation="vertical"/> */}
+        </Box>
+        <Stack flex={'grow'} width={'100%'} gap={2}>
+          <Typography display={'flex'} fontWeight={'bold'}>
+            DCA CONFIG
+          </Typography>
+          <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}/>
+          <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenTicker}/>
+          <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}/>                 
+        </Stack>
+      </Stack>
 
-          {/* <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
-            -
-          </Typography> */}
-          <Box my={'12px'}><Divider /></Box>
+      <Divider flexItem/>
 
+      <Stack direction={'row'} flex={'grow'} width={'100%'} sx={{opacity: loading ? '0.3' : '1'}}>
+        <Stack flex={'grow'} width={'100%'} gap={2}>
           <Typography display={'flex'} fontWeight={'bold'}>
             ASSETS
           </Typography>
@@ -134,30 +145,12 @@ export function AgentStatusDisplay() {
             <SwapDebug />
           </Box>
         </Stack>
+
         <Box px={2}>
           {/* <Divider orientation="vertical"/> */}
         </Box>
-        <Stack flex={'grow'} width={'100%'} gap={2}>
-          <Typography display={'flex'} fontWeight={'bold'}>
-            DCA CONFIG
-          </Typography>
-          {/* <InfoLine label='Currencies' value={
-            <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'}>
-              {status.quoteTokenTicker} <East /> {status.baseTokenTicker}
-            </Typography>}/>
-          <InfoLine label='Pools' value={
-            <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} flexDirection={'row'} gap={1} width={'100%'} fontWeight={'medium'} >
-              {status.dex}
-              <PoolsDetails agent={agent.status}/>
-            </Typography>
-            }
-          /> */}
-          <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}/>
-          <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenTicker}/>
-          <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}/>
-          
-          <Box my={'12px'}><Divider /></Box>
 
+        <Stack flex={'grow'} width={'100%'} gap={2}>
           <Typography display={'flex'} fontWeight={'bold'}>
             STATS
           </Typography>
@@ -184,8 +177,7 @@ export function AgentStatusDisplay() {
             suffix={agentPerformanceInfo?.spr ? '%' : ''}
             soft={!agentPerformanceInfo?.spr}
             labelInfo={HELP_TEXT_SPR}
-          />          
-                   
+          />       
         </Stack>
       </Stack>
     </Stack>

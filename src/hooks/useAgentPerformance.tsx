@@ -2,7 +2,7 @@ import { AgentPerformance, AgentStatus, createAgentPerformanceInfo, getCurrentSw
 import React from "react";
 
 
-export const AGENT_PERFORMANCE_POLL_INTERVAL = 8000
+export const AGENT_PERFORMANCE_POLL_INTERVAL = 5000
 
 export const useAgentPerformance = (props: {agentStatus: AgentStatus & RegisteredAgent | null}) => {
   const {agentStatus} = props
@@ -70,6 +70,7 @@ export const useAgentPerformance = (props: {agentStatus: AgentStatus & Registere
     }
 
     update()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, quoteToken, swapInAmount, baseToken, baseTokenBalance, initialized, tick])
 
   return {loading, performanceInfo};

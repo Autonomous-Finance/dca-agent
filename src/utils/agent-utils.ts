@@ -259,7 +259,7 @@ export const createAgentPerformanceInfo = (
   }
 }
 
-export const getOneAgent = async (agentId: string) => {
+export const getOneRegisteredAgent = async (agentId: string) => {
   try {
     const res = await dryrun({
       process: AGENT_BACKEND,
@@ -704,6 +704,20 @@ export const wipeBackend = async () => {
     }
   } catch (e) {
     console.error("Failure!", e)
+  }
+}
+
+export const resetProcessFlags = async (agent: string) => {
+  try {
+    const msgId = await ao.message({
+      process: agent,
+      tags: [{ name: "Action", value: "ResetProcessFlags" }],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Reset Process Flags message sent: ", msgId)
+  } catch (e) {
+    console.error(e)
+    return `Error: ${e}`
   }
 }
 

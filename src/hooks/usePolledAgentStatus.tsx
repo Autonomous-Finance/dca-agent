@@ -1,9 +1,9 @@
-import { AgentStatus, enhanceAgentStatus, getLatestAgent, getOneAgent, readAgentStatus, RegisteredAgent } from "@/utils/agent-utils";
+import { AgentStatus, enhanceAgentStatus, getOneRegisteredAgent, readAgentStatus, RegisteredAgent } from "@/utils/agent-utils";
 import React from "react";
 import { Agent } from "../queries/agent.queries";
 import { set } from "date-fns";
 
-export const AGENT_STATUS_POLL_INTERVAL = 6000
+export const AGENT_STATUS_POLL_INTERVAL = 5000
 
 export const usePolledAgentStatus = (props: {agentId: string}) => {
   const {agentId} = props
@@ -12,7 +12,7 @@ export const usePolledAgentStatus = (props: {agentId: string}) => {
 
   const getAgent = async (id: string) => {
     const respStatusProm = readAgentStatus(id)
-    const respRegisteredAgentProm = getOneAgent(id)
+    const respRegisteredAgentProm = getOneRegisteredAgent(id)
     const [respStatus, respRegisteredAgent] = await Promise.all([respStatusProm, respRegisteredAgentProm])
     if (respStatus.type === "Success" && respRegisteredAgent.type === "Success") {
       enhanceAgentStatus(respStatus.result!)

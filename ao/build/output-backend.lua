@@ -177,7 +177,11 @@ Handlers.add(
     local owner = msg.Tags["Owned-By"]
     ao.send({
       Target = msg.From,
+<<<<<<< Updated upstream
       ["Response-For"] = "GetAllAgents",
+=======
+      ["Response-For"] = "GetAllAgentsPerUser",
+>>>>>>> Stashed changes
       Data = json.encode(AgentInfosPerUser[owner] or {}),
     })
   end
@@ -187,10 +191,18 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
+<<<<<<< Updated upstream
     Handlers.utils.reply({
       ["Response-For"] = "GetAllAgents",
       Data = json.encode(getAllAgentsNotRetired()),
     })(msg)
+=======
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = "GetAllAgents",
+      Data = json.encode(getAllAgentsNotRetired()),
+    })
+>>>>>>> Stashed changes
   end
 )
 

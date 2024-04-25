@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, resetProcessFlags, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -15,6 +15,7 @@ import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvi
 import LiquidateDialog from "@/components/LiquidateDialog"
 import { AO_CRED_SYMBOL, displayableCurrency } from "@/utils/data-utils"
 import PauseDialog from "@/components/PauseDialog"
+import { AGENT_STATUS_POLL_INTERVAL } from "@/hooks/usePolledAgentStatus"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -36,22 +37,36 @@ export function AgentPanel() {
 
   React.useEffect(() => {
     if (!agent?.status?.Agent) return
+    resetProcessFlags(agent?.status?.Agent)
+  },[agent?.status?.Agent])
+
+  React.useEffect(() => {
+    if (!agent?.status?.Agent) return
+    console.log('CHECK PROGRESS FLAGS ', '-isW, isD, isL-', isWithdrawing, isDepositing, isLiquidating)
+    const status = agent.status
 
     if (!isDepositing && loadingTopUp) {
-      setLoadingTopUp(false)
-      setExecutionMessage(``)
-      addToLog({ text: 'Deposit successful. MessageId', hasLink: true, linkId: agent.status.lastDepositNoticeId, isMessage: true})
+      setTimeout(() => {
+        setLoadingTopUp(false)
+        setExecutionMessage(``)
+        addToLog({ text: 'Deposit successful. MessageId', hasLink: true, linkId: status.lastDepositNoticeId, isMessage: true})
+      }, AGENT_STATUS_POLL_INTERVAL * 1.5)
     }
     if (!isWithdrawing && (loadingWithdrawQuote || loadingWithdrawBase)) {
-      setLoadingWithdrawQuote(false)
-      setLoadingWithdrawBase(false)
-      setExecutionMessage(``)
-      addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: agent.status.lastWithdrawalNoticeId, isMessage: true})
+      setTimeout(() => {
+          setLoadingWithdrawQuote(false)
+        setLoadingWithdrawBase(false)
+        setExecutionMessage(``)
+        addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: status.lastWithdrawalNoticeId, isMessage: true})
+      }, AGENT_STATUS_POLL_INTERVAL * 1.5)
+
     }
     if (!isLiquidating && loadingLiquidate) {
-      setLoadingLiquidate(false)
-      setExecutionMessage(``)
-      addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: agent.status.lastLiquidationNoticeId, isMessage: true})
+      setTimeout(() => {
+        setLoadingLiquidate(false)
+        setExecutionMessage(``)
+        addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: status.lastLiquidationNoticeId, isMessage: true})
+      }, AGENT_STATUS_POLL_INTERVAL * 1.5)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawing, isDepositing, isLiquidating, agent?.status?.Agent])
@@ -116,8 +131,8 @@ export function AgentPanel() {
   const handleLiquidate = async () => {
     // TODO 
     setLoadingLiquidate(true)
-    setExecutionMessage(`Liquidating agent assets...`)
-    addToLog({ text: `Liquidating agent. Selling base token and withdrawing...`, hasLink: false})
+    setExecutionMessage(`Liquidating assets...`)
+    addToLog({ text: `Liquidating assets. Selling base token and withdrawing...`, hasLink: false})
     const liquidationResult = await liquidate(agent.agentId)
     if (liquidationResult?.type === "Success") {
       const msgId = liquidationResult.result
@@ -184,7 +199,7 @@ export function AgentPanel() {
             pr={actionLog.length > 0 ? 4 : 0}
             borderRight={actionLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}
           >
-            <AgentStatusDisplay/>
+            <AgentStatusDisplay loading={executingOnAssets}/>
             <Divider />
 
             <Stack gap={2} position={'relative'}>

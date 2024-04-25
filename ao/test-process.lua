@@ -583,7 +583,7 @@ Handlers.add(
     if msg.From ~= ao.id then
       ownership.onlyOwner(msg)
     end
-    ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
+    -- ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
     bot.swapInit()
   end
 )
