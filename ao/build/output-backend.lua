@@ -1,17 +1,18 @@
 do
-local _ENV = _ENV
-package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
-local mod = {}
+  local _ENV = _ENV
+  package.preload["ownership.ownership"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
 
--- messages that are to pass this access control check
--- should be sent by a wallet (entity), not by another process
+    -- messages that are to pass this access control check
+    -- should be sent by a wallet (entity), not by another process
 
-mod.onlyOwner = function(msg)
-  assert(msg.From == Owner, "Only the owner is allowed")
-end
+    mod.onlyOwner = function(msg)
+      assert(msg.From == Owner, "Only the owner is allowed")
+    end
 
-return mod
-end
+    return mod
+  end
 end
 
 --[[
@@ -177,11 +178,7 @@ Handlers.add(
     local owner = msg.Tags["Owned-By"]
     ao.send({
       Target = msg.From,
-<<<<<<< Updated upstream
-      ["Response-For"] = "GetAllAgents",
-=======
       ["Response-For"] = "GetAllAgentsPerUser",
->>>>>>> Stashed changes
       Data = json.encode(AgentInfosPerUser[owner] or {}),
     })
   end
@@ -191,18 +188,11 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-<<<<<<< Updated upstream
-    Handlers.utils.reply({
-      ["Response-For"] = "GetAllAgents",
-      Data = json.encode(getAllAgentsNotRetired()),
-    })(msg)
-=======
     ao.send({
       Target = msg.From,
       ["Response-For"] = "GetAllAgents",
       Data = json.encode(getAllAgentsNotRetired()),
     })
->>>>>>> Stashed changes
   end
 )
 
