@@ -221,6 +221,45 @@ end
 
 do
 local _ENV = _ENV
+package.preload[ "utils.response" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+--[[
+  Using this rather than Handlers.utils.reply() in order to have
+  the root-level "Data" set to the provided data (as opposed to a "Data" tag)
+--]]
+function mod.dataReply(tag, data)
+  return function(msg)
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = data
+    })
+  end
+end
+
+--[[
+  Variant of dataReply that is only sent out for trivial confirmations
+  after updates etc.
+  Only sends out if Verbose is set to true.
+--]]
+function mod.success(tag)
+  return function(msg)
+    if not Verbose then return end
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = "Success"
+    })
+  end
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
 package.preload[ "validations.validations" ] = function( ... ) local arg = _G.arg;
 local bint = require('.bint')(256)
 
@@ -246,16 +285,15 @@ end
 local ownership = require "ownership.ownership"
 local bot = require "bot.bot"
 local patterns = require "utils.patterns"
+local response = require "utils.response"
 local json = require "json"
 
--- bot deployment triggered by user from browser
---  => browser wallet owner == process owner
-Owner = Owner or ao.env.Process.Owner
+-- set to false in order to disable sending out trivial confirmation messages
+Verbose = Verbose or true
 
 Initialized = Initialized or false
 Retired = Retired or false
 Paused = Paused or false
-
 
 AgentName = AgentName or ""
 QuoteToken = QuoteToken or ""
@@ -287,10 +325,7 @@ Handlers.add(
   "getOwner",
   Handlers.utils.hasMatchingTag("Action", "GetOwner"),
   function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "GetOwner",
-      Data = Owner
-    })(msg)
+    response.dataReply("GetOwner", Owner)(msg)
   end
 )
 
@@ -299,10 +334,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetStatus"),
   function(msg)
     if not Initialized then
-      Handlers.utils.reply({
-        ["Response-For"] = "GetStatus",
-        Data = json.encode({ initialized = false })
-      })(msg)
+      response.dataReply("GetStatus", json.encode({ initialized = false }))(msg)
       return
     end
 
@@ -335,10 +367,7 @@ Handlers.add(
       lastWithdrawalNoticeId = LastWithdrawalNoticeId,
       lastLiquidationNoticeId = LastLiquidationNoticeId
     })
-    Handlers.utils.reply({
-      ["Response-For"] = "GetStatus",
-      Data = config
-    })(msg)
+    response.dataReply("GetStatus", config)(msg)
   end
 )
 
@@ -373,10 +402,7 @@ Handlers.add(
     SwapIntervalUnit = msg.Tags.SwapIntervalUnit
     SlippageTolerance = msg.Tags.Slippage
 
-    Handlers.utils.reply({
-      ["Response-For"] = "Initialize",
-      Data = "Success"
-    })(msg)
+    response.success("Initialize")(msg)
   end
 )
 
@@ -416,10 +442,7 @@ Handlers.add(
     assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
     Owner = newOwner
     ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
-    Handlers.utils.reply({
-      ["Response-For"] = "TransferOwnership",
-      Data = "Success"
-    })(msg)
+    response.success("TransferOwnership")(msg)
   end
 )
 
@@ -794,10 +817,7 @@ Handlers.add(
     ownership.onlyOwner(msg)
     Paused = not Paused
     ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
-    Handlers.utils.reply({
-      ["Response-For"] = "PauseToggle",
-      Data = "Success"
-    })(msg)
+    response.success("PauseToggle")(msg)
   end
 )
 
@@ -812,14 +832,24 @@ Handlers.add(
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
     ao.send({ Target = Backend, Action = "RetireAgent" })
-    Handlers.utils.reply({
-      ["Response-For"] = "Retire",
-      Data = "Success"
-    })(msg)
+    response.success("Retire")(msg)
+  end
+)
+
+-- MISC CONFIGURATION
+
+Handlers.add(
+  "setVerbose",
+  Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
+  function(msg)
+    ownership.onlyOwner(msg)
+    Verbose = msg.Tags.Verbose
+    response.success("SetVerbose")(msg)
   end
 )
 
 -- DEBUG / DEV
+
 
 Handlers.add(
   "triggerSwapDebug",
@@ -828,7 +858,7 @@ Handlers.add(
     if msg.From ~= ao.id then
       ownership.onlyOwner(msg)
     end
-    ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
+    -- ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
     bot.swapInit()
   end
 )

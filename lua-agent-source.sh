@@ -2,7 +2,7 @@
 
 cd ao
 
-/opt/homebrew/bin/amalg.lua -s test-process.lua -o build/output-agent.lua ownership.ownership validations.validations bot.bot utils.patterns
+/opt/homebrew/bin/amalg.lua -s process.lua -o build/output-agent.lua ownership.ownership validations.validations bot.bot utils.patterns utils.response
 
 cd ..
 

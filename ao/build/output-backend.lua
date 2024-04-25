@@ -14,6 +14,45 @@ return mod
 end
 end
 
+do
+local _ENV = _ENV
+package.preload[ "utils.response" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+--[[
+  Using this rather than Handlers.utils.reply() in order to have
+  the root-level "Data" set to the provided data (as opposed to a "Data" tag)
+--]]
+function mod.dataReply(tag, data)
+  return function(msg)
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = data
+    })
+  end
+end
+
+--[[
+  Variant of dataReply that is only sent out for trivial confirmations
+  after updates etc.
+  Only sends out if Verbose is set to true.
+--]]
+function mod.success(tag)
+  return function(msg)
+    if not Verbose then return end
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = "Success"
+    })
+  end
+end
+
+return mod
+end
+end
+
 --[[
   This code relates to a process that tracks existing AF DCA agent and their activity
   The purpose of the tracker process is to facilitate queries regarding the current state and history of any AF DCA agent
@@ -26,15 +65,14 @@ end
 --]]
 
 local json = require "json"
+local response = require "utils.response"
 
-Owner = Owner or ao.env.Process.Owner
+-- set to false in order to disable sending out trivial confirmation messages
+Verbose = Verbose or true
 
 AgentsPerUser = AgentsPerUser or {}         -- map user to his agents (process ids)
 AgentInfosPerUser = AgentInfosPerUser or {} -- map user to historical info on his agents (tables)
 RegisteredAgents = RegisteredAgents or {}   -- map agent id to current owner (user)
-
-Logg = Logg or {}
-
 
 -- HELPERS
 local onlyAgent = function(msg)
@@ -101,10 +139,7 @@ Handlers.add(
   "getOwner",
   Handlers.utils.hasMatchingTag("Action", "GetOwner"),
   function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "GetOwner",
-      Data = Owner
-    })(msg)
+    response.dataReply("GetOwner", Owner)(msg)
   end
 )
 
@@ -151,10 +186,7 @@ Handlers.add(
       FromTransfer = false,
       TransferredAt = nil
     })
-    Handlers.utils.reply({
-      ["Response-For"] = "RegisterAgent",
-      Data = "Success"
-    })(msg)
+    response.success("RegisterAgent")(msg)
   end
 )
 
@@ -179,11 +211,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgentsPerUser'),
   function(msg)
     local owner = msg.Tags["Owned-By"]
-    ao.send({
-      Target = msg.From,
-      ["Response-For"] = "GetAllAgentsPerUser",
-      Data = json.encode(AgentInfosPerUser[owner] or {}),
-    })
+    response.dataReply("GetAllAgentsPerUser", json.encode(AgentInfosPerUser[owner] or {}))(msg)
   end
 )
 
@@ -191,11 +219,7 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-    ao.send({
-      Target = msg.From,
-      ["Response-For"] = "GetAllAgents",
-      Data = json.encode(getAllAgentsNotRetired()),
-    })
+    response.dataReply("GetAllAgents", json.encode(getAllAgentsNotRetired()))(msg)
   end
 )
 
@@ -209,10 +233,7 @@ Handlers.add(
     assert(owner ~= nil, "No such agent is registered")
     local agentInfo = getAgentInfoAndIndex(agentId)
     assert(agentInfo ~= nil, "Internal: Agent not found")
-    Handlers.utils.reply({
-      ["Response-For"] = "GetOneAgent",
-      Data = json.encode(agentInfo),
-    })(msg)
+    response.dataReply("GetOneAgent", json.encode(agentInfo))(msg)
   end
 )
 
@@ -223,11 +244,7 @@ Handlers.add(
     local owner = msg.Tags["Owned-By"]
     local agentInfos = AgentInfosPerUser[owner] or {}
     local latestAgentInfo = agentInfos[#agentInfos]
-
-    Handlers.utils.reply({
-      ["Response-For"] = "GetLatestAgent",
-      Data = json.encode(latestAgentInfo),
-    })(msg)
+    response.dataReply("GetLatestAgent", json.encode(latestAgentInfo))(msg)
   end
 )
 
@@ -240,10 +257,7 @@ Handlers.add(
     local agentId = msg.From
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.QuoteTokenBalance = msg.Tags.Balance
-    Handlers.utils.reply({
-      ["Response-For"] = "UpdateQuoteTokenBalance",
-      Data = "Success"
-    })(msg)
+    response.success("UpdateQuoteTokenBalance")(msg)
   end
 )
 
@@ -256,10 +270,7 @@ Handlers.add(
     local agentId = msg.From
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.BaseTokenBalance = msg.Tags.Balance
-    Handlers.utils.reply({
-      ["Response-For"] = "UpdateBaseTokenBalance",
-      Data = "Success"
-    })(msg)
+    response.success("UpdateBaseTokenBalance")(msg)
   end
 )
 
@@ -282,10 +293,7 @@ Handlers.add(
       Timestamp = msg.Timestamp
     })
     agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
-    Handlers.utils.reply({
-      ["Response-For"] = "Deposited",
-      Data = "Success"
-    })(msg)
+    response.success("Deposited")(msg)
   end
 )
 
@@ -307,10 +315,7 @@ Handlers.add(
       ExpectedOutput = msg.Tags.ExpectedOutput,
       ActualOutput = msg.Tags.ActualOutput,
     })
-    Handlers.utils.reply({
-      ["Response-For"] = "Swapped",
-      Data = "Success"
-    })(msg)
+    response.success("Swapped")(msg)
   end
 )
 
@@ -332,10 +337,7 @@ Handlers.add(
       ExpectedOutput = msg.Tags.ExpectedOutput,
       ActualOutput = msg.Tags.ActualOutput,
     })
-    Handlers.utils.reply({
-      ["Response-For"] = "SwappedBack",
-      Data = "Success"
-    })(msg)
+    response.success("SwappedBack")(msg)
   end
 )
 
@@ -348,10 +350,7 @@ Handlers.add(
     local agentId = msg.From
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Paused = msg.Tags.Paused == "true"
-    Handlers.utils.reply({
-      ["Response-For"] = "PauseToggleAgent",
-      Data = "Success"
-    })(msg)
+    response.success("PauseToggleAgent")(msg)
   end
 )
 
@@ -364,10 +363,19 @@ Handlers.add(
     local agentId = msg.From
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
-    Handlers.utils.reply({
-      ["Response-For"] = "RetireAgent",
-      Data = "Success"
-    })(msg)
+    response.success("RetireAgent")(msg)
+  end
+)
+
+-- MISC CONFIGURATION
+
+Handlers.add(
+  "setVerbose",
+  Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
+  function(msg)
+    ownership.onlyOwner(msg)
+    Verbose = msg.Tags.Verbose
+    response.success("SetVerbose")(msg)
   end
 )
 
@@ -380,11 +388,7 @@ Handlers.add(
     AgentsPerUser = {}
     AgentInfosPerUser = {}
     RegisteredAgents = {}
-    Logg = {}
-    Handlers.utils.reply({
-      ["Response-For"] = "Wipe",
-      Data = "Success"
-    })(msg)
+    response.success("Wipe")(msg)
   end
 )
 
@@ -395,10 +399,7 @@ Handlers.add(
     local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
-    Handlers.utils.reply({
-      ["Response-For"] = "RetireAgentDebug",
-      Data = "Success",
-    })(msg)
+    response.success("RetireAgentDebug")(msg)
   end
 )
 
@@ -409,47 +410,6 @@ Handlers.add(
     local agentId = "zSMGBVafyTrNeMVshCo9W0k_JJMEirH7M5kt1atqU_Q"
     local agentInfo = getAgentInfoAndIndex(agentId)
     agentInfo.Owner = "P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4"
-    Handlers.utils.reply({
-      ["Response-For"] = "AssignOwnerDebug",
-      Data = "Success",
-    })(msg)
-  end
-)
-
-Handlers.add(
-  'logg',
-  Handlers.utils.hasMatchingTag('Action', 'Logg'),
-  function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "Logg",
-      Data = json.encode(Logg),
-    })(msg)
-  end
-)
-
-Handlers.add(
-  'readAllDebug',
-  Handlers.utils.hasMatchingTag('Action', 'ReadAllDebug'),
-  function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "ReadAllDebug",
-      Data = json.encode({
-        -- RegisteredAgents,
-        -- AgentsPerUser,
-        AgentInfosPerUser
-      }),
-    })(msg)
-  end
-)
-
-
-Handlers.add(
-  'customDebug',
-  Handlers.utils.hasMatchingTag('Action', 'CustomDebug'),
-  function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "CustomDebug",
-      Data = "Success"
-    })(msg)
+    response.success("AssignOwnerDebug")(msg)
   end
 )
