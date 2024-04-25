@@ -243,11 +243,11 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
         process: AGENT_BACKEND,
         data: "",
         tags: [
-          { name: "Action", value: "GetAllAgents" },
+          { name: "Action", value: "GetAllAgentsPerUser" },
           { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
         ],
       })
-      console.log("📜 LOG > dryRun GetAllAgents:", allAgents)
+      console.log("📜 LOG > dryRun GetAllAgentsPerUser:", allAgents)
 
       addToLog({text: "Successfully deployed.", hasLink: false})
       
@@ -311,7 +311,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
           <Stack direction={'row'} gap={4} minHeight={600} maxHeight={800} overflow={'auto'}>
 
             <Stack gap={4} alignItems={'stretch'} width={700} pr={4} borderRight={deployLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
-              <Typography variant="h6">Create New Agent</Typography>
+              <Typography variant="h5">Create New Agent</Typography>
 
               <Stack direction="row" gap={2} alignItems="stretch">
                 <Stack direction="column" sx={{minWidth: BTN_WIDTH}} gap={3} alignItems="flex-start">
@@ -327,11 +327,19 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                     />
                   </FormControl>
                   <Stack width={'100%'} gap={3}>
-                    <Stack direction={'row'} justifyContent={'space-between'}>
-                      <Typography variant="body1" color="text.primary">Currencies</Typography>
+                    <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                      <Typography variant="body1" color="text.primary" fontSize={'1.25rem'}>Currencies</Typography>
                       <Typography variant="body1" color="text.secondary">
-                        powered by <Link href='https://dexscreener.arweave.dev/' sx={{display: 'inline-flex', alignItems: 'center', gap: '0.5rem'}}>DEXI <Image alt="icon" width={24} height={24} src={'/dexi.svg'} /></Link>
+                        powered by{" "}
+                        <Link href='https://dexscreener.arweave.dev/' 
+                          sx={{display: 'inline-flex', alignItems: 'center', gap: '0.5rem'}}
+                        >
+                            DEXI <Stack py={'1px'} px={'2px'} bgcolor={'#000'} justifyContent={'center'} alignItems={'center'}><Image alt="icon" width={26} height={26} src={'/dexi.svg'} /></Stack>
+                        </Link>
                       </Typography>
+                      {/* <Typography variant="body1" color="text.secondary" display={'flex'} alignItems={'center'} gap={1}>
+                        powered by <Link href='https://dexscreener.arweave.dev/' display={'flex'} alignItems={'center'}><img alt="icon" height={'30px'} src={'/dexi.png'} /></Link>
+                      </Typography> */}
                     </Stack>
                     <FormControl fullWidth>
                       <InputLabel id="token-pair-label">Token Pair (Base / Quote)</InputLabel>
@@ -396,7 +404,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                     </FormGroup>
                   </Stack>
                   <Stack width={'100%'} gap={3}>
-                    <Typography variant="body1" color="text.primary">DCA Configuration</Typography>
+                    <Typography variant="body1" color="text.primary" fontSize={'1.25rem'}>DCA Configuration</Typography>
                     
                     <Stack direction="row" gap={1} sx={{width: "100%"}}>
                       <FormControl fullWidth>

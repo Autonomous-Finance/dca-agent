@@ -41,15 +41,40 @@ export function AgentStatusDisplay() {
 
   return (
     <Stack gap={4} alignItems="flex-start">
-      <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
+      <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'} mb={2}>
         <Typography variant="h4">
           Agent{" "}
           <Typography variant="h4" component="span" fontFamily={'Courier New'} fontWeight={'bold'}>
             {status.agentName}
           </Typography>
         </Typography>
-        <AgentStatusChip statusX={status.statusX!} large />
       </Stack>
+
+      <Stack width={'100%'} direction={'row'} gap={4} justifyContent={'space-between'}>
+        <Stack gap={2} width={'100%'}>
+          <Box width={'100%'}>
+            <InfoLine large label='Currencies' value={
+              <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'} fontSize={'1.25rem'}>
+                {status.quoteTokenTicker} <East /> {status.baseTokenTicker}
+              </Typography>}/>
+          </Box>
+          <Box width={'100%'}>
+            <InfoLine large label='Pools' value={
+              <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} flexDirection={'row'} gap={1} width={'100%'} fontSize={'1.25rem'} fontWeight={'medium'} >
+                {status.dex}
+                <PoolsDetails agent={agent.status}/>
+              </Typography>
+              }
+            />
+          </Box>
+        </Stack>
+        <Box width={'100%'} display={'flex'} alignItems={'flex-start'}>
+          <InfoLine large label={'Status'} value={<AgentStatusChip statusX={status.statusX!} large />} />
+        </Box>
+      </Stack>
+
+      <Divider flexItem/>
+
 
       <Stack direction={'row'} width={'100%'}>
         <Stack flex={'grow'} width={'100%'} gap={2}>
@@ -85,9 +110,9 @@ export function AgentStatusDisplay() {
             soft
           ></InfoLine>
 
-          <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
+          {/* <Typography mx='auto' display={'flex'} sx={{opacity: 0}}>
             -
-          </Typography>
+          </Typography> */}
           <Box my={'12px'}><Divider /></Box>
 
           <Typography display={'flex'} fontWeight={'bold'}>
@@ -116,7 +141,7 @@ export function AgentStatusDisplay() {
           <Typography display={'flex'} fontWeight={'bold'}>
             DCA CONFIG
           </Typography>
-          <InfoLine label='Currencies' value={
+          {/* <InfoLine label='Currencies' value={
             <Typography display={'flex'} alignItems={'center'} justifyContent={'space-between'} gap={1} width={'100%'} fontWeight={'medium'}>
               {status.quoteTokenTicker} <East /> {status.baseTokenTicker}
             </Typography>}/>
@@ -126,7 +151,7 @@ export function AgentStatusDisplay() {
               <PoolsDetails agent={agent.status}/>
             </Typography>
             }
-          />
+          /> */}
           <InfoLine label={'Swap Interval'} value={`${status.swapIntervalValue}`} suffix={status.swapIntervalUnit}/>
           <InfoLine label={'Swap Amount'} value={`${displayableCurrency(status.swapInAmount)}`} suffix={status.quoteTokenTicker}/>
           <InfoLine label={'Max Slippage'} value={`${status.slippageTolerance }`} suffix={'%'}/>
@@ -167,26 +192,30 @@ export function AgentStatusDisplay() {
   )
 }
 
-const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string, color?: string, soft?: boolean}) => {
+const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labelInfo?: string, color?: string, soft?: boolean, large?: boolean}) => {
   return (
-    <Stack direction={'row'} justifyContent={'space-between'} gap={2}>
+    <Stack width={'100%'} direction={'row'} justifyContent={'space-between'} gap={2}>
       <Typography variant="body1" display={'flex'} alignItems={'center'}
+        fontSize={props.large ? '1.25rem' : '1rem'}
         sx={{color: props.color || 'text.secondary'}}
       >
         {props.label} {props.labelInfo && <HelpIcon text={props.labelInfo}/>}
       </Typography>
       <Stack direction={'row'} gap={1}>
         {typeof props.value === 'string' && (
-          <Typography variant="body1" fontWeight={props.soft ? 'normal' : 'bold'}>
+          <Typography variant="body1" fontWeight={props.soft ? 'normal' : 'bold'}
+            fontSize={props.large ? '1.25rem' : '1rem'}
+          >
             {props.value}
           </Typography>
         )}
         {typeof props.value !== 'string' && (
-          <Typography variant="body1">
+          <Typography variant="body1" fontSize={props.large ? '1.25rem' : '1rem'}>
             {props.value}
           </Typography>
         )}
         {props.suffix && <Typography variant="body1"
+          fontSize={props.large ? '1.25rem' : '1rem'}
         >
           {props.suffix}
         </Typography>}
@@ -201,7 +230,15 @@ const PoolsDetails = ({agent}: {agent: any}) => {
 
   return (
     <Box overflow={'visible'} position={'relative'} display={'flex'} alignItems={'center'}>
-      <MoreHoriz onClick={() => setShow(!show)} sx={{cursor: 'pointer'}}/>
+      <MoreHoriz onClick={() => setShow(!show)} 
+        sx={[
+          {cursor: 'pointer'}, 
+          theme => ({
+            '&:hover' : {
+              backgroundColor: theme.palette.action.hover
+            }
+          })
+        ]}/>
       {show && (
         <Box position={'absolute'} width={'400px'} maxHeight={'300px'} top={'100%'} right={'100%'}
           sx={{backgroundColor: 'var(--mui-palette-background-default)'}} boxShadow={4} p={2}

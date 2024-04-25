@@ -48,6 +48,18 @@ local getAgentInfoAndIndex = function(agentId)
 end
 
 
+local getAllAgentsNotRetired = function()
+  local allAgents = {}
+  for _, agents in pairs(AgentsPerUser) do
+    for _, agent in ipairs(agents) do
+      if not getAgentInfoAndIndex(agent).Retired then
+        table.insert(allAgents, agent)
+      end
+    end
+  end
+  return allAgents
+end
+
 local changeOwners = function(agentId, newOwner, timestamp)
   local currentOwner = RegisteredAgents[agentId]
 
@@ -143,13 +155,25 @@ Handlers.add(
 
 -- msg to be sent by end user
 Handlers.add(
+  'getAllAgentsPerUser',
+  Handlers.utils.hasMatchingTag('Action', 'GetAllAgentsPerUser'),
+  function(msg)
+    local owner = msg.Tags["Owned-By"]
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = "GetAllAgents",
+      Data = json.encode(AgentInfosPerUser[owner] or {}),
+    })
+  end
+)
+
+Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-    local owner = msg.Tags["Owned-By"]
     Handlers.utils.reply({
       ["Response-For"] = "GetAllAgents",
-      Data = json.encode(AgentInfosPerUser[owner] or {}),
+      Data = json.encode(getAllAgentsNotRetired()),
     })(msg)
   end
 )
