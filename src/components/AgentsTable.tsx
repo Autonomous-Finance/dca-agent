@@ -109,7 +109,7 @@ export default function AgentsTable() {
                   <StyledTableCell align="right">
                     <Typography component='span'>
                       <Typography component='span' fontWeight={'medium'} color="text.primary">{displayableCurrency(agentInfo.QuoteTokenBalance)}</Typography>
-                      <Typography component='span' variant="body1" color="text.secondary">{" "}{AO_CRED_SYMBOL}</Typography>
+                      <Typography component='span' variant="body1" color="text.secondary">{" "}{agentInfo.QuoteTokenTicker}</Typography>
                     </Typography>
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.ownedSince}</StyledTableCell>

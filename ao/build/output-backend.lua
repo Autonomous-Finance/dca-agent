@@ -1,18 +1,17 @@
 do
-  local _ENV = _ENV
-  package.preload["ownership.ownership"] = function(...)
-    local arg = _G.arg;
-    local mod = {}
+local _ENV = _ENV
+package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
+local mod = {}
 
-    -- messages that are to pass this access control check
-    -- should be sent by a wallet (entity), not by another process
+-- messages that are to pass this access control check
+-- should be sent by a wallet (entity), not by another process
 
-    mod.onlyOwner = function(msg)
-      assert(msg.From == Owner, "Only the owner is allowed")
-    end
+mod.onlyOwner = function(msg)
+  assert(msg.From == Owner, "Only the owner is allowed")
+end
 
-    return mod
-  end
+return mod
+end
 end
 
 --[[
@@ -120,6 +119,8 @@ Handlers.add(
     assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
     assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
     assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
+    assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'QuoteTokenTicker is required!')
+    assert(type(msg.Tags.BaseTokenTicker) == 'string', 'BaseTokenTicker is required!')
 
     local sender = msg.From
 
@@ -135,6 +136,8 @@ Handlers.add(
       SwapInAmount = msg.Tags.SwapInAmount,
       SwapIntervalValue = msg.Tags.SwapIntervalValue,
       SwapIntervalUnit = msg.Tags.SwapIntervalUnit,
+      QuoteTokenTicker = msg.Tags.QuoteTokenTicker,
+      BaseTokenTicker = msg.Tags.BaseTokenTicker,
       CreatedAt = msg.Timestamp,
       QuoteTokenBalance = "0",
       Deposits = {},

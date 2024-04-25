@@ -218,6 +218,8 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
           { name: "SwapInAmount", value: values.swapInAmount },
           { name: "SwapIntervalValue", value: values.swapIntervalValue },
           { name: "SwapIntervalUnit", value: values.swapIntervalUnit },
+          { name: "QuoteTokenTicker", value: values.quoteTokenTicker },
+          { name: "BaseTokenTicker", value: values.baseTokenTicker },
         ]
       })
       console.log("📜 LOG > registerMsg:", registerMsgId)

@@ -57,6 +57,8 @@ export type RegisteredAgent = {
   SwapIntervalValue: string,
   SwapIntervalUnit: string,
   SwapInAmount: string,
+  QuoteTokenTicker: string,
+  BaseTokenTicker: string,
   CreatedAt: number,
   QuoteTokenBalance: string,
   Deposits:  any[],
@@ -104,9 +106,12 @@ const extractResponse = (result: DryRunResult, actionName: string) => {
       (tag: AoMsgTag) => tag.name === 'Response-For' && tag.value === actionName)
   );
   if (respMsg) {
-    const respData = respMsg?.Tags.find(
+    let respData = respMsg?.Tags.find(
       (tag: AoMsgTag) => tag.name === 'Data'
     )?.value
+    if (!respData) {
+      respData = respMsg?.Data
+    }
     return JSON.parse(respData)
   } else {
     throw('Internal: could not find the data')
@@ -296,7 +301,7 @@ export const getAllAgents = async () => {
     const res = await dryrun({
       process: AGENT_BACKEND,
       tags: [
-        { name: "Action", value: "GetAllAgents" },
+        { name: "Action", value: "GetAllAgentsPerUser" },
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
       ],
     })
@@ -311,7 +316,7 @@ export const getAllAgents = async () => {
 
     return {
       type: "Success",
-      result: extractResponse(res, 'GetAllAgents')
+      result: extractResponse(res, 'GetAllAgentsPerUser')
     }
   } catch (e) {
     console.error('Failed to get all agents', e)
