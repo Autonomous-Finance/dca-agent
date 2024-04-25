@@ -1,3 +1,5 @@
+local dexi = require "agent.dexi-agent-marketplace"
+
 local mod = {}
 
 -- MATCH
@@ -38,6 +40,7 @@ mod.latestBalanceUpdateQuoteToken = function(msg)
     LatestQuoteTokenBal = msg.Balance
     LatestQuoteTokenBalTimestamp = msg.Timestamp
     ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
+    dexi.reportOverviewToAgentMarketplace()
   end
 end
 
@@ -47,6 +50,7 @@ mod.latestBalanceUpdateBaseToken = function(msg)
     LatestBaseTokenBal = msg.Balance
     LatestBaseTokenBalTimestamp = msg.Timestamp
     ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
+    dexi.reportOverviewToAgentMarketplace()
   end
 end
 

@@ -17,9 +17,10 @@ export default function SingleAgent() {
 
   const canGoBack = noback !== "1"
 
-  const {loading, isOwn } = useSingleRegisteredAgent(id)
+  const {loading, isOwn, isInitialized } = useSingleRegisteredAgent(id)
 
-  const displayNotMyAgent = !!id && !loading && !isOwn
+  const displayNotInitialized = !!id && !loading && !isInitialized
+  const displayNotMyAgent = !!id && !loading && !isOwn && isInitialized
   const displayAgentPanel = !!id && !loading && isOwn
 
 
@@ -62,6 +63,16 @@ export default function SingleAgent() {
           <Box margin={'4rem auto 0'}>
             <LoadingEmptyState texts={['Loading status...']}/>
           </Box>
+        )}
+
+        {displayNotInitialized && (
+            <Box height={400} display={'flex'} gap={4}
+              alignItems={'center'} justifyContent={'center'} flexDirection={'column'}
+            >
+              <Typography variant="h5">
+                This agent needs to be initialized.
+              </Typography>
+            </Box>
         )}
 
         {displayNotMyAgent && (

@@ -758,9 +758,13 @@ local response = require "utils.response"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
+Owner = Owner or ao.env.Process.Owner
+CronId = CronId or ""
 
 Initialized = Initialized or false
+InitializedAt = InitializedAt or nil
 Retired = Retired or false
+RetiredAt = RetiredAt or nil
 Paused = Paused or false
 
 AgentName = AgentName or ""
@@ -779,6 +783,8 @@ LatestQuoteTokenBalTimestamp = LatestQuoteTokenBalTimestamp or 0
 
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
+TotalDeposited = TotalDeposited or "0"
+Fees = "0"
 
 Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
@@ -1167,4 +1173,5 @@ Handlers.add(
       IsLiquidating = IsLiquidating
     }))(msg)
   end
-)`
+)
+`

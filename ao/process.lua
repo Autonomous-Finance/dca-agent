@@ -12,12 +12,16 @@ local progress = require "agent.progress"
 local ownership = require "agent.ownership"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
+local dexi = require "agent.dexi-agent-marketplace"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
+CronId = CronId or ""
 
 Initialized = Initialized or false
+InitializedAt = InitializedAt or nil
 Retired = Retired or false
+RetiredAt = RetiredAt or nil
 Paused = Paused or false
 
 AgentName = AgentName or ""
@@ -36,6 +40,8 @@ LatestQuoteTokenBalTimestamp = LatestQuoteTokenBalTimestamp or 0
 
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
+TotalDeposited = TotalDeposited or "0"
+Fees = "0"
 
 Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
@@ -74,7 +80,10 @@ Handlers.add(
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
-  lifeCycle.initialize
+  function(msg)
+    lifeCycle.initialize(msg)
+    dexi.reportOverviewToAgentMarketplace()
+  end
 )
 
 -- ! every handler below is gated on Initialized == true
@@ -110,6 +119,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     lifeCycle.retire(msg)
+    dexi.reportOverviewToAgentMarketplace()
   end
 )
 
@@ -219,7 +229,7 @@ Handlers.add(
   "triggerSwap",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
-    if not msg.Cron then return end
+    if msg.From ~= CronId then return end
     local skip = LatestQuoteTokenBal < SwapInAmount
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap", Data = skip and "Skipping swap" or "Triggering swap" })
@@ -423,5 +433,36 @@ Handlers.add(
       IsDepositing = IsDepositing,
       IsLiquidating = IsLiquidating
     }))(msg)
+  end
+)
+
+Handlers.add(
+  "Get-Overview",
+  Handlers.utils.hasMatchingTag("Action", "Get-Overview"),
+  function(msg)
+    local overview = json.encode(dexi.computeOverviewState())
+    response.dataReply("Get-Overview", overview)(msg)
+  end
+)
+
+Handlers.add(
+  "spawned",
+  Handlers.utils.hasMatchingTag("Action", "Spawned"),
+  function(msg)
+    CronId = msg.Tags['AO-Spawn-Success']
+    -- Warn: Messages sent from here are not picked up by the MU
+  end
+)
+
+Handlers.add(
+  "startCron",
+  Handlers.utils.hasMatchingTag("Action", "Start-Cron"),
+  function()
+    ao.send({
+      Target = CronId,
+      Action = "Eval",
+      Data =
+      'Handlers.add("triggerSwap", Handlers.utils.hasMatchingTag("Action", "TriggerSwap"), function(msg) if not msg.Cron then return end ao.send({ Target = ao.env.Process.Tags["Owner"], Action = "TriggerSwap" }) end )'
+    })
   end
 )

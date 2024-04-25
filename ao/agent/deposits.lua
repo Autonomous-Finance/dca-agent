@@ -1,3 +1,5 @@
+local dexi = require "agent.dexi-agent-marketplace"
+
 local mod = {}
 
 mod.isDepositNotice = function(msg)
@@ -14,6 +16,8 @@ mod.recordDeposit = function(msg)
     Sender = msg.Tags.Sender,
     Quantity = msg.Quantity
   })
+  TotalDeposited = tostring(tonumber(TotalDeposited) + tonumber(msg.Quantity))
+  dexi.reportOverviewToAgentMarketplace()
 end
 
 return mod

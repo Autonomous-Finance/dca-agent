@@ -12,6 +12,7 @@ mod.getStatus = function(msg)
   -- is initialized => reply with complete config
   local config = json.encode({
     initialized = true,
+    cronId = CronId,
     agentName = AgentName,
     retired = Retired,
     paused = Paused,

@@ -37,8 +37,8 @@ import {
 } from "@permaweb/aoconnect/browser"
 import { AGENT_SOURCE } from "@/lua/agent-source"
 import Log, { LogEntry } from "@/components/Log";
-import { AGENT_BACKEND } from "@/utils/agent-utils";
-import { useRouter } from "next/navigation";
+import { AGENT_BACKEND, readAgentStatus } from "@/utils/agent-utils";
+import { useRouter, useSearchParams } from "next/navigation";
 import { shortenId } from '../../utils/ao-utils';
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckIcon from "@mui/icons-material/Check";
@@ -79,6 +79,8 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
   const navigateToDeployedAgent = () => {
     router.replace(`/single-agent?id=${deployed}&noback=1`)
   }
+  const params = useSearchParams()
+  const configureId = params.get("agentId")
 
   const addToLog = (entry: LogEntry) => setDeployLog((log) => [...log, entry]);
 
@@ -121,58 +123,60 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
     try {
       setLoading(true);
 
-      addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
+      let processId: string
 
-      const processId = await spawn({
-        module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
-        scheduler: "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA",
-        signer: createDataItemSigner(window.arweaveWallet),
-        tags: [
-          { name: "Process-Type", value: "AF-DCA-Agent" },
-          { name: "Name", value: values.agentName },
-          { name: "Cron-Interval", value: values.cronInterval },
-          { name: "Cron-Tag-Action", value: "TriggerSwap" },
-          { name: "Deployer", value: await window.arweaveWallet?.getActiveAddress()}
-        ],
-      })
-      console.log("📜 LOG > processId:", processId)
+      if(configureId) {
+        processId = configureId
+      } else {
+        addToLog({text: 'Creating Agent Process on AO...', hasLink: false})
+        processId = await spawn({
+          module: "SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk",
+          scheduler: "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA",
+          signer: createDataItemSigner(window.arweaveWallet),
+          tags: [
+            { name: "Process-Type", value: "AF-DCA-Agent" },
+            { name: "Deployer", value: await window.arweaveWallet?.getActiveAddress()}
+          ],
+        })
+        console.log("📜 LOG > processId:", processId)
 
-      addToLog({
-        text: 'Agent created',
-        hasLink: true,
-        linkId: processId,
-        isMessage: false
-      })
+        addToLog({
+          text: 'Agent created',
+          hasLink: true,
+          linkId: processId,
+          isMessage: false
+        })
 
-      addToLog({text: 'Installing handlers...', hasLink: false})
-
-      // This is required because the processId above is available and 
-      // returned here before the SU has completed the process registration
-      
-      let installed = false
-      let evalMsgId
-      while (!installed) {
-        try {
-          evalMsgId = await message({
-            process: processId,
-            data: AGENT_SOURCE,
-            signer: createDataItemSigner(window.arweaveWallet),
-            tags: [{ name: "Action", value: "Eval" }],
-          })
-          installed = true
-          console.log("📜 LOG > evalMsg:", evalMsgId)
-        } catch (e) {
-          console.log('500 on eval ', e)
-          await new Promise(resolve => setTimeout(resolve, 1500))
+        addToLog({text: 'Installing handlers...', hasLink: false})
+  
+        // This is required because the processId above is available and 
+        // returned here before the SU has completed the process registration
+        
+        let installed = false
+        let evalMsgId
+        while (!installed) {
+          try {
+            evalMsgId = await message({
+              process: processId,
+              data: AGENT_SOURCE,
+              signer: createDataItemSigner(window.arweaveWallet),
+              tags: [{ name: "Action", value: "Eval" }],
+            })
+            installed = true
+            console.log("📜 LOG > evalMsg:", evalMsgId)
+          } catch (e) {
+            console.log('500 on eval ', e)
+            await new Promise(resolve => setTimeout(resolve, 1500))
+          }
         }
-      }
 
-      addToLog({
-        text: 'Handlers installation',
-        hasLink: true,
-        linkId: evalMsgId!,
-        isMessage: true
-      })
+        addToLog({
+          text: 'Handlers installation',
+          hasLink: true,
+          linkId: evalMsgId!,
+          isMessage: true
+        })
+      }
 
       // Initialize (& Config)
 
@@ -196,6 +200,9 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
           { name: "SwapIntervalValue", value: values.swapIntervalValue },
           { name: "SwapIntervalUnit", value: values.swapIntervalUnit },
           { name: "Slippage", value: values.slippage },
+          { name: "Name", value: values.agentName },
+          { name: "Cron-Interval", value: values.cronInterval },
+          // { name: "Cron-Tag-Action", value: "TriggerSwap" },
         ],
       })
       console.log("📜 LOG > initMsg:", initMsgId)
@@ -212,6 +219,23 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
         return
       }
 
+      let cronId 
+      while (!cronId) {
+        try {
+          const status = await readAgentStatus(processId)
+          console.log("📜 LOG > cronId:", status.result?.cronId)
+          if(status.result?.cronId) {
+            cronId = status.result.cronId
+          } else {
+            throw new Error('cronId not found')
+          }
+        } catch (e) {
+          console.log('500 on eval ', e)
+          await new Promise(resolve => setTimeout(resolve, 1500))
+        }
+      }
+      addToLog({text: 'Cron process', hasLink: true, linkId: cronId, isMessage: false})
+
       addToLog({
         text: 'Initialization successful',
         hasLink: true,
@@ -220,13 +244,21 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
       })
       
       // cron monitoring
-
       addToLog({text: 'Starting cron monitor...', hasLink: false})
+      
+      const startCronMsg = await message({
+        process: processId,
+        signer: createDataItemSigner(window.arweaveWallet),
+        tags: [
+          { name: "Action", value: "Start-Cron" },
+        ],
+      })
+      console.log('📜 LOG > startCronMsg:', startCronMsg)
       
       await new Promise(resolve => setTimeout(resolve, 3000)) // monitor issues ? 
 
       const monitorMsgId = await monitor({
-        process: processId,
+        process: cronId,
         signer: createDataItemSigner(window.arweaveWallet),
       });
       
@@ -319,7 +351,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
           <Stack direction={'row'} gap={4} minHeight={'37.5rem'} maxHeight={'50rem'} overflow={'auto'}>
 
             <Stack gap={4} alignItems={'stretch'} width={'43.75'} pr={4} borderRight={deployLog.length > 0 ? '1px solid var(--mui-palette-divider)' : ''}>
-              <Typography variant="h5">Create New Agent</Typography>
+              <Typography variant="h5">{configureId ? "Configure":"Create"} New Agent</Typography>
 
               <Stack direction="row" gap={2} alignItems="stretch">
                 <Stack direction="column" sx={{minWidth: `${BTN_WIDTH_REM}rem`}} gap={3} alignItems="flex-start">
@@ -489,7 +521,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                       color="success"
                       onClick={handleDeploy}
                     >
-                      Deploy DCA Agent
+                      {configureId ? "Configure":"Deploy"} DCA Agent
                     </Button>
                   </Stack>
                 </Stack>
@@ -515,9 +547,17 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                     flexDirection="column"
                   >
                     {/* <Box> */}
-                      <Typography paragraph>
-                        Deployment will create an agent process as configured.
-                      </Typography>
+                    {
+                      configureId ? (
+                        <Typography paragraph>
+                          This will configure the agent process <b>{shortenId(configureId)}</b> spawned from Dexi.
+                        </Typography>
+                      ): (
+                        <Typography paragraph>
+                          Deployment will create an agent process as configured.
+                        </Typography>
+                      )
+                    }
                       <Typography paragraph>
                         You own and control this agent via your connected AR wallet account.
                       </Typography>
