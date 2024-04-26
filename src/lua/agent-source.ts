@@ -1,9 +1,243 @@
+export const AGENT_SOURCE = `do
+local _ENV = _ENV
+package.preload[ "agent.agent" ] = function( ... ) local arg = _G.arg;
+Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
+
+SwapIntervalValue = SwapIntervalValue or nil
+SwapIntervalUnit = SwapIntervalUnit or nil
+SwapInAmount = SwapInAmount or nil
+SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.33 for 22.33%)
+
+SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
+SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+
+local mod = {}
+
+mod.init = function()
+  ao.send({
+    Target = Pool,
+    Action = "Get-Price",
+    Token = BaseToken,
+    Quantity = SwapInAmount
+  })
+end
+
+mod.requestSwapOutput = function()
+  ao.send({
+    Target = Pool,
+    Action = "Get-Price",
+    Token = QuoteToken,
+    Quantity = SwapInAmount
+  })
+end
+
+mod.swap = function()
+  -- prepare swap
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Recipient = Pool,
+    Quantity = SwapInAmount,
+    ["X-Action"] = "Swap",
+    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["X-Expected-Output"] = SwapExpectedOutput,
+  })
+end
+
+mod.requestSwapBackOutput = function()
+  ao.send({
+    Target = Pool,
+    Action = "Get-Price",
+    Token = BaseToken,
+    Quantity = LatestBaseTokenBal
+  })
+end
+
+
+mod.swapBack = function()
+  -- prepare swap back
+  ao.send({
+    Target = BaseToken,
+    Action = "Transfer",
+    Quantity = LatestBaseTokenBal,
+    Recipient = Pool,
+    ["X-Action"] = "Swap",
+    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+    ["X-Expected-Output"] = SwapBackExpectedOutput,
+  })
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+-- messages that are to pass this access control check
+-- should be sent by a wallet (entity), not by another process
+
+mod.onlyOwner = function(msg)
+  assert(msg.From == Owner, "Only the owner is allowed")
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "utils.patterns" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+-- This function allows the wrapped pattern function
+-- to continue the execution after the handler
+---@param fn fun(msg: Message)
+---@return PatternFunction
+function mod.continue(fn)
+  return function(msg)
+    local patternResult = fn(msg)
+
+    if not patternResult or patternResult == 0 or patternResult == "skip" then
+      return patternResult
+    end
+    return 1
+  end
+end
+
+-- The "hasMatchingTag" utility function, but it supports
+-- multiple values for the tag
+---@param name string Tag name
+---@param values string[] Tag values
+---@return PatternFunction
+function mod.hasMatchingTagOf(name, values)
+  return function(msg)
+    for _, value in ipairs(values) do
+      local patternResult = Handlers.utils.hasMatchingTag(name, value)(msg)
+
+      if patternResult ~= 0 then
+        return patternResult
+      end
+    end
+
+    return 0
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global SwapError to the error message.
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapperSwap(handler)
+  -- return the wrapped handler
+  return function(msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      SwapError = err
+
+      return nil
+    end
+
+    return result
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global SwapError to the error message.
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapperSwapBack(handler)
+  -- return the wrapped handler
+  return function(msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      SwapBackError = err
+
+      return nil
+    end
+
+    return result
+  end
+end
+
+-- Handlers wrapped with this function will not throw Lua errors.
+-- Instead, if the handler throws an error, the wrapper will
+-- catch that and set the global SwapError to the error message.
+---@param handler HandlerFunction
+---@return HandlerFunction
+function mod.catchWrapperLiquidate(handler)
+  -- return the wrapped handler
+  return function(msg, env)
+    -- execute the provided handler
+    local status, result = pcall(handler, msg, env)
+
+    -- validate the execution result
+    if not status then
+      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
+
+      -- set the global RefundError variable
+      -- this needs to be reset in the refund later
+      LiquidateError = err
+
+      return nil
+    end
+
+    return result
+  end
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "validations.validations" ] = function( ... ) local arg = _G.arg;
+local bint = require('.bint')(256)
+
+local mod = {}
+
+mod.quantity = function(msg)
+  assert(type(msg.Quantity) == 'string', 'Quantity is required!')
+  local qty = bint(msg.Quantity)
+  assert(qty > 0, 'Quantity must be positive')
+end
+
+
+mod.optionalQuantity = function(msg)
+  if msg.Quantity == nil then return end
+
+  mod.quantity(msg)
+end
+
+return mod
+end
+end
+
 local ownership = require "ownership.ownership"
-local bot = require "bot.bot"
+local agent = require "agent.agent"
 local patterns = require "utils.patterns"
 local json = require "json"
 
--- bot deployment triggered by user from browser
+-- agent deployment triggered by user from browser
 --  => browser wallet owner == process owner
 Owner = Owner or ao.env.Process.Owner
 
@@ -305,7 +539,7 @@ Handlers.add(
     assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
     -- IsSwapping = true
-    -- bot.requestSwapOutput()
+    -- agent.requestSwapOutput()
   end
 )
 
@@ -317,7 +551,7 @@ Handlers.add(
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
-    bot.swap()
+    agent.swap()
   end
 )
 
@@ -350,7 +584,7 @@ Handlers.add(
   end,
   function(msg)
     SwapBackExpectedOutput = msg.Tags.Price
-    bot.swapBack()
+    agent.swapBack()
   end
 )
 
@@ -454,7 +688,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    bot.requestSwapBackOutput()
+    agent.requestSwapBackOutput()
   end
 )
 
@@ -503,6 +737,6 @@ Handlers.add(
     end
     ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
     IsSwapping = true
-    bot.requestSwapOutput()
+    agent.requestSwapOutput()
   end
-)
+)`

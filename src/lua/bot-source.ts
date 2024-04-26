@@ -1,4 +1,4 @@
-export const BOT_SOURCE = `do
+export const AGENT_SOURCE = `do
 local _ENV = _ENV
 package.preload[ "bot.bot" ] = function( ... ) local arg = _G.arg;
 Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex

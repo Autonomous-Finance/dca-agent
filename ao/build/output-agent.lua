@@ -1,6 +1,6 @@
 do
 local _ENV = _ENV
-package.preload[ "bot.bot" ] = function( ... ) local arg = _G.arg;
+package.preload[ "agent.agent" ] = function( ... ) local arg = _G.arg;
 Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
 
 SwapIntervalValue = SwapIntervalValue or nil
@@ -11,9 +11,9 @@ SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.3
 SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
 SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
-local bot = {}
+local mod = {}
 
-bot.init = function()
+mod.init = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -22,7 +22,7 @@ bot.init = function()
   })
 end
 
-bot.requestSwapOutput = function()
+mod.requestSwapOutput = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -31,7 +31,7 @@ bot.requestSwapOutput = function()
   })
 end
 
-bot.swap = function()
+mod.swap = function()
   -- prepare swap
   ao.send({
     Target = QuoteToken,
@@ -44,7 +44,7 @@ bot.swap = function()
   })
 end
 
-bot.requestSwapBackOutput = function()
+mod.requestSwapBackOutput = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -54,7 +54,7 @@ bot.requestSwapBackOutput = function()
 end
 
 
-bot.swapBack = function()
+mod.swapBack = function()
   -- prepare swap back
   ao.send({
     Target = BaseToken,
@@ -67,7 +67,7 @@ bot.swapBack = function()
   })
 end
 
-return bot
+return mod
 end
 end
 
@@ -233,11 +233,11 @@ end
 end
 
 local ownership = require "ownership.ownership"
-local bot = require "bot.bot"
+local agent = require "agent.agent"
 local patterns = require "utils.patterns"
 local json = require "json"
 
--- bot deployment triggered by user from browser
+-- agent deployment triggered by user from browser
 --  => browser wallet owner == process owner
 Owner = Owner or ao.env.Process.Owner
 
@@ -539,7 +539,7 @@ Handlers.add(
     assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
     -- IsSwapping = true
-    -- bot.requestSwapOutput()
+    -- agent.requestSwapOutput()
   end
 )
 
@@ -551,7 +551,7 @@ Handlers.add(
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
-    bot.swap()
+    agent.swap()
   end
 )
 
@@ -584,7 +584,7 @@ Handlers.add(
   end,
   function(msg)
     SwapBackExpectedOutput = msg.Tags.Price
-    bot.swapBack()
+    agent.swapBack()
   end
 )
 
@@ -688,7 +688,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    bot.requestSwapBackOutput()
+    agent.requestSwapBackOutput()
   end
 )
 
@@ -700,7 +700,7 @@ Handlers.add(
   function(msg)
     ownership.onlyOwner(msg)
     Paused = ~Paused
-    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = Paused })
+    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     Handlers.utils.reply({
       ["Response-For"] = "PauseToggle",
       Data = "Success"
@@ -737,6 +737,6 @@ Handlers.add(
     end
     ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
     IsSwapping = true
-    bot.requestSwapOutput()
+    agent.requestSwapOutput()
   end
 )

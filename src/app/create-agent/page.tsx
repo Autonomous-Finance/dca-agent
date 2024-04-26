@@ -34,7 +34,7 @@ import {
   monitor,
   result,
 } from "@permaweb/aoconnect/browser"
-import { BOT_SOURCE } from "@/lua/bot-source"
+import { AGENT_SOURCE } from "@/lua/bot-source"
 import { BASE_CURRENCY_PROCESS_MAP } from '../../utils/data-utils';
 import Log, { LogEntry } from "@/components/Log";
 import { REGISTRY } from "@/utils/agent-utils";
@@ -131,7 +131,7 @@ export default function CreateAgent() {
         try {
           evalMsgId = await message({
             process: processId,
-            data: BOT_SOURCE,
+            data: AGENT_SOURCE,
             signer: createDataItemSigner(window.arweaveWallet),
             tags: [{ name: "Action", value: "Eval" }],
           })

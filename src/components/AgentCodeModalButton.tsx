@@ -3,7 +3,7 @@ import { Box, Button, Link, Modal, Snackbar, Stack, TextField, Typography } from
 import CodeIcon from '@mui/icons-material/Code';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { BOT_SOURCE } from '@/lua/bot-source';
+import { AGENT_SOURCE } from '@/lua/bot-source';
 
 function AgentCodeModalButton() {
   const [open, setOpen] = useState(false);
@@ -13,7 +13,7 @@ function AgentCodeModalButton() {
   const handleClose = () => setOpen(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(BOT_SOURCE);
+    navigator.clipboard.writeText(AGENT_SOURCE);
     setSnackOpen(true);
   }
 
@@ -76,7 +76,7 @@ function AgentCodeModalButton() {
             rows={24}
             multiline
             variant="outlined"
-            value={BOT_SOURCE}
+            value={AGENT_SOURCE}
             disabled
           />
           <Typography fontSize="large" 
