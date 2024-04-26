@@ -197,8 +197,8 @@ return mod
 end
 end
 
-local permissions = require "ao.permissions.permissions"
-local agent = require "ao.agent.agent"
+local permissions = require "permissions.permissions"
+local agent = require "agent.agent"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 local json = require "json"

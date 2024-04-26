@@ -164,7 +164,7 @@ Handlers.add(
 
 -- msg to be sent by agent itself
 Handlers.add(
-  'Deposited',
+  'deposited',
   Handlers.utils.hasMatchingTag('Action', 'Deposited'),
   function(msg)
     permissions.onlyAgent(msg)
@@ -231,7 +231,7 @@ Handlers.add(
 
 -- msg to be sent by agent itself
 Handlers.add(
-  'pauseToggleAgent',
+  'pauseToggledAgent',
   Handlers.utils.hasMatchingTag('Action', 'PauseToggleAgent'),
   function(msg)
     permissions.onlyAgent(msg)

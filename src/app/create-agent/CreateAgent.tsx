@@ -130,6 +130,13 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
       })
       console.log("📜 LOG > processId:", processId)
 
+      addToLog({
+        text: 'Agent created',
+        hasLink: true,
+        linkId: processId,
+        isMessage: false
+      })
+
       addToLog({text: 'Installing handlers...', hasLink: false})
 
       // This is required because the processId above is available and 
@@ -152,6 +159,13 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
           await new Promise(resolve => setTimeout(resolve, 1500))
         }
       }
+
+      addToLog({
+        text: 'Handlers installation',
+        hasLink: true,
+        linkId: evalMsgId!,
+        isMessage: true
+      })
 
       // Initialize (& Config)
 
@@ -190,6 +204,13 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
         setLoading(false);
         return
       }
+
+      addToLog({
+        text: 'Initialization successful',
+        hasLink: true,
+        linkId: initMsgId,
+        isMessage: true
+      })
       
       // cron monitoring
 
@@ -233,6 +254,12 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
         setLoading(false);
         return
       }
+      addToLog({
+        text: 'Registration successful',
+        hasLink: true,
+        linkId: registerMsgId,
+        isMessage: true
+      })
 
       const status = await dryrun({
         process: processId,
@@ -252,36 +279,8 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
       console.log("📜 LOG > dryRun GetAllAgentsPerUser:", allAgents)
 
       addToLog({text: "Successfully deployed.", hasLink: false})
-      
-      const logEntries: LogEntry[] = [
-        {
-          text: 'Agent process',
-          hasLink: true,
-          linkId: processId,
-          isMessage: false
-        },
-        {
-          text: 'Handlers installation',
-          hasLink: true,
-          linkId: evalMsgId!,
-          isMessage: true
-        },
-        {
-          text: 'Initialization',
-          hasLink: true,
-          linkId: initMsgId,
-          isMessage: true
-        },
-        {
-          text: 'Registration',
-          hasLink: true,
-          linkId: registerMsgId,
-          isMessage: true
-        }
-      ];
-      logEntries.forEach((item: LogEntry) => addToLog(item));
+
       setDeployed(processId)
-      window.localStorage.setItem("agentProcess", processId)
     } catch (e) {
       console.error(e)
       addToLog({text: "Failed to deploy DCA agent. Please try again.", isError: true, hasLink: false})
