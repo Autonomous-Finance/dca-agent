@@ -73,8 +73,6 @@ Handlers.add(
       swapExpectedOutput = SwapExpectedOutput,
       swapBackExpectedOutput = SwapBackExpectedOutput,
       slippageTolerance = SlippageTolerance,
-      transferId = TransferId,
-      transferIdSwapBack = TransferIdSwapBack,
       pool = Pool,
       dex = Dex,
       isSwapping = IsSwapping,
@@ -311,47 +309,15 @@ Handlers.add(
   end
 )
 
-
--- ask pool for output amount
-Handlers.add(
-  "requestSwapOutput",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP
-    if m.From ~= QuoteToken then return end
-    if m.Recipient ~= Pool then return end
-
-    TransferId = m["Pushed-For"]
-
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalTransferIdSwap",
-      Data = "Got TransferId " .. (TransferId or 'nil')
-    })
-
-    ao.send({
-      Target = Pool,
-      Action = "Get-Price",
-      Token = QuoteToken,
-      Quantity = SwapInAmount
-    })
-  end
-)
-
 -- response to the price request
 Handlers.add(
   'swapExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferId
+    return msg.From == Pool and msg.Tags.Price ~= nil and IsSwapping
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalSwapExec",
-      Data = "Attempt executing swap with expected output " .. SwapExpectedOutput
-    })
-    agent.swapExec()
+    agent.swap()
   end
 )
 
@@ -371,52 +337,20 @@ Handlers.add(
     })
     SwapExpectedOutput = nil
     IsSwapping = false
-    TransferId = nil
   end
 )
 
 -- SWAP BACK (TO LIQUIDATE)
 
--- response to the agent transferring quote token to the pool, in order to prepare the SWAP BACK
-Handlers.add(
-  "requestSwapBackOutput",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP BACK
-    if m.From ~= BaseToken then return end
-    if m.Recipient ~= Pool then return end
-
-    TransferIdSwapBack = m["Pushed-For"]
-
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalTransferIdSwapBack",
-      Data = "Got TransferId for swap back " .. (TransferIdSwapBack or 'nil')
-    })
-
-    ao.send({
-      Target = Pool,
-      Action = "Get-Price",
-      Token = BaseToken,
-      Quantity = LatestBaseTokenBal
-    })
-  end
-)
-
 -- response to the price request for SWAP BACK
 Handlers.add(
   'swapBackExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and msg.Tags["Pushed-For"] == TransferIdSwapBack
+    return msg.From == Pool and msg.Tags.Price ~= nil and IsLiquidating
   end,
   function(msg)
     SwapBackExpectedOutput = msg.Tags.Price
-    ao.send({
-      Target = ao.id,
-      Action = "SelfSignalSwapBackExec",
-      Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
-    })
-    agent.swapBackExec()
+    agent.swapBack()
   end
 )
 
@@ -435,7 +369,6 @@ Handlers.add(
       ConfirmedAt = tostring(msg.Timestamp)
     })
     SwapBackExpectedOutput = nil
-    TransferIdSwapBack = nil
   end
 )
 
@@ -521,7 +454,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    agent.swapBackInit()
+    agent.requestSwapBackOutput()
   end
 )
 
@@ -575,6 +508,6 @@ Handlers.add(
       permissions.onlyOwner(msg)
     end
     IsSwapping = true
-    agent.swapInit()
+    agent.requestSwapOutput()
   end
 )
