@@ -1,4 +1,4 @@
-export const credSymbol = "AOCRED-Test" as const
+export const AO_CRED_SYMBOL = "AO" as const
 
 export const truncateId = (text: string) => {
   if (!text || text.length <= 16) return text
@@ -60,29 +60,29 @@ export const TYPE_PATH_MAP: Record<string, string> = {
   Entity: "entity",
 }
 
-export const BASE_CURRENCIES = ["BRKTST", "TRUNK", "0RBT"] as const
-export type BaseToken = typeof BASE_CURRENCIES[number]
-export const BASE_CURRENCY_PROCESS_MAP: Record<BaseToken, string> = {
-  BRKTST: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
-  TRUNK: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
-  '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"
-}
+// export const BASE_CURRENCIES = ["BRKTST", "TRUNK", "0RBT"] as const
+// export type BaseToken = typeof BASE_CURRENCIES[number]
+// export const BASE_CURRENCY_PROCESS_MAP: Record<BaseToken, string> = {
+//   BRKTST: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
+//   TRUNK: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
+//   '0RBT': "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk"
+// }
 
-export const QUOTE_CURRENCIES = [credSymbol, "USDa", "USDT"] as const
-export type QuoteToken = typeof QUOTE_CURRENCIES[number]
-export const QUOTE_CURRENCY_PROCESS_MAP: Record<QuoteToken, string> = {
-  [credSymbol]: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
-  USDa: "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk",
-  USDT: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
-}
+// export const QUOTE_CURRENCIES = [AO_CRED_SYMBOL, "USDa", "USDT"] as const
+// export type QuoteToken = typeof QUOTE_CURRENCIES[number]
+// export const QUOTE_CURRENCY_PROCESS_MAP: Record<QuoteToken, string> = {
+//   [AO_CRED_SYMBOL]: "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ",
+//   USDa: "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk",
+//   USDT: "OT9qTE2467gcozb2g8R6D6N3nQS94ENcaAIJfUzHCww",
+// }
 
 export const INTERVAL_UNITS = ["Seconds", "Minutes", "Hours", "Days"] as const
 export type IntervalUnit = typeof INTERVAL_UNITS[number]
 
 
-export const findCurrencyById = (id: string) => {
-  return Object.entries(BASE_CURRENCY_PROCESS_MAP).find(([_, value]) => value === id)?.[0]
-}
+// export const findCurrencyById = (id: string) => {
+//   return Object.entries(BASE_CURRENCY_PROCESS_MAP).find(([_, value]) => value === id)?.[0]
+// }
 
 export const LIQUIDITY_POOLS = ["Bark", "Uniswap", "Permaswap"] as const
 export type LiquidityPool = typeof LIQUIDITY_POOLS[number]

@@ -1,9 +1,9 @@
 import * as ao from "@permaweb/aoconnect/browser"
-import { CRED_ADDR } from "./agent-utils"
 
+const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 
 const {dryrun} = ao.connect({
-  CU_URL: "https://cu45.ao-testnet.xyz"
+  CU_URL: "https://cu49.ao-testnet.xyz"
 })
 
 

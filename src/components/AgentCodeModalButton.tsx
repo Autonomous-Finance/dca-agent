@@ -3,7 +3,7 @@ import { Box, Button, Link, Modal, Snackbar, Stack, TextField, Typography } from
 import CodeIcon from '@mui/icons-material/Code';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { AGENT_SOURCE } from '@/lua/bot-source';
+import { AGENT_SOURCE } from '@/lua/agent-source';
 
 function AgentCodeModalButton() {
   const [open, setOpen] = useState(false);

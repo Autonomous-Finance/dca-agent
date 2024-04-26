@@ -21,7 +21,7 @@ function AgentStatusChip({statusX, large, noIcon }: {statusX: AgentStatusX, larg
     }
 
   const helpText = statusX === 'Paused' 
-    ? 'Agent has been paused by the user.'
+    ? 'Agent has been paused. You can operate on the assets (deposit, withdraw, etc.) but the agent will not perform any DCA orders.'
     : ('No Funds' ? 'Agent is active but has insufficient funds to perform DCA orders.' : '')
 
   return (

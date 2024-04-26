@@ -1,4 +1,4 @@
-import { getOneAgent, RegisteredAgent } from "@/utils/agent-utils"
+import { getOneRegisteredAgent, RegisteredAgent } from "@/utils/agent-utils"
 import { useEffect, useState } from "react"
 
 export const useSingleRegisteredAgent = (id: string | null) => {
@@ -15,7 +15,7 @@ export const useSingleRegisteredAgent = (id: string | null) => {
     const getAgent = async () => {
       const user = await window.arweaveWallet?.getActiveAddress()
       setLoading(true)
-      getOneAgent(id).then((agentQuery) => {
+      getOneRegisteredAgent(id).then((agentQuery) => {
         setLoading(false)
         const res = agentQuery.result
         if (agentQuery.type === 'Failure') {

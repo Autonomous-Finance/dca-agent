@@ -13,13 +13,13 @@ import Link from "next/link"
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewAgent from "@/components/ViewAgent"
-import { wipeRegistry } from "@/utils/agent-utils"
+import { wipeBackend } from "@/utils/agent-utils"
 import WipeDebug from "@/components/WipeDebug"
 
 export default function HomePage() {
-  const latestFromRegistry = useLatestRegisteredAgent();
+  const latestAgentFromBackend = useLatestRegisteredAgent();
 
-  const {agentId, details, loading, refresh} = latestFromRegistry;
+  const {agentId, details, loading, refresh} = latestAgentFromBackend;
 
   const foundActiveAgent = agentId && !details?.Retired;
 
@@ -27,29 +27,29 @@ export default function HomePage() {
 
   const wipe = async () => {
     setWiping(true);
-    await wipeRegistry();
+    await wipeBackend();
     window.location.reload();
   }
 
   if (wiping) return (
     <Box margin={'8rem auto 0'}>
-      <LoadingEmptyState texts={['Wiping Registry...']}/>
+      <LoadingEmptyState texts={['Wiping Agent Backend...']}/>
     </Box>
   )
 
   return (
     <>
       <Box margin={'2rem auto 0'}>
-          {loading && (
-            <Box margin={'7rem auto 0'}>
-              <LoadingEmptyState texts={['Retrieving your Agents...']}/>
-            </Box>
-          )}
+        {loading && (
+          <Box margin={'7rem auto 0'}>
+            <LoadingEmptyState texts={['Retrieving your Agents...']}/>
+          </Box>
+        )}
         {!loading && foundActiveAgent && (
           <ViewAgent agentId={agentId} />
         )}
         {!loading && !foundActiveAgent && (
-          <Stack gap={8} marginTop={'7rem'} mx={'auto'} width={600} height={400} justifyContent={'center'} alignItems={'center'}>
+          <Stack gap={8} marginTop={'7rem'} mx={'auto'} width={'37.5rem'} height={'25rem'} justifyContent={'center'} alignItems={'center'}>
             <Typography variant="h5" align="center" gutterBottom>
               No Recent Active Agent Found.
             </Typography>

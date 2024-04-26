@@ -1,14 +1,9 @@
 import * as ao from "@permaweb/aoconnect/browser"
-import { credSymbol, findCurrencyById } from "./data-utils"
-import AgentsTable from "@/components/AgentsTable"
-
-export const CRED_ADDR = "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
-
-export const REGISTRY = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
+export const AGENT_BACKEND = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
 
 
 const {dryrun} = ao.connect({
-  CU_URL: "https://cu45.ao-testnet.xyz"
+  CU_URL: "https://cu49.ao-testnet.xyz"
 })
 
 
@@ -20,7 +15,10 @@ export type AgentStatus = {
   paused: boolean
   baseToken: string
   quoteToken: string
+  baseTokenTicker: string
+  quoteTokenTicker: string
   pool: string
+  dex: string
   swapInAmount: string
   swapIntervalValue: string
   swapIntervalUnit: string
@@ -38,8 +36,6 @@ export type AgentStatus = {
 
   // added on Frontend
   statusX?: AgentStatusX
-  quoteTokenSymbol?: string
-  baseTokenSymbol?: string
 }
 
 export const AGENT_STATUS_X_VALUES = ["Active", "Retired", "No Funds", "Paused"] as const
@@ -52,15 +48,17 @@ export type DcaBuy = {
   ConfirmedAt: string
 }
 
-// AGENT INFO AS RETURNED BY REGISTRY PROCESS
+// AGENT INFO AS RETURNED BY AGENT BACKEND PROCESS
 export type RegisteredAgent = {
-  // -- tracked in registry
+  // -- tracked in agent backend
   Owner: string,
   Agent: string,
   AgentName: string,
   SwapIntervalValue: string,
   SwapIntervalUnit: string,
   SwapInAmount: string,
+  QuoteTokenTicker: string,
+  BaseTokenTicker: string,
   CreatedAt: number,
   QuoteTokenBalance: string,
   Deposits:  any[],
@@ -108,9 +106,12 @@ const extractResponse = (result: DryRunResult, actionName: string) => {
       (tag: AoMsgTag) => tag.name === 'Response-For' && tag.value === actionName)
   );
   if (respMsg) {
-    const respData = respMsg?.Tags.find(
+    let respData = respMsg?.Tags.find(
       (tag: AoMsgTag) => tag.name === 'Data'
     )?.value
+    if (!respData) {
+      respData = respMsg?.Data
+    }
     return JSON.parse(respData)
   } else {
     throw('Internal: could not find the data')
@@ -182,7 +183,7 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
 export const getLatestAgent = async () => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetLatestAgent" },
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
@@ -243,9 +244,6 @@ export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
   } else {
     agentStatus.statusX = 'Active'
   }
-
-  agentStatus.quoteTokenSymbol = credSymbol
-  agentStatus.baseTokenSymbol = findCurrencyById(agentStatus.baseToken)
 }
 
 export const createAgentPerformanceInfo = (
@@ -266,10 +264,10 @@ export const createAgentPerformanceInfo = (
   }
 }
 
-export const getOneAgent = async (agentId: string) => {
+export const getOneRegisteredAgent = async (agentId: string) => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetOneAgent" },
         { name: "Agent", value: agentId },
@@ -301,9 +299,9 @@ export const getOneAgent = async (agentId: string) => {
 export const getAllAgents = async () => {
   try {
     const res = await dryrun({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
-        { name: "Action", value: "GetAllAgents" },
+        { name: "Action", value: "GetAllAgentsPerUser" },
         { name: "Owned-By", value: await window.arweaveWallet?.getActiveAddress() }
       ],
     })
@@ -318,7 +316,7 @@ export const getAllAgents = async () => {
 
     return {
       type: "Success",
-      result: extractResponse(res, 'GetAllAgents')
+      result: extractResponse(res, 'GetAllAgentsPerUser')
     }
   } catch (e) {
     console.error('Failed to get all agents', e)
@@ -360,7 +358,7 @@ export async function readAgentStatus(agent: string): Promise<Receipt<AgentStatu
   }
 }
 
-export const depositToAgent = async (agent: string, amount: string): Promise<Receipt<string>> => {
+export const depositToAgent = async (agent: string, tokenProcess: string, amount: string): Promise<Receipt<string>> => {
   try {
     console.log("Depositing ", amount);
     
@@ -386,7 +384,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
     }
     
     const msgId = await ao.message({
-      process: CRED_ADDR,
+      process: tokenProcess,
       tags: [
         { name: "Action", value: "Transfer" },
         { name: "Quantity", value: amount },
@@ -398,7 +396,7 @@ export const depositToAgent = async (agent: string, amount: string): Promise<Rec
   
     const res = await ao.result({
       message: msgId,
-      process: CRED_ADDR,
+      process: tokenProcess,
     })
   
     console.log("Result: ", res)
@@ -683,12 +681,12 @@ export const retireAgent = async (agent: string): Promise<Receipt<string>> => {
 }
 
 // only for debugging
-export const wipeRegistry = async () => {
+export const wipeBackend = async () => {
   try {
-    console.log("!!! Wiping Registry");
+    console.log("!!! Wiping Agent Backend");
   
     const msgId = await ao.message({
-      process: REGISTRY,
+      process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "Wipe" },
       ],
@@ -698,7 +696,7 @@ export const wipeRegistry = async () => {
   
     const res = await ao.result({
       message: msgId,
-      process: REGISTRY,
+      process: AGENT_BACKEND,
     })
   
     console.log("Result: ", res)
@@ -711,6 +709,20 @@ export const wipeRegistry = async () => {
     }
   } catch (e) {
     console.error("Failure!", e)
+  }
+}
+
+export const resetProcessFlags = async (agent: string) => {
+  try {
+    const msgId = await ao.message({
+      process: agent,
+      tags: [{ name: "Action", value: "ResetProcessFlags" }],
+      signer: ao.createDataItemSigner(window.arweaveWallet),
+    })
+    console.log("Reset Process Flags message sent: ", msgId)
+  } catch (e) {
+    console.error(e)
+    return `Error: ${e}`
   }
 }
 

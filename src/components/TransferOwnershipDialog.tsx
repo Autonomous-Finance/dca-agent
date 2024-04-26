@@ -11,7 +11,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
-export default function TransferOwnershipDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, transferTo: (id: string) => void}) {
+export default function TransferOwnershipDialog(props: {loading: boolean, disabled?: boolean, btnWidth: string, transferTo: (id: string) => void}) {
   const {loading, disabled, btnWidth, transferTo} = props;
   const [open, setOpen] = React.useState(false);
   const [account, setAccount] = React.useState("");

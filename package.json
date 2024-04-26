@@ -15,7 +15,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.14",
     "@mui/material": "^5.15.14",
-    "@permaweb/aoconnect": "^0.0.48",
+    "@permaweb/aoconnect": "0.0.48",
     "@phosphor-icons/react": "^2.1.4",
     "arweave-wallet-kit": "^1.0.4",
     "clsx": "^2.1.0",

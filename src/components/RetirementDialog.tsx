@@ -9,7 +9,7 @@ import { CircularProgress, Stack, Typography } from '@mui/material';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 
-export default function RetirementDialog(props: {loading: boolean, disabled?: boolean, btnWidth: number, retire: () => void}) {
+export default function RetirementDialog(props: {loading: boolean, disabled?: boolean, btnWidth: string, retire: () => void}) {
   const {loading, disabled, btnWidth, retire} = props
   const [open, setOpen] = React.useState(false);
 

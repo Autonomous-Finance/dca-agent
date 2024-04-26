@@ -60,7 +60,7 @@ Create working version for each iteration
 
 1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Agent can only be configured in terms of currency. Should list past processes in the table.
    1. store latest agent id in localstorage
-   2. query historic data and latest agent owned by current user - use registry process (deploy once per app, no access control for registration)
+   2. query historic data and latest agent owned by current user - use backend process (deploy once per app, no access control for registration)
    3. check that changing the owner works
    4. support managing multiple agents at once (including transferred ones)
 
@@ -79,11 +79,11 @@ Create working version for each iteration
    5. Support pagination for my processes
 5. Reconsider agent design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
 
-6. Implement access control on registry process (frontend should deploy it per user, so that user is the owner of the registry) 
+6. Implement access control on backend process (frontend should deploy it per user, so that user is the owner of the backend) 
 
 
 ## Tech Debt
-- perform the reverse of agents and agentInfos retrieved from registry already on AO, not on frontend
+- perform the reverse of agents and agentInfos retrieved from backend already on AO, not on frontend
 
 
 

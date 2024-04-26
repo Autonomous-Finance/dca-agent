@@ -1,8 +1,6 @@
 export const AGENT_SOURCE = `do
 local _ENV = _ENV
 package.preload[ "agent.agent" ] = function( ... ) local arg = _G.arg;
-Pool = "U3Yy3MQ41urYMvSmzHsaA4hJEDuvIm-TgXvSm-wz-X0" -- BARK/aoCRED pool on testnet bark dex
-
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -73,16 +71,24 @@ end
 
 do
 local _ENV = _ENV
-package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
+package.preload[ "permissions.permissions" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
--- messages that are to pass this access control check
--- should be sent by a wallet (entity), not by another process
-
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by the process owner
+]]
+---@param msg Message
 mod.onlyOwner = function(msg)
   assert(msg.From == Owner, "Only the owner is allowed")
 end
 
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by a registered agent
+]]
+---@param msg Message
+mod.onlyAgent = function(msg)
+  assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
+end
 return mod
 end
 end
@@ -107,100 +113,45 @@ function mod.continue(fn)
   end
 end
 
--- The "hasMatchingTag" utility function, but it supports
--- multiple values for the tag
----@param name string Tag name
----@param values string[] Tag values
----@return PatternFunction
-function mod.hasMatchingTagOf(name, values)
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "utils.response" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+--[[
+  Using this rather than Handlers.utils.reply() in order to have
+  the root-level "Data" set to the provided data (as opposed to a "Data" tag)
+]]
+---@param tag string Tag name
+---@param data any Data to be sent back
+function mod.dataReply(tag, data)
   return function(msg)
-    for _, value in ipairs(values) do
-      local patternResult = Handlers.utils.hasMatchingTag(name, value)(msg)
-
-      if patternResult ~= 0 then
-        return patternResult
-      end
-    end
-
-    return 0
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = data
+    })
   end
 end
 
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperSwap(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      SwapError = err
-
-      return nil
-    end
-
-    return result
-  end
-end
-
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperSwapBack(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      SwapBackError = err
-
-      return nil
-    end
-
-    return result
-  end
-end
-
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperLiquidate(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      LiquidateError = err
-
-      return nil
-    end
-
-    return result
+--[[
+  Variant of dataReply that is only sent out for trivial confirmations
+  after updates etc.
+  Only sends out if global Verbose is set to true.
+]]
+---@param tag string Tag name
+function mod.success(tag)
+  return function(msg)
+    if not Verbose then return end
+    ao.send({
+      Target = msg.From,
+      ["Response-For"] = tag,
+      Data = "Success"
+    })
   end
 end
 
@@ -232,28 +183,34 @@ return mod
 end
 end
 
-local ownership = require "ownership.ownership"
+local permissions = require "permissions.permissions"
 local agent = require "agent.agent"
 local patterns = require "utils.patterns"
+local response = require "utils.response"
 local json = require "json"
 
--- agent deployment triggered by user from browser
---  => browser wallet owner == process owner
-Owner = Owner or ao.env.Process.Owner
+-- set to false in order to disable sending out success confirmation messages
+Verbose = Verbose or true
 
 Initialized = Initialized or false
 Retired = Retired or false
 Paused = Paused or false
 
 AgentName = AgentName or ""
-QuoteToken = QuoteToken or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc" -- AOcred on testnet
-BaseToken = BaseToken or "8p7ApPZxC_37M06QHVejCQrKsHbcJEerd3jWNkDUWPQ"   -- BARK on testnet
+QuoteToken = QuoteToken or ""
+BaseToken = BaseToken or ""
+QuoteTokenTicker = QuoteTokenTicker or ""
+BaseTokenTicker = BaseTokenTicker or ""
+
+Pool = Pool or ""
+Dex = Dex or ""
+
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
-Registry = Registry or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
+Backend = Backend or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
 
 -- flags for helping the frontend properly display the process status
 IsSwapping = IsSwapping or false
@@ -270,10 +227,7 @@ Handlers.add(
   "getOwner",
   Handlers.utils.hasMatchingTag("Action", "GetOwner"),
   function(msg)
-    Handlers.utils.reply({
-      ["Response-For"] = "GetOwner",
-      Data = Owner
-    })(msg)
+    response.dataReply("GetOwner", Owner)(msg)
   end
 )
 
@@ -282,10 +236,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetStatus"),
   function(msg)
     if not Initialized then
-      Handlers.utils.reply({
-        ["Response-For"] = "GetStatus",
-        Data = json.encode({ initialized = false })
-      })(msg)
+      response.dataReply("GetStatus", json.encode({ initialized = false }))(msg)
       return
     end
 
@@ -297,6 +248,8 @@ Handlers.add(
       paused = Paused,
       baseToken = BaseToken,
       quoteToken = QuoteToken,
+      baseTokenTicker = BaseTokenTicker,
+      quoteTokenTicker = QuoteTokenTicker,
       swapInAmount = SwapInAmount,
       swapIntervalValue = SwapIntervalValue,
       swapIntervalUnit = SwapIntervalUnit,
@@ -306,6 +259,7 @@ Handlers.add(
       swapBackExpectedOutput = SwapBackExpectedOutput,
       slippageTolerance = SlippageTolerance,
       pool = Pool,
+      dex = Dex,
       isSwapping = IsSwapping,
       isDepositing = IsDepositing,
       isWithdrawing = IsWithdrawing,
@@ -314,10 +268,7 @@ Handlers.add(
       lastWithdrawalNoticeId = LastWithdrawalNoticeId,
       lastLiquidationNoticeId = LastLiquidationNoticeId
     })
-    Handlers.utils.reply({
-      ["Response-For"] = "GetStatus",
-      Data = config
-    })(msg)
+    response.dataReply("GetStatus", config)(msg)
   end
 )
 
@@ -326,12 +277,15 @@ Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
-    ownership.onlyOwner(msg)
-    -- initialize Controller, too
-    -- Controller = msg.Tags.Controller
+    Owner = msg.Sender
     assert(not Initialized, 'Process is already initialized')
     Initialized = true
     assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+    assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
+    assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
+    assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
+    assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
+    assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
     assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
     assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
     assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
@@ -339,15 +293,17 @@ Handlers.add(
 
     AgentName = msg.Tags.AgentName
     BaseToken = msg.Tags.BaseToken
+    QuoteToken = msg.Tags.QuoteToken
+    BaseTokenTicker = msg.Tags.BaseTokenTicker
+    QuoteTokenTicker = msg.Tags.QuoteTokenTicker
+    Pool = msg.Tags.Pool
+    Dex = msg.Tags.Dex
     SwapInAmount = msg.Tags.SwapInAmount
     SwapIntervalValue = msg.Tags.SwapIntervalValue
     SwapIntervalUnit = msg.Tags.SwapIntervalUnit
     SlippageTolerance = msg.Tags.Slippage
 
-    Handlers.utils.reply({
-      ["Response-For"] = "Initialize",
-      Data = "Success"
-    })(msg)
+    response.success("Initialize")(msg)
   end
 )
 
@@ -386,11 +342,8 @@ Handlers.add(
     local newOwner = msg.Tags.NewOwner
     assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
     Owner = newOwner
-    ao.send({ Target = Registry, Action = "TransferAgent", NewOwner = newOwner })
-    Handlers.utils.reply({
-      ["Response-For"] = "TransferOwnership",
-      Data = "Success"
-    })(msg)
+    ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
+    response.success("TransferOwnership")(msg)
   end
 )
 
@@ -404,7 +357,7 @@ Handlers.add(
     ao.send({ Target = QuoteToken, Action = "Balance" })
     if m.Sender == Pool then return end -- do not register pool refunds as deposits
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "Deposited",
       Sender = m.Tags.Sender,
       Quantity = m.Quantity
@@ -432,7 +385,7 @@ Handlers.add(
   end,
   function(m)
     LatestQuoteTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+    ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -467,7 +420,7 @@ Handlers.add(
   end,
   function(m)
     LatestBaseTokenBal = m.Balance
-    ao.send({ Target = Registry, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
+    ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
   end
 )
 
@@ -537,9 +490,7 @@ Handlers.add(
   function(msg)
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
-    ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
-    -- IsSwapping = true
-    -- agent.requestSwapOutput()
+    ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
   end
 )
 
@@ -562,7 +513,7 @@ Handlers.add(
   function(msg)
     if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "Swapped",
       ExpectedOutput = SwapExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
@@ -595,7 +546,7 @@ Handlers.add(
   function(msg)
     if (msg.Tags["From-Token"] ~= BaseToken) then return end
     ao.send({
-      Target = Registry,
+      Target = Backend,
       Action = "SwappedBack",
       ExpectedOutput = SwapBackExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
@@ -645,7 +596,7 @@ Handlers.add(
   "withdrawQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = QuoteToken,
@@ -660,7 +611,7 @@ Handlers.add(
   "withdrawBaseToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = BaseToken,
@@ -677,7 +628,7 @@ Handlers.add(
   "liquidate",
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsLiquidating = true
     ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
     --[[
@@ -698,13 +649,10 @@ Handlers.add(
   "pauseToggle",
   Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
-    ownership.onlyOwner(msg)
-    Paused = ~Paused
-    ao.send({ Target = Registry, Action = "PauseToggleAgent", Paused = tostring(Paused) })
-    Handlers.utils.reply({
-      ["Response-For"] = "PauseToggle",
-      Data = "Success"
-    })(msg)
+    permissions.onlyOwner(msg)
+    Paused = not Paused
+    ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
+    response.success("PauseToggle")(msg)
   end
 )
 
@@ -714,15 +662,24 @@ Handlers.add(
   "retire",
   Handlers.utils.hasMatchingTag("Action", "Retire"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
-    ao.send({ Target = Registry, Action = "RetireAgent" })
-    Handlers.utils.reply({
-      ["Response-For"] = "Retire",
-      Data = "Success"
-    })(msg)
+    ao.send({ Target = Backend, Action = "RetireAgent" })
+    response.success("Retire")(msg)
+  end
+)
+
+-- MISC CONFIGURATION
+
+Handlers.add(
+  "setVerbose",
+  Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
+  function(msg)
+    permissions.onlyOwner(msg)
+    Verbose = msg.Tags.Verbose
+    response.success("SetVerbose")(msg)
   end
 )
 
@@ -733,9 +690,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
     if msg.From ~= ao.id then
-      ownership.onlyOwner(msg)
+      permissions.onlyOwner(msg)
     end
-    ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
     IsSwapping = true
     agent.requestSwapOutput()
   end
