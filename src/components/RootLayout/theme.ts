@@ -69,7 +69,7 @@ export const theme = extendTheme({
     },
   },
   typography: {
-    fontFamily: MainFontFF,
+    fontFamily: MainFontFF
   },
   components: {
     MuiTooltip: {

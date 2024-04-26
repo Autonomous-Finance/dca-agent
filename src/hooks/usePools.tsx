@@ -115,7 +115,7 @@ export const NATIVE_TOKEN_INFO: TokenInfo = {
 }
 
 const {dryrun} = ao.connect({
-  CU_URL: "https://cu45.ao-testnet.xyz"
+  CU_URL: "https://cu49.ao-testnet.xyz"
 })
 
 export async function getTokenInfo(tokenId: string): Promise<TokenInfo> {

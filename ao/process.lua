@@ -1,10 +1,10 @@
-local ownership = require "ownership.ownership"
-local bot = require "bot.bot"
+local permissions = require "permissions.permissions"
+local agent = require "agent.agent"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 local json = require "json"
 
--- set to false in order to disable sending out trivial confirmation messages
+-- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
 
 Initialized = Initialized or false
@@ -306,18 +306,18 @@ Handlers.add(
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
-    -- bot.swapInitByCron()
+    -- agent.swapInitByCron()
     ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
   end
 )
 
 
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP
+-- response to the agent transferring quote token to the pool, in order to prepare the SWAP
 Handlers.add(
   "requestSwapOutput",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP
+    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP
     if m.From ~= QuoteToken then return end
     if m.Recipient ~= Pool then return end
 
@@ -351,7 +351,7 @@ Handlers.add(
       Action = "SelfSignalSwapExec",
       Data = "Attempt executing swap with expected output " .. SwapExpectedOutput
     })
-    bot.swapExec()
+    agent.swapExec()
   end
 )
 
@@ -376,12 +376,12 @@ Handlers.add(
 
 -- SWAP BACK (TO LIQUIDATE)
 
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP BACK
+-- response to the agent transferring quote token to the pool, in order to prepare the SWAP BACK
 Handlers.add(
   "requestSwapBackOutput",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP BACK
+    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP BACK
     if m.From ~= BaseToken then return end
     if m.Recipient ~= Pool then return end
 
@@ -415,7 +415,7 @@ Handlers.add(
       Action = "SelfSignalSwapBackExec",
       Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
     })
-    bot.swapBackExec()
+    agent.swapBackExec()
   end
 )
 
@@ -477,7 +477,7 @@ Handlers.add(
   "withdrawQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = QuoteToken,
@@ -492,7 +492,7 @@ Handlers.add(
   "withdrawBaseToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = BaseToken,
@@ -509,7 +509,7 @@ Handlers.add(
   "liquidate",
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsLiquidating = true
     ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
     --[[
@@ -520,7 +520,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    bot.swapBackInit()
+    agent.swapBackInit()
   end
 )
 
@@ -530,7 +530,7 @@ Handlers.add(
   "pauseToggle",
   Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     Paused = not Paused
     ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     response.success("PauseToggle")(msg)
@@ -543,7 +543,7 @@ Handlers.add(
   "retire",
   Handlers.utils.hasMatchingTag("Action", "Retire"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
@@ -558,7 +558,7 @@ Handlers.add(
   "setVerbose",
   Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     Verbose = msg.Tags.Verbose
     response.success("SetVerbose")(msg)
   end
@@ -572,9 +572,9 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
     if msg.From ~= ao.id then
-      ownership.onlyOwner(msg)
+      permissions.onlyOwner(msg)
     end
     -- ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
-    bot.swapInit()
+    agent.swapInit()
   end
 )

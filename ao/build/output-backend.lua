@@ -1,13 +1,84 @@
 do
 local _ENV = _ENV
-package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
+package.preload[ "backend.helpers" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
--- messages that are to pass this access control check
--- should be sent by a wallet (entity), not by another process
+mod.getAgentAndIndex = function(agentId)
+  local owner = RegisteredAgents[agentId]
+  local agents = AgentsPerUser[owner] or {}
+  for i, agent in ipairs(agents) do
+    if agent == agentId then
+      return agent, i
+    end
+  end
+end
 
+mod.getAgentInfoAndIndex = function(agentId)
+  local owner = RegisteredAgents[agentId]
+  local agentInfos = AgentInfosPerUser[owner] or {}
+  for i, agentInfo in ipairs(agentInfos) do
+    if agentInfo.Agent == agentId then
+      return agentInfo, i
+    end
+  end
+  return nil
+end
+
+
+mod.getAllAgentsNotRetired = function()
+  local allAgents = {}
+  for _, agents in pairs(AgentsPerUser) do
+    for _, agent in ipairs(agents) do
+      if not mod.getAgentInfoAndIndex(agent).Retired then
+        table.insert(allAgents, agent)
+      end
+    end
+  end
+  return allAgents
+end
+
+mod.changeOwners = function(agentId, newOwner, timestamp)
+  local currentOwner = RegisteredAgents[agentId]
+
+  AgentsPerUser[newOwner] = AgentsPerUser[newOwner] or {}
+  local _, idxAgent = mod.getAgentAndIndex(agentId)
+  table.remove(AgentsPerUser[currentOwner], idxAgent)
+  table.insert(AgentsPerUser[newOwner], agentId)
+
+  AgentInfosPerUser[newOwner] = AgentInfosPerUser[newOwner] or {}
+  local _, idxAgentInfo = mod.getAgentInfoAndIndex(agentId)
+  local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
+  info["Owner"] = newOwner
+  info["FromTransfer"] = true
+  info["TransferredAt"] = timestamp
+  table.insert(AgentInfosPerUser[newOwner], info)
+
+  RegisteredAgents[agentId] = newOwner
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "permissions.permissions" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by the process owner
+]]
+---@param msg Message
 mod.onlyOwner = function(msg)
   assert(msg.From == Owner, "Only the owner is allowed")
+end
+
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by a registered agent
+]]
+---@param msg Message
+mod.onlyAgent = function(msg)
+  assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
 end
 
 return mod
@@ -22,7 +93,9 @@ local mod = {}
 --[[
   Using this rather than Handlers.utils.reply() in order to have
   the root-level "Data" set to the provided data (as opposed to a "Data" tag)
---]]
+]]
+---@param tag string Tag name
+---@param data any Data to be sent back
 function mod.dataReply(tag, data)
   return function(msg)
     ao.send({
@@ -36,8 +109,9 @@ end
 --[[
   Variant of dataReply that is only sent out for trivial confirmations
   after updates etc.
-  Only sends out if Verbose is set to true.
---]]
+  Only sends out if global Verbose is set to true.
+]]
+---@param tag string Tag name
 function mod.success(tag)
   return function(msg)
     if not Verbose then return end
@@ -58,7 +132,7 @@ end
   The purpose of the tracker process is to facilitate queries regarding the current state and history of any AF DCA agent
 
   Process is deployed once per dApp and has no access control - any process can be registered as a dca agent,
-  but it doesn't impact expected behavior since registration is associated with the sender of a message (spamming won't harm the process)
+  but it doesn't impact expected behavior since registration is associated with the sender of a message (spamming won't harm this process)
 
   TODO
   Process should reflect history of ownership transfers
@@ -66,72 +140,15 @@ end
 
 local json = require "json"
 local response = require "utils.response"
+local permissions = require "permissions.permissions"
+local helpers = require "backend.helpers"
 
--- set to false in order to disable sending out trivial confirmation messages
+-- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
 
 AgentsPerUser = AgentsPerUser or {}         -- map user to his agents (process ids)
 AgentInfosPerUser = AgentInfosPerUser or {} -- map user to historical info on his agents (tables)
 RegisteredAgents = RegisteredAgents or {}   -- map agent id to current owner (user)
-
--- HELPERS
-local onlyAgent = function(msg)
-  assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
-end
-
-
-local getAgentAndIndex = function(agentId)
-  local owner = RegisteredAgents[agentId]
-  local agents = AgentsPerUser[owner] or {}
-  for i, agent in ipairs(agents) do
-    if agent == agentId then
-      return agent, i
-    end
-  end
-end
-
-local getAgentInfoAndIndex = function(agentId)
-  local owner = RegisteredAgents[agentId]
-  local agentInfos = AgentInfosPerUser[owner] or {}
-  for i, agentInfo in ipairs(agentInfos) do
-    if agentInfo.Agent == agentId then
-      return agentInfo, i
-    end
-  end
-  return nil
-end
-
-
-local getAllAgentsNotRetired = function()
-  local allAgents = {}
-  for _, agents in pairs(AgentsPerUser) do
-    for _, agent in ipairs(agents) do
-      if not getAgentInfoAndIndex(agent).Retired then
-        table.insert(allAgents, agent)
-      end
-    end
-  end
-  return allAgents
-end
-
-local changeOwners = function(agentId, newOwner, timestamp)
-  local currentOwner = RegisteredAgents[agentId]
-
-  AgentsPerUser[newOwner] = AgentsPerUser[newOwner] or {}
-  local _, idxAgent = getAgentAndIndex(agentId)
-  table.remove(AgentsPerUser[currentOwner], idxAgent)
-  table.insert(AgentsPerUser[newOwner], agentId)
-
-  AgentInfosPerUser[newOwner] = AgentInfosPerUser[newOwner] or {}
-  local _, idxAgentInfo = getAgentInfoAndIndex(agentId)
-  local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
-  info["Owner"] = newOwner
-  info["FromTransfer"] = true
-  info["TransferredAt"] = timestamp
-  table.insert(AgentInfosPerUser[newOwner], info)
-
-  RegisteredAgents[agentId] = newOwner
-end
 
 -- REGISTRATION
 
@@ -195,11 +212,11 @@ Handlers.add(
   'transferAgent',
   Handlers.utils.hasMatchingTag('Action', 'TransferAgent'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local newOwner = msg.Tags.NewOwner
     assert(type(newOwner) == 'string', 'NewOwner is required!')
     local agentId = msg.From
-    changeOwners(agentId, newOwner, msg.Timestamp)
+    helpers.changeOwners(agentId, newOwner, msg.Timestamp)
   end
 )
 
@@ -219,7 +236,7 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-    response.dataReply("GetAllAgents", json.encode(getAllAgentsNotRetired()))(msg)
+    response.dataReply("GetAllAgents", json.encode(helpers.getAllAgentsNotRetired()))(msg)
   end
 )
 
@@ -231,7 +248,7 @@ Handlers.add(
     assert(agentId ~= nil, "Agent is required")
     local owner = RegisteredAgents[agentId]
     assert(owner ~= nil, "No such agent is registered")
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     assert(agentInfo ~= nil, "Internal: Agent not found")
     response.dataReply("GetOneAgent", json.encode(agentInfo))(msg)
   end
@@ -253,9 +270,9 @@ Handlers.add(
   'updateQuoteTokenBalance',
   Handlers.utils.hasMatchingTag('Action', 'UpdateQuoteTokenBalance'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.QuoteTokenBalance = msg.Tags.Balance
     response.success("UpdateQuoteTokenBalance")(msg)
   end
@@ -266,9 +283,9 @@ Handlers.add(
   'updateBaseTokenBalance',
   Handlers.utils.hasMatchingTag('Action', 'UpdateBaseTokenBalance'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.BaseTokenBalance = msg.Tags.Balance
     response.success("UpdateBaseTokenBalance")(msg)
   end
@@ -279,11 +296,11 @@ Handlers.add(
   'Deposited',
   Handlers.utils.hasMatchingTag('Action', 'Deposited'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     assert(type(msg.Tags.Sender) == 'string', 'Sender is required!')
     assert(type(msg.Tags.Quantity) == 'string', 'Quantity is required!')
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     if agentInfo == nil then
       error("Internal: Agent not found")
     end
@@ -302,9 +319,9 @@ Handlers.add(
   'swapped',
   Handlers.utils.hasMatchingTag('Action', 'Swapped'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     if agentInfo == nil then
       error("Internal: Agent not found")
     end
@@ -324,9 +341,9 @@ Handlers.add(
   'swappedBack',
   Handlers.utils.hasMatchingTag('Action', 'SwappedBack'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     if agentInfo == nil then
       error("Internal: Agent not found")
     end
@@ -346,9 +363,9 @@ Handlers.add(
   'pauseToggleAgent',
   Handlers.utils.hasMatchingTag('Action', 'PauseToggleAgent'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.Paused = msg.Tags.Paused == "true"
     response.success("PauseToggleAgent")(msg)
   end
@@ -359,9 +376,9 @@ Handlers.add(
   'retireAgent',
   Handlers.utils.hasMatchingTag('Action', 'RetireAgent'),
   function(msg)
-    onlyAgent(msg)
+    permissions.onlyAgent(msg)
     local agentId = msg.From
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
     response.success("RetireAgent")(msg)
   end
@@ -373,7 +390,7 @@ Handlers.add(
   "setVerbose",
   Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     Verbose = msg.Tags.Verbose
     response.success("SetVerbose")(msg)
   end
@@ -397,7 +414,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
   function(msg)
     local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.Retired = true
     response.success("RetireAgentDebug")(msg)
   end
@@ -408,7 +425,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag('Action', 'AssignOwnerDebug'),
   function(msg)
     local agentId = "zSMGBVafyTrNeMVshCo9W0k_JJMEirH7M5kt1atqU_Q"
-    local agentInfo = getAgentInfoAndIndex(agentId)
+    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
     agentInfo.Owner = "P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4"
     response.success("AssignOwnerDebug")(msg)
   end

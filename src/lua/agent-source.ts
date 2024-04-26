@@ -1,6 +1,6 @@
-export const BOT_SOURCE = `do
+export const AGENT_SOURCE = `do
 local _ENV = _ENV
-package.preload[ "bot.bot" ] = function( ... ) local arg = _G.arg;
+package.preload[ "agent.agent" ] = function( ... ) local arg = _G.arg;
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -9,9 +9,9 @@ SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.3
 SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
 SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
-local bot = {}
+local mod = {}
 
-bot.init = function()
+mod.init = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -20,7 +20,7 @@ bot.init = function()
   })
 end
 
-bot.swapInit = function()
+mod.swapInit = function()
   -- prepare swap
   ao.send({
     Target = QuoteToken,
@@ -30,7 +30,7 @@ bot.swapInit = function()
   })
 end
 
-bot.swapInitByCron = function()
+mod.swapInitByCron = function()
   -- prepare swap
   ao.send({
     Target = QuoteToken,
@@ -41,7 +41,7 @@ bot.swapInitByCron = function()
   })
 end
 
-bot.swapExec = function()
+mod.swapExec = function()
   assert(type(TransferId) == 'string', 'TransferId is missing!')
   -- swap interaction
   ao.send({
@@ -54,7 +54,7 @@ bot.swapExec = function()
   })
 end
 
-bot.swapBackInit = function()
+mod.swapBackInit = function()
   -- prepare swap back
   ao.send({
     Target = BaseToken,
@@ -64,7 +64,7 @@ bot.swapBackInit = function()
   })
 end
 
-bot.swapBackExec = function()
+mod.swapBackExec = function()
   -- assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
   -- swap interaction
   ao.send({
@@ -78,20 +78,29 @@ bot.swapBackExec = function()
 end
 
 
-return bot
+return mod
 end
 end
 
 do
 local _ENV = _ENV
-package.preload[ "ownership.ownership" ] = function( ... ) local arg = _G.arg;
+package.preload[ "permissions.permissions" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
--- messages that are to pass this access control check
--- should be sent by a wallet (entity), not by another process
-
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by the process owner
+]]
+---@param msg Message
 mod.onlyOwner = function(msg)
   assert(msg.From == Owner, "Only the owner is allowed")
+end
+
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by a registered agent
+]]
+---@param msg Message
+mod.onlyAgent = function(msg)
+  assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
 end
 
 return mod
@@ -118,103 +127,6 @@ function mod.continue(fn)
   end
 end
 
--- The "hasMatchingTag" utility function, but it supports
--- multiple values for the tag
----@param name string Tag name
----@param values string[] Tag values
----@return PatternFunction
-function mod.hasMatchingTagOf(name, values)
-  return function(msg)
-    for _, value in ipairs(values) do
-      local patternResult = Handlers.utils.hasMatchingTag(name, value)(msg)
-
-      if patternResult ~= 0 then
-        return patternResult
-      end
-    end
-
-    return 0
-  end
-end
-
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperSwap(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      SwapError = err
-
-      return nil
-    end
-
-    return result
-  end
-end
-
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperSwapBack(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      SwapBackError = err
-
-      return nil
-    end
-
-    return result
-  end
-end
-
--- Handlers wrapped with this function will not throw Lua errors.
--- Instead, if the handler throws an error, the wrapper will
--- catch that and set the global SwapError to the error message.
----@param handler HandlerFunction
----@return HandlerFunction
-function mod.catchWrapperLiquidate(handler)
-  -- return the wrapped handler
-  return function(msg, env)
-    -- execute the provided handler
-    local status, result = pcall(handler, msg, env)
-
-    -- validate the execution result
-    if not status then
-      local err = string.gsub(result, "[%w_]*%.lua:%d: ", "")
-
-      -- set the global RefundError variable
-      -- this needs to be reset in the refund later
-      LiquidateError = err
-
-      return nil
-    end
-
-    return result
-  end
-end
-
 return mod
 end
 end
@@ -227,7 +139,9 @@ local mod = {}
 --[[
   Using this rather than Handlers.utils.reply() in order to have
   the root-level "Data" set to the provided data (as opposed to a "Data" tag)
---]]
+]]
+---@param tag string Tag name
+---@param data any Data to be sent back
 function mod.dataReply(tag, data)
   return function(msg)
     ao.send({
@@ -241,8 +155,9 @@ end
 --[[
   Variant of dataReply that is only sent out for trivial confirmations
   after updates etc.
-  Only sends out if Verbose is set to true.
---]]
+  Only sends out if global Verbose is set to true.
+]]
+---@param tag string Tag name
 function mod.success(tag)
   return function(msg)
     if not Verbose then return end
@@ -282,13 +197,13 @@ return mod
 end
 end
 
-local ownership = require "ownership.ownership"
-local bot = require "bot.bot"
+local permissions = require "ao.permissions.permissions"
+local agent = require "ao.agent.agent"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 local json = require "json"
 
--- set to false in order to disable sending out trivial confirmation messages
+-- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
 
 Initialized = Initialized or false
@@ -590,18 +505,18 @@ Handlers.add(
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
     ao.send({ Target = ao.id, Data = "TICK RECEIVED" })
-    -- bot.swapInitByCron()
+    -- agent.swapInitByCron()
     ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
   end
 )
 
 
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP
+-- response to the agent transferring quote token to the pool, in order to prepare the SWAP
 Handlers.add(
   "requestSwapOutput",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP
+    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP
     if m.From ~= QuoteToken then return end
     if m.Recipient ~= Pool then return end
 
@@ -635,7 +550,7 @@ Handlers.add(
       Action = "SelfSignalSwapExec",
       Data = "Attempt executing swap with expected output " .. SwapExpectedOutput
     })
-    bot.swapExec()
+    agent.swapExec()
   end
 )
 
@@ -660,12 +575,12 @@ Handlers.add(
 
 -- SWAP BACK (TO LIQUIDATE)
 
--- response to the bot transferring quote token to the pool, in order to prepare the SWAP BACK
+-- response to the agent transferring quote token to the pool, in order to prepare the SWAP BACK
 Handlers.add(
   "requestSwapBackOutput",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
   function(m)
-    -- ensure this was a transfer from the bot to the pool as preliminary to the SWAP BACK
+    -- ensure this was a transfer from the agent to the pool as preliminary to the SWAP BACK
     if m.From ~= BaseToken then return end
     if m.Recipient ~= Pool then return end
 
@@ -699,7 +614,7 @@ Handlers.add(
       Action = "SelfSignalSwapBackExec",
       Data = "Attempt executing swap back with expected output " .. SwapBackExpectedOutput
     })
-    bot.swapBackExec()
+    agent.swapBackExec()
   end
 )
 
@@ -761,7 +676,7 @@ Handlers.add(
   "withdrawQuoteToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = QuoteToken,
@@ -776,7 +691,7 @@ Handlers.add(
   "withdrawBaseToken",
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsWithdrawing = true
     ao.send({
       Target = BaseToken,
@@ -793,7 +708,7 @@ Handlers.add(
   "liquidate",
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     IsLiquidating = true
     ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
     --[[
@@ -804,7 +719,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    bot.swapBackInit()
+    agent.swapBackInit()
   end
 )
 
@@ -814,7 +729,7 @@ Handlers.add(
   "pauseToggle",
   Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     Paused = not Paused
     ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
     response.success("PauseToggle")(msg)
@@ -827,7 +742,7 @@ Handlers.add(
   "retire",
   Handlers.utils.hasMatchingTag("Action", "Retire"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
     assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
     Retired = true
@@ -842,7 +757,7 @@ Handlers.add(
   "setVerbose",
   Handlers.utils.hasMatchingTag("Action", "SetVerbose"),
   function(msg)
-    ownership.onlyOwner(msg)
+    permissions.onlyOwner(msg)
     Verbose = msg.Tags.Verbose
     response.success("SetVerbose")(msg)
   end
@@ -856,9 +771,9 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
     if msg.From ~= ao.id then
-      ownership.onlyOwner(msg)
+      permissions.onlyOwner(msg)
     end
     -- ao.send({ Target = ao.id, Data = "SWAP DEBUG from msg: " .. json.encode(msg) })
-    bot.swapInit()
+    agent.swapInit()
   end
 )`

@@ -188,7 +188,7 @@ const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labe
   return (
     <Stack width={'100%'} direction={'row'} justifyContent={'space-between'} gap={2}>
       <Typography variant="body1" display={'flex'} alignItems={'center'}
-        fontSize={props.large ? '1.25rem' : '1rem'}
+        fontSize={props.large ? '1.25em' : '1em'}
         sx={{color: props.color || 'text.secondary'}}
       >
         {props.label} {props.labelInfo && <HelpIcon text={props.labelInfo}/>}
@@ -196,18 +196,18 @@ const InfoLine = (props: {label: string, value: ReactNode, suffix?: string, labe
       <Stack direction={'row'} gap={1}>
         {typeof props.value === 'string' && (
           <Typography variant="body1" fontWeight={props.soft ? 'normal' : 'bold'}
-            fontSize={props.large ? '1.25rem' : '1rem'}
+            fontSize={props.large ? '1.25em' : '1em'}
           >
             {props.value}
           </Typography>
         )}
         {typeof props.value !== 'string' && (
-          <Typography variant="body1" fontSize={props.large ? '1.25rem' : '1rem'}>
+          <Typography variant="body1" fontSize={props.large ? '1.25em' : '1em'}>
             {props.value}
           </Typography>
         )}
         {props.suffix && <Typography variant="body1"
-          fontSize={props.large ? '1.25rem' : '1rem'}
+          fontSize={props.large ? '1.25em' : '1em'}
         >
           {props.suffix}
         </Typography>}

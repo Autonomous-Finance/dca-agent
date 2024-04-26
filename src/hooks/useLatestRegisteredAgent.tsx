@@ -42,7 +42,7 @@ const useGetLatestAgent = () => {
   return {loading, agentId, details, refresh}
 }
 
-// ------------ CHECKS FOR BOT ------------
+// ------------ CHECKS FOR AGENT ------------
 
 const LatestAgentContext = React.createContext<{
   loading: boolean,

@@ -6,9 +6,9 @@ SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.3
 SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
 SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
 
-local bot = {}
+local mod = {}
 
-bot.init = function()
+mod.init = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -17,7 +17,7 @@ bot.init = function()
   })
 end
 
-bot.swapInit = function()
+mod.swapInit = function()
   -- prepare swap
   ao.send({
     Target = QuoteToken,
@@ -27,7 +27,7 @@ bot.swapInit = function()
   })
 end
 
-bot.swapInitByCron = function()
+mod.swapInitByCron = function()
   -- prepare swap
   ao.send({
     Target = QuoteToken,
@@ -38,7 +38,7 @@ bot.swapInitByCron = function()
   })
 end
 
-bot.swapExec = function()
+mod.swapExec = function()
   assert(type(TransferId) == 'string', 'TransferId is missing!')
   -- swap interaction
   ao.send({
@@ -51,7 +51,7 @@ bot.swapExec = function()
   })
 end
 
-bot.swapBackInit = function()
+mod.swapBackInit = function()
   -- prepare swap back
   ao.send({
     Target = BaseToken,
@@ -61,7 +61,7 @@ bot.swapBackInit = function()
   })
 end
 
-bot.swapBackExec = function()
+mod.swapBackExec = function()
   -- assert(type(TransferIdSwapBack) == 'string', 'TransferIdSwapBack is missing!')
   -- swap interaction
   ao.send({
@@ -75,4 +75,4 @@ bot.swapBackExec = function()
 end
 
 
-return bot
+return mod
