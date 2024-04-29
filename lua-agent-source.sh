@@ -2,7 +2,7 @@
 
 cd ao
 
-/opt/homebrew/bin/amalg.lua -s process.lua -o build/output-agent.lua permissions.permissions validations.validations agent.agent utils.patterns utils.response
+/opt/homebrew/bin/amalg.lua -s process.lua -o build/output-agent.lua permissions.permissions validations.validations agent.swaps agent.initialization utils.patterns utils.response
 
 cd ..
 

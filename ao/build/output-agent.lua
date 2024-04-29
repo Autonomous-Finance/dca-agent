@@ -1,6 +1,47 @@
 do
 local _ENV = _ENV
-package.preload[ "agent.agent" ] = function( ... ) local arg = _G.arg;
+package.preload[ "agent.initialization" ] = function( ... ) local arg = _G.arg;
+local response = require "utils.response"
+
+local mod = {}
+
+mod.initialize = function(msg)
+  Owner = msg.Sender
+  assert(not Initialized, 'Process is already initialized')
+  Initialized = true
+  assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+  assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
+  assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
+  assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
+  assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
+  assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
+  assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
+  assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
+  assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
+  assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
+
+  AgentName = msg.Tags.AgentName
+  BaseToken = msg.Tags.BaseToken
+  QuoteToken = msg.Tags.QuoteToken
+  BaseTokenTicker = msg.Tags.BaseTokenTicker
+  QuoteTokenTicker = msg.Tags.QuoteTokenTicker
+  Pool = msg.Tags.Pool
+  Dex = msg.Tags.Dex
+  SwapInAmount = msg.Tags.SwapInAmount
+  SwapIntervalValue = msg.Tags.SwapIntervalValue
+  SwapIntervalUnit = msg.Tags.SwapIntervalUnit
+  SlippageTolerance = msg.Tags.Slippage
+
+  response.success("Initialize")(msg)
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "agent.swaps" ] = function( ... ) local arg = _G.arg;
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -184,7 +225,8 @@ end
 end
 
 local permissions = require "permissions.permissions"
-local agent = require "agent.agent"
+local swaps = require "agent.swaps"
+local initialization = require "agent.initialization"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 local json = require "json"
@@ -277,33 +319,7 @@ Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
-    Owner = msg.Sender
-    assert(not Initialized, 'Process is already initialized')
-    Initialized = true
-    assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
-    assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
-    assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
-    assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
-    assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
-    assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
-    assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
-    assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
-    assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
-    assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
-
-    AgentName = msg.Tags.AgentName
-    BaseToken = msg.Tags.BaseToken
-    QuoteToken = msg.Tags.QuoteToken
-    BaseTokenTicker = msg.Tags.BaseTokenTicker
-    QuoteTokenTicker = msg.Tags.QuoteTokenTicker
-    Pool = msg.Tags.Pool
-    Dex = msg.Tags.Dex
-    SwapInAmount = msg.Tags.SwapInAmount
-    SwapIntervalValue = msg.Tags.SwapIntervalValue
-    SwapIntervalUnit = msg.Tags.SwapIntervalUnit
-    SlippageTolerance = msg.Tags.Slippage
-
-    response.success("Initialize")(msg)
+    initialization.initialize(msg)
   end
 )
 
@@ -490,7 +506,8 @@ Handlers.add(
   function(msg)
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
-    ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
+    IsSwapping = true
+    swaps.requestSwapOutput()
   end
 )
 
@@ -502,7 +519,7 @@ Handlers.add(
   end,
   function(msg)
     SwapExpectedOutput = msg.Tags.Price
-    agent.swap()
+    swaps.swap()
   end
 )
 
@@ -535,7 +552,7 @@ Handlers.add(
   end,
   function(msg)
     SwapBackExpectedOutput = msg.Tags.Price
-    agent.swapBack()
+    swaps.swapBack()
   end
 )
 
@@ -639,7 +656,7 @@ Handlers.add(
         (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
     --]]
     LiquidationAmountQuote = LatestQuoteTokenBal
-    agent.requestSwapBackOutput()
+    swaps.requestSwapBackOutput()
   end
 )
 
@@ -689,10 +706,8 @@ Handlers.add(
   "triggerSwapDebug",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
-    if msg.From ~= ao.id then
-      permissions.onlyOwner(msg)
-    end
+    permissions.onlyOwner(msg)
     IsSwapping = true
-    agent.requestSwapOutput()
+    swaps.requestSwapOutput()
   end
 )
