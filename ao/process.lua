@@ -304,6 +304,6 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     IsSwapping = true
-    swaps.requestSwapOutput()
+    swaps.triggerSwap()
   end
 )
