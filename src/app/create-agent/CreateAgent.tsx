@@ -214,16 +214,16 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
       
       // cron monitoring
 
-      addToLog({text: 'Starting cron monitor...', hasLink: false})
+      // addToLog({text: 'Starting cron monitor...', hasLink: false})
       
-      await new Promise(resolve => setTimeout(resolve, 3000)) // monitor issues ? 
+      // await new Promise(resolve => setTimeout(resolve, 3000)) // monitor issues ? 
 
-      const monitorMsgId = await monitor({
-        process: processId,
-        signer: createDataItemSigner(window.arweaveWallet),
-      });
+      // const monitorMsgId = await monitor({
+      //   process: processId,
+      //   signer: createDataItemSigner(window.arweaveWallet),
+      // });
       
-      console.log('📜 LOG > monitorMsgId:', monitorMsgId)
+      // console.log('📜 LOG > monitorMsgId:', monitorMsgId)
       
       // Register with Agent Backend
       

@@ -330,7 +330,7 @@ end
 
 -- SWAP
 
-mod.triggerSwap = function(msg)
+mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
   -- request expected swap output
@@ -754,7 +754,7 @@ Handlers.add(
   swaps.concludeSwap
 )
 
--- SWAP BACK (to liquidate)
+-- SWAP BACK (in order to LIQUIDATE)
 
 -- response to the price request for SWAP BACK
 Handlers.add(

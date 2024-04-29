@@ -141,7 +141,7 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
             suffix={currentValue ? status.quoteTokenTicker : ''}
             soft={!currentValue}
           />
-          <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto'}}>
+          <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto', position: 'relative', left: '-400px'}}>
             <SwapDebug />
           </Box>
         </Stack>

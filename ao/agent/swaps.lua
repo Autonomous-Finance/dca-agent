@@ -19,7 +19,7 @@ end
 
 -- SWAP
 
-mod.triggerSwap = function(msg)
+mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
   -- request expected swap output

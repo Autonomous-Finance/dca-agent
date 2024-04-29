@@ -228,7 +228,7 @@ Handlers.add(
   swaps.concludeSwap
 )
 
--- SWAP BACK (to liquidate)
+-- SWAP BACK (in order to LIQUIDATE)
 
 -- response to the price request for SWAP BACK
 Handlers.add(
