@@ -33,4 +33,10 @@ function mod.success(tag)
   end
 end
 
+function mod.errorMessage(text)
+  error({
+    message = text
+  })
+end
+
 return mod

@@ -712,11 +712,11 @@ export const wipeBackend = async () => {
   }
 }
 
-export const resetProcessFlags = async (agent: string) => {
+export const resetProgressFlags = async (agent: string) => {
   try {
     const msgId = await ao.message({
       process: agent,
-      tags: [{ name: "Action", value: "ResetProcessFlags" }],
+      tags: [{ name: "Action", value: "ResetProgressFlags" }],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
     console.log("Reset Process Flags message sent: ", msgId)

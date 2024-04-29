@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, resetProcessFlags, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, resetProgressFlags, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -37,7 +37,7 @@ export function AgentPanel() {
 
   React.useEffect(() => {
     if (!agent?.status?.Agent) return
-    resetProcessFlags(agent?.status?.Agent)
+    resetProgressFlags(agent?.status?.Agent)
   },[agent?.status?.Agent])
 
   React.useEffect(() => {

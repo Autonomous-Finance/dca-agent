@@ -1,21 +1,21 @@
 do
 local _ENV = _ENV
 package.preload[ "backend.agent-updates" ] = function( ... ) local arg = _G.arg;
-local helpers = require "backend.helpers"
+local queries = require "backend.queries"
 local response = require "utils.response"
 
 local mod = {}
 
 mod.updateQuoteTokenBalance = function(msg)
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   agentInfo.QuoteTokenBalance = msg.Tags.Balance
   response.success("UpdateQuoteTokenBalance")(msg)
 end
 
 mod.updateBaseTokenBalance = function(msg)
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   agentInfo.BaseTokenBalance = msg.Tags.Balance
   response.success("UpdateBaseTokenBalance")(msg)
 end
@@ -24,7 +24,7 @@ mod.deposited = function(msg)
   assert(type(msg.Tags.Sender) == 'string', 'Sender is required!')
   assert(type(msg.Tags.Quantity) == 'string', 'Quantity is required!')
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   if agentInfo == nil then
     error("Internal: Agent not found")
   end
@@ -39,7 +39,7 @@ end
 
 mod.swapped = function(msg)
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   if agentInfo == nil then
     error("Internal: Agent not found")
   end
@@ -55,7 +55,7 @@ end
 
 mod.swappedBack = function(msg)
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   if agentInfo == nil then
     error("Internal: Agent not found")
   end
@@ -71,23 +71,43 @@ end
 
 mod.pauseToggledAgent = function(msg)
   local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
   agentInfo.Paused = msg.Tags.Paused == "true"
   response.success("PauseToggleAgent")(msg)
 end
 
+mod.retiredAgent = function(msg)
+  local agentId = msg.From
+  local agentInfo = queries.getAgentInfoAndIndex(agentId)
+  agentInfo.Retired = true
+  response.success("RetireAgent")(msg)
+end
+
+-- ownership transfer
+
+local changeOwners = function(agentId, newOwner, timestamp)
+  local currentOwner = RegisteredAgents[agentId]
+
+  AgentsPerUser[newOwner] = AgentsPerUser[newOwner] or {}
+  local _, idxAgent = queries.getAgentAndIndex(agentId)
+  table.remove(AgentsPerUser[currentOwner], idxAgent)
+  table.insert(AgentsPerUser[newOwner], agentId)
+
+  AgentInfosPerUser[newOwner] = AgentInfosPerUser[newOwner] or {}
+  local _, idxAgentInfo = queries.getAgentInfoAndIndex(agentId)
+  local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
+  info["Owner"] = newOwner
+  info["FromTransfer"] = true
+  info["TransferredAt"] = timestamp
+  table.insert(AgentInfosPerUser[newOwner], info)
+
+  RegisteredAgents[agentId] = newOwner
+end
 mod.transferredAgent = function(msg)
   local newOwner = msg.Tags.NewOwner
   assert(type(newOwner) == 'string', 'NewOwner is required!')
   local agentId = msg.From
-  helpers.changeOwners(agentId, newOwner, msg.Timestamp)
-end
-
-mod.retiredAgent = function(msg)
-  local agentId = msg.From
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-  agentInfo.Retired = true
-  response.success("RetireAgent")(msg)
+  changeOwners(agentId, newOwner, msg.Timestamp)
 end
 
 return mod
@@ -96,8 +116,12 @@ end
 
 do
 local _ENV = _ENV
-package.preload[ "backend.helpers" ] = function( ... ) local arg = _G.arg;
+package.preload[ "backend.queries" ] = function( ... ) local arg = _G.arg;
+local json = require 'json'
+local response = require "utils.response"
+
 local mod = {}
+
 
 mod.getAgentAndIndex = function(agentId)
   local owner = RegisteredAgents[agentId]
@@ -121,57 +145,24 @@ mod.getAgentInfoAndIndex = function(agentId)
 end
 
 
-mod.getAllAgentsNotRetired = function()
-  local allAgents = {}
-  for _, agents in pairs(AgentsPerUser) do
-    for _, agent in ipairs(agents) do
-      if not mod.getAgentInfoAndIndex(agent).Retired then
-        table.insert(allAgents, agent)
-      end
-    end
-  end
-  return allAgents
-end
-
-mod.changeOwners = function(agentId, newOwner, timestamp)
-  local currentOwner = RegisteredAgents[agentId]
-
-  AgentsPerUser[newOwner] = AgentsPerUser[newOwner] or {}
-  local _, idxAgent = mod.getAgentAndIndex(agentId)
-  table.remove(AgentsPerUser[currentOwner], idxAgent)
-  table.insert(AgentsPerUser[newOwner], agentId)
-
-  AgentInfosPerUser[newOwner] = AgentInfosPerUser[newOwner] or {}
-  local _, idxAgentInfo = mod.getAgentInfoAndIndex(agentId)
-  local info = table.remove(AgentInfosPerUser[currentOwner], idxAgentInfo)
-  info["Owner"] = newOwner
-  info["FromTransfer"] = true
-  info["TransferredAt"] = timestamp
-  table.insert(AgentInfosPerUser[newOwner], info)
-
-  RegisteredAgents[agentId] = newOwner
-end
-
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "backend.queries" ] = function( ... ) local arg = _G.arg;
-local json = require 'json'
-local response = require "utils.response"
-local helpers = require "backend.helpers"
-
-local mod = {}
-
 mod.getAgentsPerUser = function(msg)
   local owner = msg.Tags["Owned-By"]
   response.dataReply("GetAllAgentsPerUser", json.encode(AgentInfosPerUser[owner] or {}))(msg)
 end
 
+--[[
+  Returns all agents that are not retired (DEXI integration)
+]]
 mod.getAllAgents = function(msg)
-  response.dataReply("GetAllAgents", json.encode(helpers.getAllAgentsNotRetired()))(msg)
+  local allAgentsNotRetired = {}
+  for _, agents in pairs(AgentsPerUser) do
+    for _, agent in ipairs(agents) do
+      if not mod.getAgentInfoAndIndex(agent).Retired then
+        table.insert(allAgentsNotRetired, agent)
+      end
+    end
+  end
+  response.dataReply("GetAllAgents", json.encode(allAgentsNotRetired))(msg)
 end
 
 mod.getOneAgent = function(msg)
@@ -179,7 +170,7 @@ mod.getOneAgent = function(msg)
   assert(agentId ~= nil, "Agent is required")
   local owner = RegisteredAgents[agentId]
   assert(owner ~= nil, "No such agent is registered")
-  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  local agentInfo = mod.getAgentInfoAndIndex(agentId)
   assert(agentInfo ~= nil, "Internal: Agent not found")
   response.dataReply("GetOneAgent", json.encode(agentInfo))(msg)
 end
@@ -319,6 +310,12 @@ function mod.success(tag)
   end
 end
 
+function mod.errorMessage(text)
+  error({
+    message = text
+  })
+end
+
 return mod
 end
 end
@@ -334,10 +331,8 @@ end
   Reflect history of ownership transfers
 --]]
 
-local json = require "json"
 local response = require "utils.response"
 local permissions = require "permissions.permissions"
-local helpers = require "backend.helpers"
 local queries = require "backend.queries"
 local agentUpdates = require "backend.agent-updates"
 local registration = require "backend.registration"
@@ -362,9 +357,7 @@ Handlers.add(
 Handlers.add(
   'registerAgent',
   Handlers.utils.hasMatchingTag('Action', 'RegisterAgent'),
-  function(msg)
-    registration.registerAgent(msg)
-  end
+  registration.registerAgent
 )
 
 -- QUERIES
@@ -372,33 +365,25 @@ Handlers.add(
 Handlers.add(
   'getAllAgentsPerUser',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgentsPerUser'),
-  function(msg)
-    queries.getAgentsPerUser(msg)
-  end
+  queries.getAgentsPerUser
 )
 
 Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
-  function(msg)
-    queries.getAllAgents(msg)
-  end
+  queries.getAllAgents
 )
 
 Handlers.add(
   'getOneAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetOneAgent'),
-  function(msg)
-    queries.getOneAgent(msg)
-  end
+  queries.getOneAgent
 )
 
 Handlers.add(
   'getLatestAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetLatestAgent'),
-  function(msg)
-    queries.getLatestAgent(msg)
-  end
+  queries.getLatestAgent
 )
 
 -- -----------------------------------
@@ -501,27 +486,5 @@ Handlers.add(
     AgentInfosPerUser = {}
     RegisteredAgents = {}
     response.success("Wipe")(msg)
-  end
-)
-
-Handlers.add(
-  'retireAgentDebug',
-  Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
-  function(msg)
-    local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Retired = true
-    response.success("RetireAgentDebug")(msg)
-  end
-)
-
-Handlers.add(
-  'assignOwnerDebug',
-  Handlers.utils.hasMatchingTag('Action', 'AssignOwnerDebug'),
-  function(msg)
-    local agentId = "zSMGBVafyTrNeMVshCo9W0k_JJMEirH7M5kt1atqU_Q"
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Owner = "P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4"
-    response.success("AssignOwnerDebug")(msg)
   end
 )

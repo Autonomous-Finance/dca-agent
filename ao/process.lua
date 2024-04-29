@@ -1,10 +1,14 @@
 local permissions = require "permissions.permissions"
-local initialization = require "agent.initialization"
+local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
 local swaps = require "agent.swaps"
+local withdrawals = require "agent.withdrawals"
+local liquidation = require "agent.liquidation"
+local balances = require "agent.balances"
+local progress = require "agent.progress"
+local ownership = require "agent.ownership"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
-local json = require "json"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
@@ -38,7 +42,7 @@ LastWithdrawalNoticeId = LastWithdrawalNoticeId or nil
 LastDepositNoticeId = LastDepositNoticeId or nil
 LastLiquidationNoticeId = LastLiquidationNoticeId or nil
 
--- INIT & CONFIG
+-- LIFE CYCLE & CONFIG
 
 Handlers.add(
   "getOwner",
@@ -51,43 +55,49 @@ Handlers.add(
 Handlers.add(
   "getStatus",
   Handlers.utils.hasMatchingTag("Action", "GetStatus"),
-  function(msg)
-    status.getStatus(msg)
-  end
+  status.getStatus
 )
 
 -- msg to be sent by end user
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
-  function(msg)
-    initialization.initialize(msg)
-  end
+  lifeCycle.initialize
 )
 
--- every handler below is gated on Initialized == true
+-- ! every handler below is gated on Initialized == true
 Handlers.add(
   "checkInit",
   function(msg)
     return not Initialized
   end,
-  function(msg)
-    error({
-      message = "error - process is not initialized"
-    })
-  end
+  response.errorMessage("error - process is not initialized")
 )
 
--- every handler below is gated on Retired == false
+-- ! every handler below is gated on Retired == false
 Handlers.add(
   "checkRetired",
   function(msg)
     return Retired
   end,
+  response.errorMessage("error - process is retired")
+)
+
+Handlers.add(
+  "pauseToggle",
+  Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
   function(msg)
-    error({
-      message = "error - process is retired"
-    })
+    permissions.onlyOwner(msg)
+    lifeCycle.pauseToggle(msg)
+  end
+)
+
+Handlers.add(
+  "retire",
+  Handlers.utils.hasMatchingTag("Action", "Retire"),
+  function(msg)
+    permissions.onlyOwner(msg)
+    lifeCycle.retire(msg)
   end
 )
 
@@ -97,39 +107,23 @@ Handlers.add(
   "transferOwnership",
   Handlers.utils.hasMatchingTag("Action", "TransferOwnership"),
   function(msg)
-    local newOwner = msg.Tags.NewOwner
-    assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
-    Owner = newOwner
-    ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
-    response.success("TransferOwnership")(msg)
+    permissions.onlyOwner(msg)
+    ownership.transfer(msg)
   end
 )
 
--- TRACK latest QuoteToken BALANCE -- ! keep these handlers here at the top of the file (continue patterns)
+-- TRACK BALANCES -- ! keep these handlers here at the top of the file (because continue patterns)
 
 Handlers.add(
   "balanceUpdateCreditQuoteToken",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  function(m)
-    if m.From ~= QuoteToken then return end
-    ao.send({ Target = QuoteToken, Action = "Balance" })
-    if m.Sender == Pool then return end -- do not register pool refunds as deposits
-    ao.send({
-      Target = Backend,
-      Action = "Deposit",
-      Sender = m.Tags.Sender,
-      Quantity = m.Quantity
-    })
-  end
+  balances.balanceUpdateCreditQuoteToken
 )
 
 Handlers.add(
   "balanceUpdateDebitQuoteToken",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    if m.From ~= QuoteToken then return end
-    ao.send({ Target = QuoteToken, Action = "Balance" })
-  end
+  balances.balanceUpdateDebitQuoteToken
 )
 
 -- response to the balance request
@@ -141,30 +135,19 @@ Handlers.add(
         and m.Target == ao.id
     return isMatch and -1 or 0
   end,
-  function(m)
-    LatestQuoteTokenBal = m.Balance
-    ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
-  end
+  balances.latestBalanceUpdateQuoteToken
 )
-
--- TRACK latest BASE TOKEN BALANCE -- ! keep these handlers here at the top of the file (continue patterns)
 
 Handlers.add(
   "balanceUpdateCreditBaseToken",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
-  end
+  balances.balanceUpdateCreditBaseToken
 )
 
 Handlers.add(
   "balanceUpdateDebitBaseToken",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(m)
-    if m.From ~= BaseToken then return end
-    ao.send({ Target = BaseToken, Action = "Balance" })
-  end
+  balances.balanceUpdateDebitBaseToken
 )
 
 -- response to the balance request
@@ -176,80 +159,55 @@ Handlers.add(
         and m.Target == ao.id
     return isMatch and -1 or 0
   end,
-  function(m)
-    LatestBaseTokenBal = m.Balance
-    ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
-  end
+  balances.latestBalanceUpdateBaseToken
 )
 
--- PROCESS IN PROGRESS FLAGS
+-- --------------------------------------
+
+-- PROGRESS FLAGS
 
 Handlers.add(
   "startDepositing",
   Handlers.utils.hasMatchingTag("Action", "StartDepositing"),
-  function(msg)
-    IsDepositing = true
-  end
+  progress.startDepositing
 )
 
 Handlers.add(
   "concludeDeposit",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  function(msg)
-    if msg.From ~= QuoteToken or IsLiquidating then return end
-    IsDepositing = false
-    LastDepositNoticeId = msg.Id
-  end
+  progress.concludeDeposit
 )
 
 Handlers.add(
   "concludeWithdraw",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(msg)
-    local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
-    local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
-    if not (isQuoteWithdrawal or isBaseWithdrawal) then return end
-    IsWithdrawing = false
-    LastWithdrawalNoticeId = msg.Id
-  end
+  progress.concludeWithdraw
 )
 
 Handlers.add(
   "concludeLiquidation",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
-  function(msg)
-    local isLiquidation = msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
-    if not (isLiquidation) then return end
-    IsLiquidating = false
-    LastLiquidationNoticeId = msg.Id
-  end
+  progress.concludeLiquidation
 )
 
 -- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
 -- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
 Handlers.add(
-  'resetProcessFlags',
-  Handlers.utils.hasMatchingTag('Action', 'ResetProcessFlags'),
-  function(msg)
-    IsWithdrawing = false
-    IsDepositing = false
-    IsLiquidating = false
-    LastDepositNoticeId = nil
-    LastWithdrawalNoticeId = nil
-    LastLiquidationNoticeId = nil
-  end
+  'resetProgressFlags',
+  Handlers.utils.hasMatchingTag('Action', 'ResetProgressFlags'),
+  progress.resetProgressFlags
 )
 
--- SWAP
+-- --------------------------------------
+
+-- SWAP (DCA)
 
 Handlers.add(
   "triggerSwap",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
-    assert(not Paused, 'Process is paused')
-    IsSwapping = true
-    swaps.requestSwapOutput()
+    swaps.triggerSwap(msg)
   end
 )
 
@@ -259,32 +217,17 @@ Handlers.add(
   function(msg)
     return msg.From == Pool and msg.Tags.Price ~= nil and IsSwapping
   end,
-  function(msg)
-    SwapExpectedOutput = msg.Tags.Price
-    swaps.swap()
-  end
+  swaps.swapExec
 )
 
 -- response to successful swap
 Handlers.add(
   'orderConfirmation',
   patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
-  function(msg)
-    if (msg.Tags["From-Token"] ~= QuoteToken) then return end
-    ao.send({
-      Target = Backend,
-      Action = "Swap",
-      ExpectedOutput = SwapExpectedOutput,
-      InputAmount = msg.Tags["From-Quantity"],
-      ActualOutput = msg.Tags["To-Quantity"],
-      ConfirmedAt = tostring(msg.Timestamp)
-    })
-    SwapExpectedOutput = nil
-    IsSwapping = false
-  end
+  swaps.concludeSwap
 )
 
--- SWAP BACK (TO LIQUIDATE)
+-- SWAP BACK (to liquidate)
 
 -- response to the price request for SWAP BACK
 Handlers.add(
@@ -292,61 +235,21 @@ Handlers.add(
   function(msg)
     return msg.From == Pool and msg.Tags.Price ~= nil and IsLiquidating
   end,
-  function(msg)
-    SwapBackExpectedOutput = msg.Tags.Price
-    swaps.swapBack()
-  end
+  liquidation.swapBackExec
 )
 
 -- response to successful SWAP BACK
 Handlers.add(
   'orderConfirmationSwapBack',
   patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
-  function(msg)
-    if (msg.Tags["From-Token"] ~= BaseToken) then return end
-    ao.send({
-      Target = Backend,
-      Action = "SwapBack",
-      ExpectedOutput = SwapBackExpectedOutput,
-      InputAmount = msg.Tags["From-Quantity"],
-      ActualOutput = msg.Tags["To-Quantity"],
-      ConfirmedAt = tostring(msg.Timestamp)
-    })
-    SwapBackExpectedOutput = nil
-  end
+  liquidation.concludeSwapBack
 )
 
 -- last step of the liquidation process
 Handlers.add(
   "withdrawAfterSwapBack",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  function(m)
-    if m.From ~= QuoteToken then return end
-    if m.Sender ~= Pool then return end
-    --[[
-      Sender == Pool indicates this credit-notice is from either
-        A. a pool payout after swap back (last step of the liquidation process)
-        OR
-        B. refund after failed dca swap
-    --]]
-    if LiquidationAmountQuote == nil then
-      -- this is B. a refund
-      ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(m) })
-      return
-    else
-      -- this is A. a payout after swap back
-      LiquidationAmountBaseToQuote = m.Tags["Quantity"]
-
-      ao.send({
-        Target = QuoteToken,
-        Action = "Transfer",
-        Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
-        Recipient = Owner
-      })
-      LiquidationAmountQuote = nil
-      LiquidationAmountBaseToQuote = nil
-    end
-  end
+  liquidation.concludeLiquidation
 )
 
 -- WITHDRAW
@@ -356,13 +259,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
     permissions.onlyOwner(msg)
-    IsWithdrawing = true
-    ao.send({
-      Target = QuoteToken,
-      Action = "Transfer",
-      Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
-      Recipient = Owner
-    })
+    withdrawals.withdrawQuoteToken(msg)
   end
 )
 
@@ -371,62 +268,18 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
     permissions.onlyOwner(msg)
-    IsWithdrawing = true
-    ao.send({
-      Target = BaseToken,
-      Action = "Transfer",
-      Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
-      Recipient = Owner
-    })
+    withdrawals.withdrawBaseToken(msg)
   end
 )
 
--- LIQUIDATE
+-- LIQUIDATION
 
 Handlers.add(
   "liquidate",
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
     permissions.onlyOwner(msg)
-    IsLiquidating = true
-    ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
-    --[[
-      we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
-      instead we remember quote token balance before the swap back
-        => after swap back, we add it to the output quote amount and transfer the whole sum to the owner
-      this setup is in order to avoid two separate withdrawals, which would have been the other option
-        (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
-    --]]
-    LiquidationAmountQuote = LatestQuoteTokenBal
-    swaps.requestSwapBackOutput()
-  end
-)
-
--- PAUSE
-
-Handlers.add(
-  "pauseToggle",
-  Handlers.utils.hasMatchingTag("Action", "PauseToggle"),
-  function(msg)
-    permissions.onlyOwner(msg)
-    Paused = not Paused
-    ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
-    response.success("PauseToggle")(msg)
-  end
-)
-
--- RETIRE
-
-Handlers.add(
-  "retire",
-  Handlers.utils.hasMatchingTag("Action", "Retire"),
-  function(msg)
-    permissions.onlyOwner(msg)
-    assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
-    assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
-    Retired = true
-    ao.send({ Target = Backend, Action = "RetireAgent" })
-    response.success("Retire")(msg)
+    liquidation.start(msg)
   end
 )
 

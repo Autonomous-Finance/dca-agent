@@ -37,4 +37,18 @@ mod.initialize = function(msg)
   response.success("Initialize")(msg)
 end
 
+mod.pauseToggle = function(msg)
+  Paused = not Paused
+  ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
+  response.success("PauseToggle")(msg)
+end
+
+mod.retire = function(msg)
+  assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
+  assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
+  Retired = true
+  ao.send({ Target = Backend, Action = "RetireAgent" })
+  response.success("Retire")(msg)
+end
+
 return mod

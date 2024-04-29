@@ -9,10 +9,8 @@
   Reflect history of ownership transfers
 --]]
 
-local json = require "json"
 local response = require "utils.response"
 local permissions = require "permissions.permissions"
-local helpers = require "backend.helpers"
 local queries = require "backend.queries"
 local agentUpdates = require "backend.agent-updates"
 local registration = require "backend.registration"
@@ -37,9 +35,7 @@ Handlers.add(
 Handlers.add(
   'registerAgent',
   Handlers.utils.hasMatchingTag('Action', 'RegisterAgent'),
-  function(msg)
-    registration.registerAgent(msg)
-  end
+  registration.registerAgent
 )
 
 -- QUERIES
@@ -47,33 +43,25 @@ Handlers.add(
 Handlers.add(
   'getAllAgentsPerUser',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgentsPerUser'),
-  function(msg)
-    queries.getAgentsPerUser(msg)
-  end
+  queries.getAgentsPerUser
 )
 
 Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
-  function(msg)
-    queries.getAllAgents(msg)
-  end
+  queries.getAllAgents
 )
 
 Handlers.add(
   'getOneAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetOneAgent'),
-  function(msg)
-    queries.getOneAgent(msg)
-  end
+  queries.getOneAgent
 )
 
 Handlers.add(
   'getLatestAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetLatestAgent'),
-  function(msg)
-    queries.getLatestAgent(msg)
-  end
+  queries.getLatestAgent
 )
 
 -- -----------------------------------
@@ -176,27 +164,5 @@ Handlers.add(
     AgentInfosPerUser = {}
     RegisteredAgents = {}
     response.success("Wipe")(msg)
-  end
-)
-
-Handlers.add(
-  'retireAgentDebug',
-  Handlers.utils.hasMatchingTag('Action', 'RetireAgentDebug'),
-  function(msg)
-    local agentId = "xqFK4YtdDiJcT8a_pPqWeKhdD7CKGmArIjw7mlW7Ano"
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Retired = true
-    response.success("RetireAgentDebug")(msg)
-  end
-)
-
-Handlers.add(
-  'assignOwnerDebug',
-  Handlers.utils.hasMatchingTag('Action', 'AssignOwnerDebug'),
-  function(msg)
-    local agentId = "zSMGBVafyTrNeMVshCo9W0k_JJMEirH7M5kt1atqU_Q"
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Owner = "P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4"
-    response.success("AssignOwnerDebug")(msg)
   end
 )

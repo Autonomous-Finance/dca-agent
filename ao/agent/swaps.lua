@@ -17,7 +17,12 @@ mod.init = function()
   })
 end
 
-mod.requestSwapOutput = function()
+-- SWAP
+
+mod.triggerSwap = function(msg)
+  assert(not Paused, 'Process is paused')
+  IsSwapping = true
+  -- request expected swap output
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -26,8 +31,8 @@ mod.requestSwapOutput = function()
   })
 end
 
-mod.swap = function()
-  -- prepare swap
+mod.swapExec = function(msg)
+  SwapExpectedOutput = msg.Tags.Price
   ao.send({
     Target = QuoteToken,
     Action = "Transfer",
@@ -39,27 +44,18 @@ mod.swap = function()
   })
 end
 
-mod.requestSwapBackOutput = function()
+mod.concludeSwap = function(msg)
+  if (msg.Tags["From-Token"] ~= QuoteToken) then return end
   ao.send({
-    Target = Pool,
-    Action = "Get-Price",
-    Token = BaseToken,
-    Quantity = LatestBaseTokenBal
+    Target = Backend,
+    Action = "Swap",
+    ExpectedOutput = SwapExpectedOutput,
+    InputAmount = msg.Tags["From-Quantity"],
+    ActualOutput = msg.Tags["To-Quantity"],
+    ConfirmedAt = tostring(msg.Timestamp)
   })
-end
-
-
-mod.swapBack = function()
-  -- prepare swap back
-  ao.send({
-    Target = BaseToken,
-    Action = "Transfer",
-    Quantity = LatestBaseTokenBal,
-    Recipient = Pool,
-    ["X-Action"] = "Swap",
-    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
-    ["X-Expected-Output"] = SwapBackExpectedOutput,
-  })
+  SwapExpectedOutput = nil
+  IsSwapping = false
 end
 
 return mod
