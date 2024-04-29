@@ -733,6 +733,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
+    ao.send({ Target = ao.id, Action = "ProgressSignal", Data = "Cron triggered!" })
     swaps.triggerSwap(msg)
   end
 )
