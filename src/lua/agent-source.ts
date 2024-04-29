@@ -4,8 +4,7 @@ package.preload[ "agent.balances" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
 
-mod.balanceUpdateCreditQuoteToken = function(msg)
-  if msg.From ~= QuoteToken then return end
+mod.balanceUpdateCreditQuoteToken = function(m)
   ao.send({ Target = QuoteToken, Action = "Balance" })
   if msg.Sender == Pool then return end -- do not register pool refunds as deposits
   ao.send({
@@ -16,36 +15,55 @@ mod.balanceUpdateCreditQuoteToken = function(msg)
   })
 end
 
-mod.balanceUpdateDebitQuoteToken = function(msg)
-  if msg.From ~= QuoteToken then return end
+mod.balanceUpdateDebitQuoteToken = function()
   ao.send({ Target = QuoteToken, Action = "Balance" })
 end
-
 
 mod.latestBalanceUpdateQuoteToken = function(msg)
   LatestQuoteTokenBal = msg.Balance
   ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
 end
 
-
-mod.balanceUpdateCreditBaseToken = function(msg)
-  if msg.From ~= BaseToken then return end
+mod.balanceUpdateCreditBaseToken = function()
   ao.send({ Target = BaseToken, Action = "Balance" })
 end
 
-
-
-mod.balanceUpdateDebitBaseToken = function(msg)
-  if msg.From ~= BaseToken then return end
+mod.balanceUpdateDebitBaseToken = function()
   ao.send({ Target = BaseToken, Action = "Balance" })
 end
-
 
 mod.latestBalanceUpdateBaseToken = function(msg)
   LatestBaseTokenBal = msg.Balance
   ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
 end
 
+mod.isBalanceUpdateQuoteToken = function(m)
+  local isMatch = m.Tags.Balance ~= nil
+      and m.From == QuoteToken
+      and m.Target == ao.id
+  return isMatch and -1 or 0
+end
+
+mod.isBalanceUpdateBaseToken = function(m)
+  local isMatch = m.Tags.Balance ~= nil
+      and m.From == BaseToken
+      and m.Target == ao.id
+  return isMatch and -1 or 0
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "agent.deposits" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+mod.isDepositCreditNotice = function(msg)
+  return msg.From == QuoteToken
+      and not IsLiquidating
+end
 
 return mod
 end
@@ -195,6 +213,10 @@ mod.finalizeLiquidation = function(msg)
   end
 end
 
+mod.isLiquidationDebitNotice = function(msg)
+  return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+end
+
 return mod
 end
 end
@@ -228,22 +250,16 @@ mod.startDepositing = function(msg)
 end
 
 mod.concludeDeposit = function(msg)
-  if msg.From ~= QuoteToken or IsLiquidating then return end
   IsDepositing = false
   LastDepositNoticeId = msg.Id
 end
 
 mod.concludeWithdraw = function(msg)
-  local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
-  local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
-  if not (isQuoteWithdrawal or isBaseWithdrawal) then return end
   IsWithdrawing = false
   LastWithdrawalNoticeId = msg.Id
 end
 
 mod.concludeLiquidation = function(msg)
-  local isLiquidation = msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
-  if not (isLiquidation) then return end
   IsLiquidating = false
   LastLiquidationNoticeId = msg.Id
 end
@@ -433,6 +449,12 @@ mod.withdrawBaseToken = function(msg)
   })
 end
 
+mod.isWithdrawalDebitNotice = function(msg)
+  local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
+  local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
+  return isQuoteWithdrawal or isBaseWithdrawal
+end
+
 return mod
 end
 end
@@ -468,7 +490,7 @@ local mod = {}
 
 -- This function allows the wrapped pattern function
 -- to continue the execution after the handler
----@param fn fun(msg: Message)
+---@param fn fun(msg: Message): boolean|number|string
 ---@return PatternFunction
 function mod.continue(fn)
   return function(msg)
@@ -566,6 +588,7 @@ local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
 local swaps = require "agent.swaps"
 local withdrawals = require "agent.withdrawals"
+local deposits = require "agent.deposits"
 local liquidation = require "agent.liquidation"
 local balances = require "agent.balances"
 local progress = require "agent.progress"
@@ -594,7 +617,7 @@ LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
-Backend = Backend or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
+Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
 -- flags for helping the frontend properly display the process status
 IsSwapping = IsSwapping or false
@@ -679,49 +702,51 @@ Handlers.add(
 
 Handlers.add(
   "balanceUpdateCreditQuoteToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and msg.From == QuoteToken
+  end),
   balances.balanceUpdateCreditQuoteToken
 )
 
 Handlers.add(
   "balanceUpdateDebitQuoteToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and msg.From == QuoteToken
+  end),
   balances.balanceUpdateDebitQuoteToken
 )
 
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateQuoteToken",
-  function(msg)
-    local isMatch = msg.Tags.Balance ~= nil
-        and msg.From == QuoteToken
-        and msg.Target == ao.id
-    return isMatch and -1 or 0
-  end,
+  balances.isBalanceUpdateQuoteToken,
   balances.latestBalanceUpdateQuoteToken
 )
 
 Handlers.add(
   "balanceUpdateCreditBaseToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and msg.From == BaseToken
+  end),
   balances.balanceUpdateCreditBaseToken
 )
 
 Handlers.add(
   "balanceUpdateDebitBaseToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and msg.From == BaseToken
+  end),
   balances.balanceUpdateDebitBaseToken
 )
 
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateBaseToken",
-  function(msg)
-    local isMatch = msg.Tags.Balance ~= nil
-        and msg.From == BaseToken
-        and msg.Target == ao.id
-    return isMatch and -1 or 0
-  end,
+  balances.isBalanceUpdateBaseToken,
   balances.latestBalanceUpdateBaseToken
 )
 
@@ -737,19 +762,28 @@ Handlers.add(
 
 Handlers.add(
   "concludeDeposit",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and deposits.isDepositNotice(msg)
+  end),
   progress.concludeDeposit
 )
 
 Handlers.add(
   "concludeWithdraw",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and withdrawals.isWithdrawalDebitNotice(msg)
+  end),
   progress.concludeWithdraw
 )
 
 Handlers.add(
   "concludeLiquidation",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and liquidation.isLiquidationDebitNotice(msg)
+  end),
   progress.concludeLiquidation
 )
 
