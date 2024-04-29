@@ -116,7 +116,7 @@ Handlers.add(
     if m.Sender == Pool then return end -- do not register pool refunds as deposits
     ao.send({
       Target = Backend,
-      Action = "Deposited",
+      Action = "Deposit",
       Sender = m.Tags.Sender,
       Quantity = m.Quantity
     })
@@ -273,7 +273,7 @@ Handlers.add(
     if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
       Target = Backend,
-      Action = "Swapped",
+      Action = "Swap",
       ExpectedOutput = SwapExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
       ActualOutput = msg.Tags["To-Quantity"],
@@ -306,7 +306,7 @@ Handlers.add(
     if (msg.Tags["From-Token"] ~= BaseToken) then return end
     ao.send({
       Target = Backend,
-      Action = "SwappedBack",
+      Action = "SwapBack",
       ExpectedOutput = SwapBackExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
       ActualOutput = msg.Tags["To-Quantity"],

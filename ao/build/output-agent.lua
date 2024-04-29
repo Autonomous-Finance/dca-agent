@@ -5,10 +5,7 @@ local response = require "utils.response"
 
 local mod = {}
 
-mod.initialize = function(msg)
-  Owner = msg.Sender
-  assert(not Initialized, 'Process is already initialized')
-  Initialized = true
+local validateInitData = function(msg)
   assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
   assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
   assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
@@ -19,6 +16,14 @@ mod.initialize = function(msg)
   assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
   assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
   assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
+end
+
+mod.initialize = function(msg)
+  Owner = msg.Sender
+  assert(not Initialized, 'Process is already initialized')
+  Initialized = true
+
+  validateInitData(msg)
 
   AgentName = msg.Tags.AgentName
   BaseToken = msg.Tags.BaseToken
@@ -225,8 +230,9 @@ end
 end
 
 local permissions = require "permissions.permissions"
-local swaps = require "agent.swaps"
 local initialization = require "agent.initialization"
+local status = require "agent.status"
+local swaps = require "agent.swaps"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 local json = require "json"
@@ -277,40 +283,7 @@ Handlers.add(
   "getStatus",
   Handlers.utils.hasMatchingTag("Action", "GetStatus"),
   function(msg)
-    if not Initialized then
-      response.dataReply("GetStatus", json.encode({ initialized = false }))(msg)
-      return
-    end
-
-    -- is initialized => reply with complete config
-    local config = json.encode({
-      initialized = true,
-      agentName = AgentName,
-      retired = Retired,
-      paused = Paused,
-      baseToken = BaseToken,
-      quoteToken = QuoteToken,
-      baseTokenTicker = BaseTokenTicker,
-      quoteTokenTicker = QuoteTokenTicker,
-      swapInAmount = SwapInAmount,
-      swapIntervalValue = SwapIntervalValue,
-      swapIntervalUnit = SwapIntervalUnit,
-      baseTokenBalance = LatestBaseTokenBal,
-      quoteTokenBalance = LatestQuoteTokenBal,
-      swapExpectedOutput = SwapExpectedOutput,
-      swapBackExpectedOutput = SwapBackExpectedOutput,
-      slippageTolerance = SlippageTolerance,
-      pool = Pool,
-      dex = Dex,
-      isSwapping = IsSwapping,
-      isDepositing = IsDepositing,
-      isWithdrawing = IsWithdrawing,
-      isLiquidating = IsLiquidating,
-      lastDepositNoticeId = LastDepositNoticeId,
-      lastWithdrawalNoticeId = LastWithdrawalNoticeId,
-      lastLiquidationNoticeId = LastLiquidationNoticeId
-    })
-    response.dataReply("GetStatus", config)(msg)
+    status.getStatus(msg)
   end
 )
 
@@ -374,7 +347,7 @@ Handlers.add(
     if m.Sender == Pool then return end -- do not register pool refunds as deposits
     ao.send({
       Target = Backend,
-      Action = "Deposited",
+      Action = "Deposit",
       Sender = m.Tags.Sender,
       Quantity = m.Quantity
     })
@@ -531,7 +504,7 @@ Handlers.add(
     if (msg.Tags["From-Token"] ~= QuoteToken) then return end
     ao.send({
       Target = Backend,
-      Action = "Swapped",
+      Action = "Swap",
       ExpectedOutput = SwapExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
       ActualOutput = msg.Tags["To-Quantity"],
@@ -564,7 +537,7 @@ Handlers.add(
     if (msg.Tags["From-Token"] ~= BaseToken) then return end
     ao.send({
       Target = Backend,
-      Action = "SwappedBack",
+      Action = "SwapBack",
       ExpectedOutput = SwapBackExpectedOutput,
       InputAmount = msg.Tags["From-Quantity"],
       ActualOutput = msg.Tags["To-Quantity"],

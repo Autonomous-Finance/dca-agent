@@ -1,5 +1,101 @@
 do
 local _ENV = _ENV
+package.preload[ "backend.agent-updates" ] = function( ... ) local arg = _G.arg;
+local helpers = require "backend.helpers"
+local response = require "utils.response"
+
+local mod = {}
+
+mod.updateQuoteTokenBalance = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  agentInfo.QuoteTokenBalance = msg.Tags.Balance
+  response.success("UpdateQuoteTokenBalance")(msg)
+end
+
+mod.updateBaseTokenBalance = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  agentInfo.BaseTokenBalance = msg.Tags.Balance
+  response.success("UpdateBaseTokenBalance")(msg)
+end
+
+mod.deposited = function(msg)
+  assert(type(msg.Tags.Sender) == 'string', 'Sender is required!')
+  assert(type(msg.Tags.Quantity) == 'string', 'Quantity is required!')
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  if agentInfo == nil then
+    error("Internal: Agent not found")
+  end
+  table.insert(agentInfo.Deposits, {
+    Sender = msg.Tags.Sender,
+    Quantity = msg.Tags.Quantity,
+    Timestamp = msg.Timestamp
+  })
+  agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
+  response.success("Deposited")(msg)
+end
+
+mod.swapped = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  if agentInfo == nil then
+    error("Internal: Agent not found")
+  end
+  local dcaBuys = agentInfo.DcaBuys
+  table.insert(dcaBuys, {
+    ConfirmedAt = msg.Tags.ConfirmedAt,
+    InputAmount = msg.Tags.InputAmount,
+    ExpectedOutput = msg.Tags.ExpectedOutput,
+    ActualOutput = msg.Tags.ActualOutput,
+  })
+  response.success("Swapped")(msg)
+end
+
+mod.swappedBack = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  if agentInfo == nil then
+    error("Internal: Agent not found")
+  end
+  local swapsBack = agentInfo.SwapsBack
+  table.insert(swapsBack, {
+    ConfirmedAt = msg.Tags.ConfirmedAt,
+    InputAmount = msg.Tags.InputAmount,
+    ExpectedOutput = msg.Tags.ExpectedOutput,
+    ActualOutput = msg.Tags.ActualOutput,
+  })
+  response.success("SwappedBack")(msg)
+end
+
+mod.pauseToggledAgent = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  agentInfo.Paused = msg.Tags.Paused == "true"
+  response.success("PauseToggleAgent")(msg)
+end
+
+mod.transferredAgent = function(msg)
+  local newOwner = msg.Tags.NewOwner
+  assert(type(newOwner) == 'string', 'NewOwner is required!')
+  local agentId = msg.From
+  helpers.changeOwners(agentId, newOwner, msg.Timestamp)
+end
+
+mod.retiredAgent = function(msg)
+  local agentId = msg.From
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  agentInfo.Retired = true
+  response.success("RetireAgent")(msg)
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
 package.preload[ "backend.helpers" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
@@ -54,6 +150,45 @@ mod.changeOwners = function(agentId, newOwner, timestamp)
   table.insert(AgentInfosPerUser[newOwner], info)
 
   RegisteredAgents[agentId] = newOwner
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "backend.queries" ] = function( ... ) local arg = _G.arg;
+local json = require 'json'
+local response = require "utils.response"
+local helpers = require "backend.helpers"
+
+local mod = {}
+
+mod.getAgentsPerUser = function(msg)
+  local owner = msg.Tags["Owned-By"]
+  response.dataReply("GetAllAgentsPerUser", json.encode(AgentInfosPerUser[owner] or {}))(msg)
+end
+
+mod.getAllAgents = function(msg)
+  response.dataReply("GetAllAgents", json.encode(helpers.getAllAgentsNotRetired()))(msg)
+end
+
+mod.getOneAgent = function(msg)
+  local agentId = msg.Tags.Agent
+  assert(agentId ~= nil, "Agent is required")
+  local owner = RegisteredAgents[agentId]
+  assert(owner ~= nil, "No such agent is registered")
+  local agentInfo = helpers.getAgentInfoAndIndex(agentId)
+  assert(agentInfo ~= nil, "Internal: Agent not found")
+  response.dataReply("GetOneAgent", json.encode(agentInfo))(msg)
+end
+
+mod.getLatestAgent = function(msg)
+  local owner = msg.Tags["Owned-By"]
+  local agentInfos = AgentInfosPerUser[owner] or {}
+  local latestAgentInfo = agentInfos[#agentInfos]
+  response.dataReply("GetLatestAgent", json.encode(latestAgentInfo))(msg)
 end
 
 return mod
@@ -203,6 +338,8 @@ local json = require "json"
 local response = require "utils.response"
 local permissions = require "permissions.permissions"
 local helpers = require "backend.helpers"
+local queries = require "backend.queries"
+local agentUpdates = require "backend.agent-updates"
 local registration = require "backend.registration"
 
 -- set to false in order to disable sending out success confirmation messages
@@ -230,28 +367,13 @@ Handlers.add(
   end
 )
 
--- msg to be sent by agent itself
-Handlers.add(
-  'transferAgent',
-  Handlers.utils.hasMatchingTag('Action', 'TransferAgent'),
-  function(msg)
-    permissions.onlyAgent(msg)
-    local newOwner = msg.Tags.NewOwner
-    assert(type(newOwner) == 'string', 'NewOwner is required!')
-    local agentId = msg.From
-    helpers.changeOwners(agentId, newOwner, msg.Timestamp)
-  end
-)
+-- QUERIES
 
--- FEATURES
-
--- msg to be sent by end user
 Handlers.add(
   'getAllAgentsPerUser',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgentsPerUser'),
   function(msg)
-    local owner = msg.Tags["Owned-By"]
-    response.dataReply("GetAllAgentsPerUser", json.encode(AgentInfosPerUser[owner] or {}))(msg)
+    queries.getAgentsPerUser(msg)
   end
 )
 
@@ -259,7 +381,7 @@ Handlers.add(
   'getAllAgents',
   Handlers.utils.hasMatchingTag('Action', 'GetAllAgents'),
   function(msg)
-    response.dataReply("GetAllAgents", json.encode(helpers.getAllAgentsNotRetired()))(msg)
+    queries.getAllAgents(msg)
   end
 )
 
@@ -267,13 +389,7 @@ Handlers.add(
   'getOneAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetOneAgent'),
   function(msg)
-    local agentId = msg.Tags.Agent
-    assert(agentId ~= nil, "Agent is required")
-    local owner = RegisteredAgents[agentId]
-    assert(owner ~= nil, "No such agent is registered")
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    assert(agentInfo ~= nil, "Internal: Agent not found")
-    response.dataReply("GetOneAgent", json.encode(agentInfo))(msg)
+    queries.getOneAgent(msg)
   end
 )
 
@@ -281,131 +397,87 @@ Handlers.add(
   'getLatestAgent',
   Handlers.utils.hasMatchingTag('Action', 'GetLatestAgent'),
   function(msg)
-    local owner = msg.Tags["Owned-By"]
-    local agentInfos = AgentInfosPerUser[owner] or {}
-    local latestAgentInfo = agentInfos[#agentInfos]
-    response.dataReply("GetLatestAgent", json.encode(latestAgentInfo))(msg)
+    queries.getLatestAgent(msg)
   end
 )
 
--- msg to be sent by agent itself
+-- -----------------------------------
+
+-- AGENT UPDATES (sent by agent itself)
+
 Handlers.add(
   'updateQuoteTokenBalance',
   Handlers.utils.hasMatchingTag('Action', 'UpdateQuoteTokenBalance'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.QuoteTokenBalance = msg.Tags.Balance
-    response.success("UpdateQuoteTokenBalance")(msg)
+    agentUpdates.updateQuoteTokenBalance(msg)
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
   'updateBaseTokenBalance',
   Handlers.utils.hasMatchingTag('Action', 'UpdateBaseTokenBalance'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.BaseTokenBalance = msg.Tags.Balance
-    response.success("UpdateBaseTokenBalance")(msg)
+    agentUpdates.updateBaseTokenBalance(msg)
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
   'deposited',
-  Handlers.utils.hasMatchingTag('Action', 'Deposited'),
+  Handlers.utils.hasMatchingTag('Action', 'Deposit'),
   function(msg)
     permissions.onlyAgent(msg)
-    assert(type(msg.Tags.Sender) == 'string', 'Sender is required!')
-    assert(type(msg.Tags.Quantity) == 'string', 'Quantity is required!')
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    if agentInfo == nil then
-      error("Internal: Agent not found")
-    end
-    table.insert(agentInfo.Deposits, {
-      Sender = msg.Tags.Sender,
-      Quantity = msg.Tags.Quantity,
-      Timestamp = msg.Timestamp
-    })
-    agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
-    response.success("Deposited")(msg)
+    agentUpdates.deposited(msg)
   end
 )
 
--- message to be sent by agent itself
 Handlers.add(
   'swapped',
-  Handlers.utils.hasMatchingTag('Action', 'Swapped'),
+  Handlers.utils.hasMatchingTag('Action', 'Swap'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    if agentInfo == nil then
-      error("Internal: Agent not found")
-    end
-    local dcaBuys = agentInfo.DcaBuys
-    table.insert(dcaBuys, {
-      ConfirmedAt = msg.Tags.ConfirmedAt,
-      InputAmount = msg.Tags.InputAmount,
-      ExpectedOutput = msg.Tags.ExpectedOutput,
-      ActualOutput = msg.Tags.ActualOutput,
-    })
-    response.success("Swapped")(msg)
+    agentUpdates.swapped(msg)
   end
 )
 
--- message to be sent by agent itself
 Handlers.add(
   'swappedBack',
-  Handlers.utils.hasMatchingTag('Action', 'SwappedBack'),
+  Handlers.utils.hasMatchingTag('Action', 'SwapBack'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    if agentInfo == nil then
-      error("Internal: Agent not found")
-    end
-    local swapsBack = agentInfo.SwapsBack
-    table.insert(swapsBack, {
-      ConfirmedAt = msg.Tags.ConfirmedAt,
-      InputAmount = msg.Tags.InputAmount,
-      ExpectedOutput = msg.Tags.ExpectedOutput,
-      ActualOutput = msg.Tags.ActualOutput,
-    })
-    response.success("SwappedBack")(msg)
+    agentUpdates.swappedBack(msg)
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
   'pauseToggledAgent',
   Handlers.utils.hasMatchingTag('Action', 'PauseToggleAgent'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Paused = msg.Tags.Paused == "true"
-    response.success("PauseToggleAgent")(msg)
+    agentUpdates.pauseToggledAgent(msg)
   end
 )
 
--- msg to be sent by agent itself
 Handlers.add(
-  'retireAgent',
+  'transferredAgent',
+  Handlers.utils.hasMatchingTag('Action', 'TransferAgent'),
+  function(msg)
+    permissions.onlyAgent(msg)
+    agentUpdates.transferredAgent(msg)
+  end
+)
+
+Handlers.add(
+  'retiredAgent',
   Handlers.utils.hasMatchingTag('Action', 'RetireAgent'),
   function(msg)
     permissions.onlyAgent(msg)
-    local agentId = msg.From
-    local agentInfo = helpers.getAgentInfoAndIndex(agentId)
-    agentInfo.Retired = true
-    response.success("RetireAgent")(msg)
+    agentUpdates.retiredAgent(msg)
   end
 )
+
+-- -----------------------------------
 
 -- MISC CONFIGURATION
 

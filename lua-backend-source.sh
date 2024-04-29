@@ -2,4 +2,4 @@
 
 cd ao
 
-/opt/homebrew/bin/amalg.lua -s backend.lua -o build/output-backend.lua permissions.permissions utils.response backend.helpers backend.registration
+/opt/homebrew/bin/amalg.lua -s backend.lua -o build/output-backend.lua permissions.permissions utils.response backend.helpers backend.registration backend.agent-updates backend.queries
