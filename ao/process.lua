@@ -305,7 +305,8 @@ Handlers.add(
   function(msg)
     if not msg.Cron then return end
     assert(not Paused, 'Process is paused')
-    ao.send({ Target = ao.id, Action = "TriggerSwapDebug" })
+    IsSwapping = true
+    agent.requestSwapOutput()
   end
 )
 
@@ -504,9 +505,7 @@ Handlers.add(
   "triggerSwapDebug",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
-    if msg.From ~= ao.id then
-      permissions.onlyOwner(msg)
-    end
+    permissions.onlyOwner(msg)
     IsSwapping = true
     agent.requestSwapOutput()
   end

@@ -6,13 +6,14 @@
   but it doesn't impact expected behavior since registration is associated with the sender of a message (spamming won't harm this process)
 
   TODO
-  Process should reflect history of ownership transfers
+  Reflect history of ownership transfers
 --]]
 
 local json = require "json"
 local response = require "utils.response"
 local permissions = require "permissions.permissions"
 local helpers = require "backend.helpers"
+local registration = require "backend.registration"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
@@ -31,50 +32,11 @@ Handlers.add(
   end
 )
 
--- msg to be sent by end user
 Handlers.add(
   'registerAgent',
   Handlers.utils.hasMatchingTag('Action', 'RegisterAgent'),
   function(msg)
-    local agent = msg.Tags.Agent
-    assert(type(agent) == 'string', 'Agent is required!')
-    assert(type(msg.Tags.AgentName) == 'string', 'AgentName is required!')
-    assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
-    assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
-    assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
-    assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'QuoteTokenTicker is required!')
-    assert(type(msg.Tags.BaseTokenTicker) == 'string', 'BaseTokenTicker is required!')
-
-    local sender = msg.From
-
-    RegisteredAgents[agent] = msg.From
-    AgentsPerUser[sender] = AgentsPerUser[sender] or {}
-    AgentInfosPerUser[sender] = AgentInfosPerUser[sender] or {}
-
-    table.insert(AgentsPerUser[sender], agent)
-    table.insert(AgentInfosPerUser[sender], {
-      Owner = sender,
-      Agent = agent,
-      AgentName = msg.Tags.AgentName,
-      SwapInAmount = msg.Tags.SwapInAmount,
-      SwapIntervalValue = msg.Tags.SwapIntervalValue,
-      SwapIntervalUnit = msg.Tags.SwapIntervalUnit,
-      QuoteTokenTicker = msg.Tags.QuoteTokenTicker,
-      BaseTokenTicker = msg.Tags.BaseTokenTicker,
-      CreatedAt = msg.Timestamp,
-      QuoteTokenBalance = "0",
-      Deposits = {},
-      TotalDeposited = "0",
-      WithdrawalsQuoteToken = {},
-      WithdrawalsBaseToken = {},
-      DcaBuys = {},
-      SwapsBack = {},
-      Retired = false,
-      Paused = false,
-      FromTransfer = false,
-      TransferredAt = nil
-    })
-    response.success("RegisterAgent")(msg)
+    registration.registerAgent(msg)
   end
 )
 
