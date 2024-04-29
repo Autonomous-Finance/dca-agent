@@ -489,9 +489,11 @@ function mod.success(tag)
 end
 
 function mod.errorMessage(text)
-  error({
-    message = text
-  })
+  return function()
+    error({
+      message = text
+    })
+  end
 end
 
 return mod
