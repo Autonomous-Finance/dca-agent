@@ -2,7 +2,7 @@ local mod = {}
 
 -- This function allows the wrapped pattern function
 -- to continue the execution after the handler
----@param fn fun(msg: Message)
+---@param fn fun(msg: Message): boolean|number|string
 ---@return PatternFunction
 function mod.continue(fn)
   return function(msg)

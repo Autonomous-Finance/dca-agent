@@ -79,4 +79,8 @@ mod.finalizeLiquidation = function(msg)
   end
 end
 
+mod.isLiquidationDebitNotice = function(msg)
+  return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+end
+
 return mod

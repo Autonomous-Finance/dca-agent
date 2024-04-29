@@ -1,5 +1,5 @@
 import * as ao from "@permaweb/aoconnect/browser"
-export const AGENT_BACKEND = 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E'
+export const AGENT_BACKEND = '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc'
 
 
 const {dryrun} = ao.connect({

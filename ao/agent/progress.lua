@@ -5,22 +5,16 @@ mod.startDepositing = function(msg)
 end
 
 mod.concludeDeposit = function(msg)
-  if msg.From ~= QuoteToken or IsLiquidating then return end
   IsDepositing = false
   LastDepositNoticeId = msg.Id
 end
 
 mod.concludeWithdraw = function(msg)
-  local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
-  local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
-  if not (isQuoteWithdrawal or isBaseWithdrawal) then return end
   IsWithdrawing = false
   LastWithdrawalNoticeId = msg.Id
 end
 
 mod.concludeLiquidation = function(msg)
-  local isLiquidation = msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
-  if not (isLiquidation) then return end
   IsLiquidating = false
   LastLiquidationNoticeId = msg.Id
 end

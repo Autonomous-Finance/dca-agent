@@ -5,6 +5,7 @@ local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
 local swaps = require "agent.swaps"
 local withdrawals = require "agent.withdrawals"
+local deposits = require "agent.deposits"
 local liquidation = require "agent.liquidation"
 local balances = require "agent.balances"
 local progress = require "agent.progress"
@@ -33,7 +34,7 @@ LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
-Backend = Backend or 'YAt2vbsxMEooMJjWwL6R2OnMGfPib-MnyYL1qExiA2E' -- hardcoded for mvp, universal for all users
+Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
 -- flags for helping the frontend properly display the process status
 IsSwapping = IsSwapping or false
@@ -118,49 +119,51 @@ Handlers.add(
 
 Handlers.add(
   "balanceUpdateCreditQuoteToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and msg.From == QuoteToken
+  end),
   balances.balanceUpdateCreditQuoteToken
 )
 
 Handlers.add(
   "balanceUpdateDebitQuoteToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and msg.From == QuoteToken
+  end),
   balances.balanceUpdateDebitQuoteToken
 )
 
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateQuoteToken",
-  function(msg)
-    local isMatch = msg.Tags.Balance ~= nil
-        and msg.From == QuoteToken
-        and msg.Target == ao.id
-    return isMatch and -1 or 0
-  end,
+  balances.isBalanceUpdateQuoteToken,
   balances.latestBalanceUpdateQuoteToken
 )
 
 Handlers.add(
   "balanceUpdateCreditBaseToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and msg.From == BaseToken
+  end),
   balances.balanceUpdateCreditBaseToken
 )
 
 Handlers.add(
   "balanceUpdateDebitBaseToken",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and msg.From == BaseToken
+  end),
   balances.balanceUpdateDebitBaseToken
 )
 
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateBaseToken",
-  function(msg)
-    local isMatch = msg.Tags.Balance ~= nil
-        and msg.From == BaseToken
-        and msg.Target == ao.id
-    return isMatch and -1 or 0
-  end,
+  balances.isBalanceUpdateBaseToken,
   balances.latestBalanceUpdateBaseToken
 )
 
@@ -176,19 +179,28 @@ Handlers.add(
 
 Handlers.add(
   "concludeDeposit",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and deposits.isDepositNotice(msg)
+  end),
   progress.concludeDeposit
 )
 
 Handlers.add(
   "concludeWithdraw",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and withdrawals.isWithdrawalDebitNotice(msg)
+  end),
   progress.concludeWithdraw
 )
 
 Handlers.add(
   "concludeLiquidation",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Debit-Notice")),
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and liquidation.isLiquidationDebitNotice(msg)
+  end),
   progress.concludeLiquidation
 )
 

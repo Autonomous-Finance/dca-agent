@@ -20,4 +20,10 @@ mod.withdrawBaseToken = function(msg)
   })
 end
 
+mod.isWithdrawalDebitNotice = function(msg)
+  local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
+  local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
+  return isQuoteWithdrawal or isBaseWithdrawal
+end
+
 return mod
