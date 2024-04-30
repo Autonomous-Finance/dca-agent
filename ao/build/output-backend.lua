@@ -34,7 +34,7 @@ mod.deposited = function(msg)
     Timestamp = msg.Timestamp
   })
   agentInfo.TotalDeposited = tostring(tonumber(agentInfo.TotalDeposited) + tonumber(msg.Tags.Quantity))
-  response.success("Deposited")(msg)
+  response.success("Deposit")(msg)
 end
 
 mod.swapped = function(msg)
@@ -50,7 +50,7 @@ mod.swapped = function(msg)
     ExpectedOutput = msg.Tags.ExpectedOutput,
     ActualOutput = msg.Tags.ActualOutput,
   })
-  response.success("Swapped")(msg)
+  response.success("Swap")(msg)
 end
 
 mod.swappedBack = function(msg)
@@ -66,7 +66,7 @@ mod.swappedBack = function(msg)
     ExpectedOutput = msg.Tags.ExpectedOutput,
     ActualOutput = msg.Tags.ActualOutput,
   })
-  response.success("SwappedBack")(msg)
+  response.success("SwapBack")(msg)
 end
 
 mod.pauseToggledAgent = function(msg)
