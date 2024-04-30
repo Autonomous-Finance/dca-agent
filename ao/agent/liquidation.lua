@@ -1,3 +1,4 @@
+local json = require "json"
 local mod = {}
 
 local json = require "json"

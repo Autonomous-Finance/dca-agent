@@ -13,6 +13,8 @@ local ownership = require "agent.ownership"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
 
+local json = require "json"
+
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
 
@@ -405,6 +407,19 @@ Handlers.add(
     permissions.onlyOwner(msg)
     status.checkNotBusy()
     swaps.triggerSwap()
+  end
+)
+
+Handlers.add(
+  "getFlags",
+  Handlers.utils.hasMatchingTag("Action", "GetFlags"),
+  function(msg)
+    response.dataReply("GetFlags", json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    }))(msg)
   end
 )
 
