@@ -320,6 +320,8 @@ end
 do
 local _ENV = _ENV
 package.preload[ "agent.swaps" ] = function( ... ) local arg = _G.arg;
+local response = require "utils.response"
+
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -343,6 +345,9 @@ end
 
 mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
+  if LatestQuoteTokenBal < SwapInAmount then
+    error({ message = 'Insufficient Quote Token balance' })
+  end
   IsSwapping = true
   -- request expected swap output
   ao.send({
@@ -746,8 +751,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
-    ao.send({ Target = ao.id, Action = "ProgressSignal", Data = "Cron triggered!" })
-    swaps.triggerSwap(msg)
+    ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
+    swaps.triggerSwap()
   end
 )
 
