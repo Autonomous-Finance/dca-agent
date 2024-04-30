@@ -1,5 +1,5 @@
-local Type = require ".utils.type"
-local bint = require ".bint" (512)
+local Type = require "utils.type"
+local bint = require "bint" (512)
 
 local mod = {}
 

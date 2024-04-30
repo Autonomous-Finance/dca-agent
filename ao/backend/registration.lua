@@ -1,4 +1,7 @@
 local response = require "utils.response"
+local assertions = require "utils.assertions"
+local Type = require "utils.type"
+
 
 local mod = {}
 
@@ -13,7 +16,8 @@ local mod = {}
 ---@param msg Message
 mod.registerAgent = function(msg)
   local agent = msg.Tags.Agent
-  assert(type(agent) == 'string', 'Agent is required!')
+  assertions.Address:assert(agent)
+  -- Type:string("is required"):assert(msg.Tags.AgentName)
   assert(type(msg.Tags.AgentName) == 'string', 'AgentName is required!')
   assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
   assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')

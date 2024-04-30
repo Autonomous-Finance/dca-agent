@@ -105,6 +105,7 @@ mod.transferredAgent = function(msg)
   assert(type(newOwner) == 'string', 'NewOwner is required!')
   local agentId = msg.From
   changeOwners(agentId, newOwner, msg.Timestamp)
+  ao.send({ Target = newOwner, Action = "Ownership-Notice", ["Owned-Process"] = agentId })
 end
 
 return mod
