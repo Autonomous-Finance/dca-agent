@@ -23,9 +23,6 @@ end
 
 mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
-  if LatestQuoteTokenBal < SwapInAmount then
-    error({ message = 'Insufficient Quote Token balance' })
-  end
   IsSwapping = true
   -- request expected swap output
   ao.send({
@@ -60,6 +57,12 @@ mod.concludeSwap = function(msg)
     ConfirmedAt = tostring(msg.Timestamp)
   })
   SwapExpectedOutput = nil
+end
+
+mod.finalizeDCASwap = function(msg)
+  if msg.From ~= BaseToken then return end
+  if msg.Sender ~= Pool then return end
+
   IsSwapping = false
 end
 

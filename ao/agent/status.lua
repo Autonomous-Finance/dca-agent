@@ -40,4 +40,23 @@ mod.getStatus = function(msg)
   response.dataReply("GetStatus", config)(msg)
 end
 
+mod.checkNotBusy = function()
+  local flags = json.encode({
+    IsSwapping = IsSwapping,
+    IsDepositing = IsDepositing,
+    IsWithdrawing = IsWithdrawing,
+    IsLiquidating = IsLiquidating
+  })
+  -- LOG
+  ao.send({
+    Target = ao.id,
+    Data = "Checking if busy..." .. flags
+  })
+  if IsDepositing or IsWithdrawing or IsLiquidating then
+    response.errorMessage(
+      "error - process is busy with another action on funds" .. flags
+    )()
+  end
+end
+
 return mod
