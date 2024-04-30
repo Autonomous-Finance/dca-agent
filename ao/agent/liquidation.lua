@@ -1,8 +1,19 @@
 local mod = {}
 
+local json = require "json"
+
 mod.start = function(msg)
   IsLiquidating = true
-  ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+  ao.send({
+    Target = ao.id,
+    Data = "Liquidating. Swapping back..." .. json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    })
+  })
+
   --[[
     we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
     instead we remember quote token balance before the swap back

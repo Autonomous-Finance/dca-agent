@@ -1,3 +1,5 @@
+local json = require "json"
+
 local permissions = require "permissions.permissions"
 local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
@@ -305,5 +307,18 @@ Handlers.add(
     permissions.onlyOwner(msg)
     IsSwapping = true
     swaps.triggerSwap()
+  end
+)
+
+Handlers.add(
+  "getFlags",
+  Handlers.utils.hasMatchingTag("Action", "GetFlags"),
+  function(msg)
+    response.dataReply("GetFlags", json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    }))(msg)
   end
 )

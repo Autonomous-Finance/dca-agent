@@ -116,9 +116,20 @@ local _ENV = _ENV
 package.preload[ "agent.liquidation" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
+local json = require "json"
+
 mod.start = function(msg)
   IsLiquidating = true
-  ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+  ao.send({
+    Target = ao.id,
+    Data = "Liquidating. Swapping back..." .. json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    })
+  })
+
   --[[
     we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
     instead we remember quote token balance before the swap back
@@ -524,6 +535,8 @@ return mod
 end
 end
 
+local json = require "json"
+
 local permissions = require "permissions.permissions"
 local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
@@ -831,5 +844,18 @@ Handlers.add(
     permissions.onlyOwner(msg)
     IsSwapping = true
     swaps.triggerSwap()
+  end
+)
+
+Handlers.add(
+  "getFlags",
+  Handlers.utils.hasMatchingTag("Action", "GetFlags"),
+  function(msg)
+    response.dataReply("GetFlags", json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    }))(msg)
   end
 )`
