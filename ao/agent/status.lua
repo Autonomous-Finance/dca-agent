@@ -52,7 +52,7 @@ mod.checkNotBusy = function()
     Target = ao.id,
     Data = "Checking if busy..." .. flags
   })
-  if IsDepositing or IsWithdrawing or IsLiquidating then
+  if IsDepositing or IsWithdrawing or IsLiquidating or IsSwapping then
     response.errorMessage(
       "error - process is busy with another action on funds" .. flags
     )()
