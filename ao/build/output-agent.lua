@@ -122,12 +122,7 @@ mod.start = function(msg)
   IsLiquidating = true
   ao.send({
     Target = ao.id,
-    Data = "Liquidating. Swapping back..." .. json.encode({
-      IsSwapping = IsSwapping,
-      IsWithdrawing = IsWithdrawing,
-      IsDepositing = IsDepositing,
-      IsLiquidating = IsLiquidating
-    })
+    Data = "Liquidating. Swapping back..."
   })
 
   --[[
@@ -325,7 +320,7 @@ mod.checkNotBusy = function()
     Target = ao.id,
     Data = "Checking if busy..." .. flags
   })
-  if IsDepositing or IsWithdrawing or IsLiquidating then
+  if IsDepositing or IsWithdrawing or IsLiquidating or IsSwapping then
     response.errorMessage(
       "error - process is busy with another action on funds" .. flags
     )()
