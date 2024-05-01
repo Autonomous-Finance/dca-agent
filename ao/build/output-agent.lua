@@ -4,46 +4,46 @@ package.preload[ "agent.balances" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
 
-mod.balanceUpdateCreditQuoteToken = function(m)
-  if m.From ~= QuoteToken then return end
+mod.balanceUpdateCreditQuoteToken = function(msg)
+  if msg.From ~= QuoteToken then return end
   ao.send({ Target = QuoteToken, Action = "Balance" })
-  if m.Sender == Pool then return end -- do not register pool refunds as deposits
+  if msg.Sender == Pool then return end -- do not register pool refunds as deposits
   ao.send({
     Target = Backend,
     Action = "Deposit",
-    Sender = m.Tags.Sender,
-    Quantity = m.Quantity
+    Sender = msg.Tags.Sender,
+    Quantity = msg.Quantity
   })
 end
 
-mod.balanceUpdateDebitQuoteToken = function(m)
-  if m.From ~= QuoteToken then return end
+mod.balanceUpdateDebitQuoteToken = function(msg)
+  if msg.From ~= QuoteToken then return end
   ao.send({ Target = QuoteToken, Action = "Balance" })
 end
 
 
-mod.latestBalanceUpdateQuoteToken = function(m)
-  LatestQuoteTokenBal = m.Balance
-  ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = m.Balance })
+mod.latestBalanceUpdateQuoteToken = function(msg)
+  LatestQuoteTokenBal = msg.Balance
+  ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
 end
 
 
-mod.balanceUpdateCreditBaseToken = function(m)
-  if m.From ~= BaseToken then return end
+mod.balanceUpdateCreditBaseToken = function(msg)
+  if msg.From ~= BaseToken then return end
   ao.send({ Target = BaseToken, Action = "Balance" })
 end
 
 
 
-mod.balanceUpdateDebitBaseToken = function(m)
-  if m.From ~= BaseToken then return end
+mod.balanceUpdateDebitBaseToken = function(msg)
+  if msg.From ~= BaseToken then return end
   ao.send({ Target = BaseToken, Action = "Balance" })
 end
 
 
-mod.latestBalanceUpdateBaseToken = function(m)
-  LatestBaseTokenBal = m.Balance
-  ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = m.Balance })
+mod.latestBalanceUpdateBaseToken = function(msg)
+  LatestBaseTokenBal = msg.Balance
+  ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
 end
 
 
@@ -116,9 +116,20 @@ local _ENV = _ENV
 package.preload[ "agent.liquidation" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
+local json = require "json"
+
 mod.start = function(msg)
   IsLiquidating = true
-  ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+  ao.send({
+    Target = ao.id,
+    Data = "Liquidating. Swapping back..." .. json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    })
+  })
+
   --[[
     we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
     instead we remember quote token balance before the swap back
@@ -161,9 +172,9 @@ mod.concludeSwapBack = function(msg)
   SwapBackExpectedOutput = nil
 end
 
-mod.concludeLiquidation = function(m)
-  if m.From ~= QuoteToken then return end
-  if m.Sender ~= Pool then return end
+mod.finalizeLiquidation = function(msg)
+  if msg.From ~= QuoteToken then return end
+  if msg.Sender ~= Pool then return end
   --[[
     Sender == Pool indicates this credit-notice is from either
       A. a pool payout after swap back (last step of the liquidation process)
@@ -171,12 +182,11 @@ mod.concludeLiquidation = function(m)
       B. refund after failed dca swap
   --]]
   if LiquidationAmountQuote == nil then
-    -- this is B. a refund
-    ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(m) })
+    -- this is B. a refund, handled elsewhere
     return
   else
     -- this is A. a payout after swap back
-    LiquidationAmountBaseToQuote = m.Tags["Quantity"]
+    LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
 
     ao.send({
       Target = QuoteToken,
@@ -186,6 +196,7 @@ mod.concludeLiquidation = function(m)
     })
     LiquidationAmountQuote = nil
     LiquidationAmountBaseToQuote = nil
+    IsLiquidating = false
   end
 end
 
@@ -302,6 +313,25 @@ mod.getStatus = function(msg)
   response.dataReply("GetStatus", config)(msg)
 end
 
+mod.checkNotBusy = function()
+  local flags = json.encode({
+    IsSwapping = IsSwapping,
+    IsDepositing = IsDepositing,
+    IsWithdrawing = IsWithdrawing,
+    IsLiquidating = IsLiquidating
+  })
+  -- LOG
+  ao.send({
+    Target = ao.id,
+    Data = "Checking if busy..." .. flags
+  })
+  if IsDepositing or IsWithdrawing or IsLiquidating then
+    response.errorMessage(
+      "error - process is busy with another action on funds" .. flags
+    )()
+  end
+end
+
 return mod
 end
 end
@@ -309,6 +339,8 @@ end
 do
 local _ENV = _ENV
 package.preload[ "agent.swaps" ] = function( ... ) local arg = _G.arg;
+local response = require "utils.response"
+
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -330,7 +362,7 @@ end
 
 -- SWAP
 
-mod.triggerSwap = function(msg)
+mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
   -- request expected swap output
@@ -366,6 +398,12 @@ mod.concludeSwap = function(msg)
     ConfirmedAt = tostring(msg.Timestamp)
   })
   SwapExpectedOutput = nil
+end
+
+mod.finalizeDCASwap = function(msg)
+  if msg.From ~= BaseToken then return end
+  if msg.Sender ~= Pool then return end
+
   IsSwapping = false
 end
 
@@ -524,6 +562,8 @@ return mod
 end
 end
 
+local json = require "json"
+
 local permissions = require "permissions.permissions"
 local lifeCycle = require "agent.life-cycle"
 local status = require "agent.status"
@@ -655,10 +695,10 @@ Handlers.add(
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateQuoteToken",
-  function(m)
-    local isMatch = m.Tags.Balance ~= nil
-        and m.From == QuoteToken
-        and m.Target == ao.id
+  function(msg)
+    local isMatch = msg.Tags.Balance ~= nil
+        and msg.From == QuoteToken
+        and msg.Target == ao.id
     return isMatch and -1 or 0
   end,
   balances.latestBalanceUpdateQuoteToken
@@ -679,10 +719,10 @@ Handlers.add(
 -- response to the balance request
 Handlers.add(
   "latestBalanceUpdateBaseToken",
-  function(m)
-    local isMatch = m.Tags.Balance ~= nil
-        and m.From == BaseToken
-        and m.Target == ao.id
+  function(msg)
+    local isMatch = msg.Tags.Balance ~= nil
+        and msg.From == BaseToken
+        and msg.Target == ao.id
     return isMatch and -1 or 0
   end,
   balances.latestBalanceUpdateBaseToken
@@ -733,8 +773,10 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
-    ao.send({ Target = ao.id, Action = "ProgressSignal", Data = "Cron triggered!" })
-    swaps.triggerSwap(msg)
+    -- LOG
+    ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
+    status.checkNotBusy()
+    swaps.triggerSwap()
   end
 )
 
@@ -742,9 +784,39 @@ Handlers.add(
 Handlers.add(
   'swapExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and IsSwapping
+    return msg.From == Pool
+        and msg.Tags.Price ~= nil
+        and IsSwapping -- would rather use msg.Tags.Token == QuoteToken but AMM does not provide it when responding to Get-Price
   end,
   swaps.swapExec
+)
+
+-- token could not transfer to pool (insufficient balance)
+Handlers.add(
+  'swapErrorByToken',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
+        and msg.From == QuoteToken
+        and IsSwapping
+  end),
+  function(msg)
+    IsSwapping = false
+  end
+)
+
+-- pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
+Handlers.add(
+  'swapErrorByPool',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Credit-Notice')(msg)
+        and msg.From == QuoteToken
+        and msg.Sender == Pool
+        and msg.Tags["X-Refunded-Transfer"] ~= nil
+  end),
+  function(msg)
+    ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(msg) })
+    IsSwapping = false
+  end
 )
 
 -- response to successful swap
@@ -754,15 +826,53 @@ Handlers.add(
   swaps.concludeSwap
 )
 
--- SWAP BACK (to liquidate)
+-- last step of the dca swap process
+Handlers.add(
+  "finalizeSwap",
+  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
+  swaps.finalizeDCASwap
+)
+
+-- SWAP BACK (in order to LIQUIDATE)
 
 -- response to the price request for SWAP BACK
 Handlers.add(
   'swapBackExecOnGetPriceResponse',
   function(msg)
-    return msg.From == Pool and msg.Tags.Price ~= nil and IsLiquidating
+    return msg.From == Pool
+        and msg.Tags.Price ~= nil
+        and
+        IsLiquidating -- would rather use msg.Tags.Token == BaseToken but AMM does not provide it when responding to Get-Price
   end,
   liquidation.swapBackExec
+)
+
+-- token could not transfer to pool (insufficient balance)
+Handlers.add(
+  'swapBackErrorByToken',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
+        and msg.From == BaseToken
+        and IsLiquidating
+  end),
+  function(msg)
+    IsLiquidating = false
+  end
+)
+
+-- pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
+Handlers.add(
+  'swapBackErrorByPool',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Credit-Notice')(msg)
+        and msg.From == BaseToken
+        and msg.Sender == Pool
+        and msg.Tags["X-Refunded-Transfer"] ~= nil
+  end),
+  function(msg)
+    ao.send({ Target = ao.id, Data = "Refund after failed swap back: " .. json.encode(msg) })
+    IsLiquidating = false
+  end
 )
 
 -- response to successful SWAP BACK
@@ -776,7 +886,20 @@ Handlers.add(
 Handlers.add(
   "withdrawAfterSwapBack",
   patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  liquidation.concludeLiquidation
+  liquidation.finalizeLiquidation
+)
+
+-- token could not transfer to agent owner (insufficient balance)
+Handlers.add(
+  'withdrawError',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
+        and (msg.From == QuoteToken or msg.From == BaseToken)
+        and IsWithdrawing
+  end),
+  function(msg)
+    IsWithdrawing = false
+  end
 )
 
 -- WITHDRAW
@@ -786,6 +909,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "WithdrawQuoteToken"),
   function(msg)
     permissions.onlyOwner(msg)
+    status.checkNotBusy()
     withdrawals.withdrawQuoteToken(msg)
   end
 )
@@ -795,6 +919,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "WithdrawBaseToken"),
   function(msg)
     permissions.onlyOwner(msg)
+    status.checkNotBusy()
     withdrawals.withdrawBaseToken(msg)
   end
 )
@@ -806,6 +931,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
     permissions.onlyOwner(msg)
+    status.checkNotBusy()
     liquidation.start(msg)
   end
 )
@@ -829,7 +955,20 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
     permissions.onlyOwner(msg)
-    IsSwapping = true
+    status.checkNotBusy()
     swaps.triggerSwap()
+  end
+)
+
+Handlers.add(
+  "getFlags",
+  Handlers.utils.hasMatchingTag("Action", "GetFlags"),
+  function(msg)
+    response.dataReply("GetFlags", json.encode({
+      IsSwapping = IsSwapping,
+      IsWithdrawing = IsWithdrawing,
+      IsDepositing = IsDepositing,
+      IsLiquidating = IsLiquidating
+    }))(msg)
   end
 )

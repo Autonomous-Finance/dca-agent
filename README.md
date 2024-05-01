@@ -3,9 +3,8 @@
 A DCA agent that swaps QuoteToken for BaseToken at regular intervals. 
 
 
-It works in conjunction with 2 Cron process proxies
-- 1 for triggering the swap
-- 1 for updating the price as per associated liquidity pool
+TODO:
+- cover edge case where withdrawal / liquidation & auto swap occur at the same time (flags not used properly)
 
 ## Features
 

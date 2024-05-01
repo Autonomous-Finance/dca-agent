@@ -1,3 +1,5 @@
+local response = require "utils.response"
+
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -19,7 +21,7 @@ end
 
 -- SWAP
 
-mod.triggerSwap = function(msg)
+mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
   -- request expected swap output
@@ -55,6 +57,12 @@ mod.concludeSwap = function(msg)
     ConfirmedAt = tostring(msg.Timestamp)
   })
   SwapExpectedOutput = nil
+end
+
+mod.finalizeDCASwap = function(msg)
+  if msg.From ~= BaseToken then return end
+  if msg.Sender ~= Pool then return end
+
   IsSwapping = false
 end
 

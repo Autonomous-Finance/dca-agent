@@ -1,8 +1,14 @@
 local mod = {}
 
+local json = require "json"
+
 mod.start = function(msg)
   IsLiquidating = true
-  ao.send({ Target = ao.id, Data = "Liquidating. Swapping back..." })
+  ao.send({
+    Target = ao.id,
+    Data = "Liquidating. Swapping back..."
+  })
+
   --[[
     we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
     instead we remember quote token balance before the swap back
@@ -45,9 +51,9 @@ mod.concludeSwapBack = function(msg)
   SwapBackExpectedOutput = nil
 end
 
-mod.concludeLiquidation = function(m)
-  if m.From ~= QuoteToken then return end
-  if m.Sender ~= Pool then return end
+mod.finalizeLiquidation = function(msg)
+  if msg.From ~= QuoteToken then return end
+  if msg.Sender ~= Pool then return end
   --[[
     Sender == Pool indicates this credit-notice is from either
       A. a pool payout after swap back (last step of the liquidation process)
@@ -55,12 +61,11 @@ mod.concludeLiquidation = function(m)
       B. refund after failed dca swap
   --]]
   if LiquidationAmountQuote == nil then
-    -- this is B. a refund
-    ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(m) })
+    -- this is B. a refund, handled elsewhere
     return
   else
     -- this is A. a payout after swap back
-    LiquidationAmountBaseToQuote = m.Tags["Quantity"]
+    LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
 
     ao.send({
       Target = QuoteToken,
@@ -70,6 +75,7 @@ mod.concludeLiquidation = function(m)
     })
     LiquidationAmountQuote = nil
     LiquidationAmountBaseToQuote = nil
+    IsLiquidating = false
   end
 end
 
