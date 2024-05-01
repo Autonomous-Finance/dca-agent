@@ -38,17 +38,15 @@ mod.latestBalanceUpdateBaseToken = function(msg)
 end
 
 mod.isBalanceUpdateQuoteToken = function(msg)
-  local isMatch = msg.Tags.Balance ~= nil
+  return msg.Tags.Balance ~= nil
       and msg.From == QuoteToken
       and msg.Account == ao.id
-  return isMatch and -1 or 0
 end
 
 mod.isBalanceUpdateBaseToken = function(msg)
-  local isMatch = msg.Tags.Balance ~= nil
+  return msg.Tags.Balance ~= nil
       and msg.From == BaseToken
       and msg.Account == ao.id
-  return isMatch and -1 or 0
 end
 
 return mod
@@ -60,7 +58,7 @@ local _ENV = _ENV
 package.preload[ "agent.deposits" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
-mod.isDepositCreditNotice = function(msg)
+mod.isDepositNotice = function(msg)
   return msg.From == QuoteToken
       and not IsLiquidating
 end
