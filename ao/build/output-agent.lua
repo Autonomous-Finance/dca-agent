@@ -254,9 +254,11 @@ mod.resetProgressFlags = function(msg)
   IsWithdrawing = false
   IsDepositing = false
   IsLiquidating = false
+  IsSwapping = false
   LastDepositNoticeId = nil
   LastWithdrawalNoticeId = nil
   LastLiquidationNoticeId = nil
+  LastSwapNoticeId = nil
 end
 
 return mod
