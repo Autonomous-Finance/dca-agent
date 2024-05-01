@@ -4,7 +4,7 @@ package.preload[ "agent.balances" ] = function( ... ) local arg = _G.arg;
 local mod = {}
 
 
-mod.balanceUpdateCreditQuoteToken = function(m)
+mod.balanceUpdateCreditQuoteToken = function(msg)
   ao.send({ Target = QuoteToken, Action = "Balance" })
   if msg.Sender == Pool then return end -- do not register pool refunds as deposits
   ao.send({
@@ -37,17 +37,17 @@ mod.latestBalanceUpdateBaseToken = function(msg)
   ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
 end
 
-mod.isBalanceUpdateQuoteToken = function(m)
-  local isMatch = m.Tags.Balance ~= nil
-      and m.From == QuoteToken
-      and m.Target == ao.id
+mod.isBalanceUpdateQuoteToken = function(msg)
+  local isMatch = msg.Tags.Balance ~= nil
+      and msg.From == QuoteToken
+      and msg.Account == ao.id
   return isMatch and -1 or 0
 end
 
-mod.isBalanceUpdateBaseToken = function(m)
-  local isMatch = m.Tags.Balance ~= nil
-      and m.From == BaseToken
-      and m.Target == ao.id
+mod.isBalanceUpdateBaseToken = function(msg)
+  local isMatch = msg.Tags.Balance ~= nil
+      and msg.From == BaseToken
+      and msg.Account == ao.id
   return isMatch and -1 or 0
 end
 
