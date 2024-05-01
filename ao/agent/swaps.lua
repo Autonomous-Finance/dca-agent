@@ -24,6 +24,8 @@ end
 mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
+  LastSwapNoticeId = nil
+  LastSwapError = nil
   -- request expected swap output
   ao.send({
     Target = Pool,
@@ -64,6 +66,7 @@ mod.finalizeDCASwap = function(msg)
   if msg.Sender ~= Pool then return end
 
   IsSwapping = false
+  LastSwapNoticeId = msg.Id
 end
 
 return mod

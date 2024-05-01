@@ -35,7 +35,7 @@ function SwapDebug() {
   return (
     <Button onClick={swap} variant="outlined"
       sx={{opacity: 0.6}}>
-      <SwapHorizIcon/> <BugReport/> {loading && <CircularProgress size={14} sx={{marginLeft: '0.5rem'}} /> }
+      <SwapHorizIcon/> Swap <BugReport/> {loading && <CircularProgress size={14} sx={{marginLeft: '0.5rem'}} /> }
     </Button>
   )
 }

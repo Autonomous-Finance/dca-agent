@@ -27,12 +27,20 @@ export type AgentStatus = {
   quoteTokenBalance: string
   baseTokenBalance: string
   slippageTolerance: string
+
   isLiquidating: boolean
   isWithdrawing: boolean
   isDepositing: boolean
+  isSwapping: boolean
+
   lastDepositNoticeId: string
   lastWithdrawalNoticeId: string
   lastLiquidationNoticeId: string
+  lastSwapNoticeId: string
+
+  lastWithdrawalError: string
+  lastLiquidationError: string
+  lastSwapError: string
 
   // added on Frontend
   statusX?: AgentStatusX

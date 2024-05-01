@@ -5,6 +5,8 @@ local json = require "json"
 
 mod.start = function(msg)
   IsLiquidating = true
+  LastLiquidationNoticeId = nil
+  LastLiquidationError = nil
   ao.send({
     Target = ao.id,
     Data = "Liquidating. Swapping back..."

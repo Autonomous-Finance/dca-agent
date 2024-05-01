@@ -43,9 +43,15 @@ IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
 IsLiquidating = IsLiquidating or false
+
 LastWithdrawalNoticeId = LastWithdrawalNoticeId or nil
 LastDepositNoticeId = LastDepositNoticeId or nil
 LastLiquidationNoticeId = LastLiquidationNoticeId or nil
+LastSwapNoticeId = LastSwapNoticeId or nil
+
+LastWithdrawalError = LastWithdrawalError or nil
+LastLiquidationError = LastLiquidationError or nil
+LastSwapError = LastSwapError or nil
 
 -- LIFE CYCLE & CONFIG
 
@@ -251,6 +257,7 @@ Handlers.add(
   end),
   function(msg)
     IsSwapping = false
+    LastSwapError = msg.Tags.Error
   end
 )
 
@@ -266,6 +273,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(msg) })
     IsSwapping = false
+    LastSwapError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. QuoteTokenTicker
   end
 )
 
@@ -307,6 +315,7 @@ Handlers.add(
   end),
   function(msg)
     IsLiquidating = false
+    LastLiquidationError = msg.Tags.Error
   end
 )
 
@@ -322,6 +331,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed swap back: " .. json.encode(msg) })
     IsLiquidating = false
+    LastLiquidationError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. BaseTokenTicker
   end
 )
 
@@ -349,6 +359,7 @@ Handlers.add(
   end),
   function(msg)
     IsWithdrawing = false
+    LastWithdrawalError = msg.Tags.Error
   end
 )
 

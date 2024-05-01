@@ -12,6 +12,7 @@ import { Close, East, MoreHoriz, } from "@mui/icons-material";
 import SwapDebug from "@/components/SwapDebug";
 import { useAgentPerformance } from "@/hooks/useAgentPerformance";
 import { displayableCurrency, truncateId } from "@/utils/data-utils";
+import ResetProgress from "@/components/ResetProgress";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
@@ -141,9 +142,12 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
             suffix={currentValue ? status.quoteTokenTicker : ''}
             soft={!currentValue}
           />
-          <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto', position: 'relative', left: '-400px'}}>
+          <Stack direction={'row'} sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto', position: 'relative', left: '-360px', top: '-32px'}}>
             <SwapDebug />
-          </Box>
+            <Box sx={{position: 'relative', left: '-50%', bottom: 'calc(-1 * 100% - 16px)'}}>
+              <ResetProgress />
+            </Box>
+          </Stack>
         </Stack>
 
         <Box px={2}>

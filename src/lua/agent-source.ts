@@ -137,6 +137,8 @@ local json = require "json"
 
 mod.start = function(msg)
   IsLiquidating = true
+  LastLiquidationNoticeId = nil
+  LastLiquidationError = nil
   ao.send({
     Target = ao.id,
     Data = "Liquidating. Swapping back..."
@@ -274,6 +276,9 @@ mod.resetProgressFlags = function(msg)
   LastWithdrawalNoticeId = nil
   LastLiquidationNoticeId = nil
   LastSwapNoticeId = nil
+  LastLiquidationError = nil
+  LastSwapError = nil
+  LastWithdrawalError = nil
 end
 
 return mod
@@ -314,13 +319,20 @@ mod.getStatus = function(msg)
     slippageTolerance = SlippageTolerance,
     pool = Pool,
     dex = Dex,
+
     isSwapping = IsSwapping,
     isDepositing = IsDepositing,
     isWithdrawing = IsWithdrawing,
     isLiquidating = IsLiquidating,
+
     lastDepositNoticeId = LastDepositNoticeId,
     lastWithdrawalNoticeId = LastWithdrawalNoticeId,
-    lastLiquidationNoticeId = LastLiquidationNoticeId
+    lastLiquidationNoticeId = LastLiquidationNoticeId,
+    lastSwapNoticeId = LastSwapNoticeId,
+
+    LastWithdrawalError = LastWithdrawalError,
+    LastLiquidationError = LastLiquidationError,
+    LastSwapError = LastSwapError
   })
   response.dataReply("GetStatus", config)(msg)
 end
@@ -377,6 +389,8 @@ end
 mod.triggerSwap = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
+  LastSwapNoticeId = nil
+  LastSwapError = nil
   -- request expected swap output
   ao.send({
     Target = Pool,
@@ -417,6 +431,7 @@ mod.finalizeDCASwap = function(msg)
   if msg.Sender ~= Pool then return end
 
   IsSwapping = false
+  LastSwapNoticeId = msg.Id
 end
 
 return mod
@@ -430,6 +445,8 @@ local mod = {}
 
 mod.withdrawQuoteToken = function(msg)
   IsWithdrawing = true
+  LastWithdrawalNoticeId = nil
+  LastWithdrawalError = nil
   ao.send({
     Target = QuoteToken,
     Action = "Transfer",
@@ -440,6 +457,8 @@ end
 
 mod.withdrawBaseToken = function(msg)
   IsWithdrawing = true
+  LastWithdrawalNoticeId = nil
+  LastWithdrawalError = nil
   ao.send({
     Target = BaseToken,
     Action = "Transfer",
@@ -625,9 +644,15 @@ IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
 IsLiquidating = IsLiquidating or false
+
 LastWithdrawalNoticeId = LastWithdrawalNoticeId or nil
 LastDepositNoticeId = LastDepositNoticeId or nil
 LastLiquidationNoticeId = LastLiquidationNoticeId or nil
+LastSwapNoticeId = LastSwapNoticeId or nil
+
+LastWithdrawalError = LastWithdrawalError or nil
+LastLiquidationError = LastLiquidationError or nil
+LastSwapError = LastSwapError or nil
 
 -- LIFE CYCLE & CONFIG
 
@@ -833,6 +858,7 @@ Handlers.add(
   end),
   function(msg)
     IsSwapping = false
+    LastSwapError = msg.Tags.Error
   end
 )
 
@@ -848,6 +874,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(msg) })
     IsSwapping = false
+    LastSwapError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. QuoteTokenTicker
   end
 )
 
@@ -889,6 +916,7 @@ Handlers.add(
   end),
   function(msg)
     IsLiquidating = false
+    LastLiquidationError = msg.Tags.Error
   end
 )
 
@@ -904,6 +932,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed swap back: " .. json.encode(msg) })
     IsLiquidating = false
+    LastLiquidationError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. BaseTokenTicker
   end
 )
 
@@ -931,6 +960,7 @@ Handlers.add(
   end),
   function(msg)
     IsWithdrawing = false
+    LastWithdrawalError = msg.Tags.Error
   end
 )
 

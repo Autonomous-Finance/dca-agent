@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from
 import React from "react"
 
 import { AgentStatusDisplay } from "./AgentStatusDisplay"
-import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, resetProgressFlags, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
+import { depositToAgent, liquidate, pauseAgent as pauseToggleAgent, retireAgent, transferOwnership, withdrawBase, withdrawQuote } from "@/utils/agent-utils"
 import TransferOwnershipDialog from "@/components/TransferOwnershipDialog"
 import Log, { LogEntry } from "@/components/Log"
 import TopUpDialog from "@/components/TopUpDialog"
@@ -33,12 +33,7 @@ export function AgentPanel() {
 
   const agent = usePolledAgentStatusContext();
 
-  const { isWithdrawing, isDepositing, isLiquidating } = agent?.status ?? {}
-
-  React.useEffect(() => {
-    if (!agent?.status?.Agent) return
-    resetProgressFlags(agent?.status?.Agent)
-  },[agent?.status?.Agent])
+  const { isWithdrawing, isDepositing, isLiquidating } = agent?.status ?? {} 
 
   React.useEffect(() => {
     if (!agent?.status?.Agent) return
@@ -57,7 +52,12 @@ export function AgentPanel() {
         setLoadingWithdrawQuote(false)
         setLoadingWithdrawBase(false)
         setExecutionMessage(``)
-        addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: status.lastWithdrawalNoticeId, isMessage: true})
+        if (status.lastWithdrawalNoticeId) {
+          addToLog({ text: 'Withdrawal successful. MessageId', hasLink: true, linkId: status.lastWithdrawalNoticeId, isMessage: true})
+        }
+        if (status.lastWithdrawalError) {
+          addToLog({ text: 'Withdrawal failed. Error:', hasLink: false, isError: true}, status.lastWithdrawalError)
+        }
       }, AGENT_STATUS_POLL_INTERVAL * 1.5)
 
     }
@@ -65,7 +65,12 @@ export function AgentPanel() {
       setTimeout(() => {
         setLoadingLiquidate(false)
         setExecutionMessage(``)
-        addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: status.lastLiquidationNoticeId, isMessage: true})
+        if (status.lastLiquidationNoticeId) {
+          addToLog({ text: 'Liquidation successful. MessageId', hasLink: true, linkId: status.lastLiquidationNoticeId, isMessage: true})
+        }
+        if (status.lastLiquidationError) {
+          addToLog({ text: 'Liquidation failed. Error:', hasLink: false, isError: true}, status.lastLiquidationError)
+        }
       }, AGENT_STATUS_POLL_INTERVAL * 1.5)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

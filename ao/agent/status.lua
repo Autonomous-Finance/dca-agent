@@ -29,13 +29,20 @@ mod.getStatus = function(msg)
     slippageTolerance = SlippageTolerance,
     pool = Pool,
     dex = Dex,
+
     isSwapping = IsSwapping,
     isDepositing = IsDepositing,
     isWithdrawing = IsWithdrawing,
     isLiquidating = IsLiquidating,
+
     lastDepositNoticeId = LastDepositNoticeId,
     lastWithdrawalNoticeId = LastWithdrawalNoticeId,
-    lastLiquidationNoticeId = LastLiquidationNoticeId
+    lastLiquidationNoticeId = LastLiquidationNoticeId,
+    lastSwapNoticeId = LastSwapNoticeId,
+
+    LastWithdrawalError = LastWithdrawalError,
+    LastLiquidationError = LastLiquidationError,
+    LastSwapError = LastSwapError
   })
   response.dataReply("GetStatus", config)(msg)
 end

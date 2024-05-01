@@ -1,583 +1,615 @@
 do
-local _ENV = _ENV
-package.preload[ "agent.balances" ] = function( ... ) local arg = _G.arg;
-local mod = {}
+  local _ENV = _ENV
+  package.preload["agent.balances"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
 
 
-mod.balanceUpdateCreditQuoteToken = function(msg)
-  ao.send({ Target = QuoteToken, Action = "Balance" })
-  if msg.Sender == Pool then return end -- do not register pool refunds as deposits
-  ao.send({
-    Target = Backend,
-    Action = "Deposit",
-    Sender = msg.Tags.Sender,
-    Quantity = msg.Quantity
-  })
-end
+    mod.balanceUpdateCreditQuoteToken = function(msg)
+      ao.send({ Target = QuoteToken, Action = "Balance" })
+      if msg.Sender == Pool then return end -- do not register pool refunds as deposits
+      ao.send({
+        Target = Backend,
+        Action = "Deposit",
+        Sender = msg.Tags.Sender,
+        Quantity = msg.Quantity
+      })
+    end
 
-mod.balanceUpdateDebitQuoteToken = function()
-  ao.send({ Target = QuoteToken, Action = "Balance" })
-end
+    mod.balanceUpdateDebitQuoteToken = function()
+      ao.send({ Target = QuoteToken, Action = "Balance" })
+    end
 
-mod.latestBalanceUpdateQuoteToken = function(msg)
-  LatestQuoteTokenBal = msg.Balance
-  ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
-end
+    mod.latestBalanceUpdateQuoteToken = function(msg)
+      LatestQuoteTokenBal = msg.Balance
+      ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
+    end
 
-mod.balanceUpdateCreditBaseToken = function()
-  ao.send({ Target = BaseToken, Action = "Balance" })
-end
+    mod.balanceUpdateCreditBaseToken = function()
+      ao.send({ Target = BaseToken, Action = "Balance" })
+    end
 
-mod.balanceUpdateDebitBaseToken = function()
-  ao.send({ Target = BaseToken, Action = "Balance" })
-end
+    mod.balanceUpdateDebitBaseToken = function()
+      ao.send({ Target = BaseToken, Action = "Balance" })
+    end
 
-mod.latestBalanceUpdateBaseToken = function(msg)
-  LatestBaseTokenBal = msg.Balance
-  ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
-end
+    mod.latestBalanceUpdateBaseToken = function(msg)
+      LatestBaseTokenBal = msg.Balance
+      ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
+    end
 
-mod.isBalanceUpdateQuoteToken = function(msg)
-  return msg.Tags.Balance ~= nil
-      and msg.From == QuoteToken
-      and msg.Account == ao.id
-end
+    mod.isBalanceUpdateQuoteToken = function(msg)
+      return msg.Tags.Balance ~= nil
+          and msg.From == QuoteToken
+          and msg.Account == ao.id
+    end
 
-mod.isBalanceUpdateBaseToken = function(msg)
-  return msg.Tags.Balance ~= nil
-      and msg.From == BaseToken
-      and msg.Account == ao.id
-end
+    mod.isBalanceUpdateBaseToken = function(msg)
+      return msg.Tags.Balance ~= nil
+          and msg.From == BaseToken
+          and msg.Account == ao.id
+    end
 
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "agent.deposits" ] = function( ... ) local arg = _G.arg;
-local mod = {}
-
-mod.isDepositNotice = function(msg)
-  return msg.From == QuoteToken
-      and not IsLiquidating
-end
-
-return mod
-end
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "agent.life-cycle" ] = function( ... ) local arg = _G.arg;
-local response = require "utils.response"
+  local _ENV = _ENV
+  package.preload["agent.deposits"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
 
-local mod = {}
+    mod.isDepositNotice = function(msg)
+      return msg.From == QuoteToken
+          and not IsLiquidating
+    end
 
-local validateInitData = function(msg)
-  assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
-  assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
-  assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
-  assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
-  assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
-  assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
-  assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
-  assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
-  assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
-  assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
-end
-
-mod.initialize = function(msg)
-  Owner = msg.Sender
-  assert(not Initialized, 'Process is already initialized')
-  Initialized = true
-
-  validateInitData(msg)
-
-  AgentName = msg.Tags.AgentName
-  BaseToken = msg.Tags.BaseToken
-  QuoteToken = msg.Tags.QuoteToken
-  BaseTokenTicker = msg.Tags.BaseTokenTicker
-  QuoteTokenTicker = msg.Tags.QuoteTokenTicker
-  Pool = msg.Tags.Pool
-  Dex = msg.Tags.Dex
-  SwapInAmount = msg.Tags.SwapInAmount
-  SwapIntervalValue = msg.Tags.SwapIntervalValue
-  SwapIntervalUnit = msg.Tags.SwapIntervalUnit
-  SlippageTolerance = msg.Tags.Slippage
-
-  response.success("Initialize")(msg)
-end
-
-mod.pauseToggle = function(msg)
-  Paused = not Paused
-  ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
-  response.success("PauseToggle")(msg)
-end
-
-mod.retire = function(msg)
-  assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
-  assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
-  Retired = true
-  ao.send({ Target = Backend, Action = "RetireAgent" })
-  response.success("Retire")(msg)
-end
-
-return mod
-end
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "agent.liquidation" ] = function( ... ) local arg = _G.arg;
-local json = require "json"
-local mod = {}
+  local _ENV = _ENV
+  package.preload["agent.life-cycle"] = function(...)
+    local arg = _G.arg;
+    local response = require "utils.response"
 
-local json = require "json"
+    local mod = {}
 
-mod.start = function(msg)
-  IsLiquidating = true
-  ao.send({
-    Target = ao.id,
-    Data = "Liquidating. Swapping back..."
-  })
+    local validateInitData = function(msg)
+      assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
+      assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
+      assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
+      assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
+      assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
+      assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
+      assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
+      assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
+      assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
+      assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
+    end
 
-  --[[
+    mod.initialize = function(msg)
+      Owner = msg.Sender
+      assert(not Initialized, 'Process is already initialized')
+      Initialized = true
+
+      validateInitData(msg)
+
+      AgentName = msg.Tags.AgentName
+      BaseToken = msg.Tags.BaseToken
+      QuoteToken = msg.Tags.QuoteToken
+      BaseTokenTicker = msg.Tags.BaseTokenTicker
+      QuoteTokenTicker = msg.Tags.QuoteTokenTicker
+      Pool = msg.Tags.Pool
+      Dex = msg.Tags.Dex
+      SwapInAmount = msg.Tags.SwapInAmount
+      SwapIntervalValue = msg.Tags.SwapIntervalValue
+      SwapIntervalUnit = msg.Tags.SwapIntervalUnit
+      SlippageTolerance = msg.Tags.Slippage
+
+      response.success("Initialize")(msg)
+    end
+
+    mod.pauseToggle = function(msg)
+      Paused = not Paused
+      ao.send({ Target = Backend, Action = "PauseToggleAgent", Paused = tostring(Paused) })
+      response.success("PauseToggle")(msg)
+    end
+
+    mod.retire = function(msg)
+      assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
+      assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
+      Retired = true
+      ao.send({ Target = Backend, Action = "RetireAgent" })
+      response.success("Retire")(msg)
+    end
+
+    return mod
+  end
+end
+
+do
+  local _ENV = _ENV
+  package.preload["agent.liquidation"] = function(...)
+    local arg = _G.arg;
+    local json = require "json"
+    local mod = {}
+
+    local json = require "json"
+
+    mod.start = function(msg)
+      IsLiquidating = true
+      LastLiquidationNoticeId = nil
+      LastLiquidationError = nil
+      ao.send({
+        Target = ao.id,
+        Data = "Liquidating. Swapping back..."
+      })
+
+      --[[
     we won't rely on latest balances when withdrawing to the owner at the end of the liquidation
     instead we remember quote token balance before the swap back
       => after swap back, we add it to the output quote amount and transfer the whole sum to the owner
     this setup is in order to avoid two separate withdrawals, which would have been the other option
       (one before swap back (HERE), one after the swap back (on quote CREDIT-NOTICE))
   --]]
-  LiquidationAmountQuote = LatestQuoteTokenBal
-  ao.send({
-    Target = Pool,
-    Action = "Get-Price",
-    Token = BaseToken,
-    Quantity = LatestBaseTokenBal
-  })
-end
+      LiquidationAmountQuote = LatestQuoteTokenBal
+      ao.send({
+        Target = Pool,
+        Action = "Get-Price",
+        Token = BaseToken,
+        Quantity = LatestBaseTokenBal
+      })
+    end
 
-mod.swapBackExec = function(msg)
-  SwapBackExpectedOutput = msg.Tags.Price
-  ao.send({
-    Target = BaseToken,
-    Action = "Transfer",
-    Quantity = LatestBaseTokenBal,
-    Recipient = Pool,
-    ["X-Action"] = "Swap",
-    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
-    ["X-Expected-Output"] = SwapBackExpectedOutput,
-  })
-end
+    mod.swapBackExec = function(msg)
+      SwapBackExpectedOutput = msg.Tags.Price
+      ao.send({
+        Target = BaseToken,
+        Action = "Transfer",
+        Quantity = LatestBaseTokenBal,
+        Recipient = Pool,
+        ["X-Action"] = "Swap",
+        ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+        ["X-Expected-Output"] = SwapBackExpectedOutput,
+      })
+    end
 
-mod.concludeSwapBack = function(msg)
-  if (msg.Tags["From-Token"] ~= BaseToken) then return end
-  ao.send({
-    Target = Backend,
-    Action = "SwapBack",
-    ExpectedOutput = SwapBackExpectedOutput,
-    InputAmount = msg.Tags["From-Quantity"],
-    ActualOutput = msg.Tags["To-Quantity"],
-    ConfirmedAt = tostring(msg.Timestamp)
-  })
-  SwapBackExpectedOutput = nil
-end
+    mod.concludeSwapBack = function(msg)
+      if (msg.Tags["From-Token"] ~= BaseToken) then return end
+      ao.send({
+        Target = Backend,
+        Action = "SwapBack",
+        ExpectedOutput = SwapBackExpectedOutput,
+        InputAmount = msg.Tags["From-Quantity"],
+        ActualOutput = msg.Tags["To-Quantity"],
+        ConfirmedAt = tostring(msg.Timestamp)
+      })
+      SwapBackExpectedOutput = nil
+    end
 
-mod.finalizeLiquidation = function(msg)
-  if msg.From ~= QuoteToken then return end
-  if msg.Sender ~= Pool then return end
-  --[[
+    mod.finalizeLiquidation = function(msg)
+      if msg.From ~= QuoteToken then return end
+      if msg.Sender ~= Pool then return end
+      --[[
     Sender == Pool indicates this credit-notice is from either
       A. a pool payout after swap back (last step of the liquidation process)
       OR
       B. refund after failed dca swap
   --]]
-  if LiquidationAmountQuote == nil then
-    -- this is B. a refund, handled elsewhere
-    return
-  else
-    -- this is A. a payout after swap back
-    LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
+      if LiquidationAmountQuote == nil then
+        -- this is B. a refund, handled elsewhere
+        return
+      else
+        -- this is A. a payout after swap back
+        LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
 
-    ao.send({
-      Target = QuoteToken,
-      Action = "Transfer",
-      Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
-      Recipient = Owner
-    })
-    LiquidationAmountQuote = nil
-    LiquidationAmountBaseToQuote = nil
-    IsLiquidating = false
+        ao.send({
+          Target = QuoteToken,
+          Action = "Transfer",
+          Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
+          Recipient = Owner
+        })
+        LiquidationAmountQuote = nil
+        LiquidationAmountBaseToQuote = nil
+        IsLiquidating = false
+      end
+    end
+
+    mod.isLiquidationDebitNotice = function(msg)
+      return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+    end
+
+    return mod
   end
 end
 
-mod.isLiquidationDebitNotice = function(msg)
-  return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
-end
-
-return mod
-end
-end
-
 do
-local _ENV = _ENV
-package.preload[ "agent.ownership" ] = function( ... ) local arg = _G.arg;
-local response = require "utils.response"
+  local _ENV = _ENV
+  package.preload["agent.ownership"] = function(...)
+    local arg = _G.arg;
+    local response = require "utils.response"
 
-local mod = {}
+    local mod = {}
 
-mod.transfer = function(msg)
-  local newOwner = msg.Tags.NewOwner
-  assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
-  Owner = newOwner
-  ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
-  response.success("TransferOwnership")(msg)
-end
+    mod.transfer = function(msg)
+      local newOwner = msg.Tags.NewOwner
+      assert(newOwner ~= nil and type(newOwner) == 'string', 'NewOwner is required!')
+      Owner = newOwner
+      ao.send({ Target = Backend, Action = "TransferAgent", NewOwner = newOwner })
+      response.success("TransferOwnership")(msg)
+    end
 
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "agent.progress" ] = function( ... ) local arg = _G.arg;
-local mod = {}
-
-mod.startDepositing = function(msg)
-  IsDepositing = true
-end
-
-mod.concludeDeposit = function(msg)
-  IsDepositing = false
-  LastDepositNoticeId = msg.Id
-end
-
-mod.concludeWithdraw = function(msg)
-  IsWithdrawing = false
-  LastWithdrawalNoticeId = msg.Id
-end
-
-mod.concludeLiquidation = function(msg)
-  IsLiquidating = false
-  LastLiquidationNoticeId = msg.Id
-end
-
--- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
--- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
-mod.resetProgressFlags = function(msg)
-  IsWithdrawing = false
-  IsDepositing = false
-  IsLiquidating = false
-  IsSwapping = false
-  LastDepositNoticeId = nil
-  LastWithdrawalNoticeId = nil
-  LastLiquidationNoticeId = nil
-  LastSwapNoticeId = nil
-end
-
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "agent.status" ] = function( ... ) local arg = _G.arg;
-local json = require "json"
-local response = require "utils.response"
-
-local mod = {}
-
-mod.getStatus = function(msg)
-  if not Initialized then
-    response.dataReply("GetStatus", json.encode({ initialized = false }))(msg)
-    return
-  end
-
-  -- is initialized => reply with complete config
-  local config = json.encode({
-    initialized = true,
-    agentName = AgentName,
-    retired = Retired,
-    paused = Paused,
-    baseToken = BaseToken,
-    quoteToken = QuoteToken,
-    baseTokenTicker = BaseTokenTicker,
-    quoteTokenTicker = QuoteTokenTicker,
-    swapInAmount = SwapInAmount,
-    swapIntervalValue = SwapIntervalValue,
-    swapIntervalUnit = SwapIntervalUnit,
-    baseTokenBalance = LatestBaseTokenBal,
-    quoteTokenBalance = LatestQuoteTokenBal,
-    swapExpectedOutput = SwapExpectedOutput,
-    swapBackExpectedOutput = SwapBackExpectedOutput,
-    slippageTolerance = SlippageTolerance,
-    pool = Pool,
-    dex = Dex,
-    isSwapping = IsSwapping,
-    isDepositing = IsDepositing,
-    isWithdrawing = IsWithdrawing,
-    isLiquidating = IsLiquidating,
-    lastDepositNoticeId = LastDepositNoticeId,
-    lastWithdrawalNoticeId = LastWithdrawalNoticeId,
-    lastLiquidationNoticeId = LastLiquidationNoticeId
-  })
-  response.dataReply("GetStatus", config)(msg)
-end
-
-mod.checkNotBusy = function()
-  local flags = json.encode({
-    IsSwapping = IsSwapping,
-    IsDepositing = IsDepositing,
-    IsWithdrawing = IsWithdrawing,
-    IsLiquidating = IsLiquidating
-  })
-  -- LOG
-  ao.send({
-    Target = ao.id,
-    Data = "Checking if busy..." .. flags
-  })
-  if IsDepositing or IsWithdrawing or IsLiquidating or IsSwapping then
-    response.errorMessage(
-      "error - process is busy with another action on funds" .. flags
-    )()
+    return mod
   end
 end
 
-return mod
-end
+do
+  local _ENV = _ENV
+  package.preload["agent.progress"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
+
+    mod.startDepositing = function(msg)
+      IsDepositing = true
+    end
+
+    mod.concludeDeposit = function(msg)
+      IsDepositing = false
+      LastDepositNoticeId = msg.Id
+    end
+
+    mod.concludeWithdraw = function(msg)
+      IsWithdrawing = false
+      LastWithdrawalNoticeId = msg.Id
+    end
+
+    mod.concludeLiquidation = function(msg)
+      IsLiquidating = false
+      LastLiquidationNoticeId = msg.Id
+    end
+
+    -- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
+    -- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
+    mod.resetProgressFlags = function(msg)
+      IsWithdrawing = false
+      IsDepositing = false
+      IsLiquidating = false
+      IsSwapping = false
+      LastDepositNoticeId = nil
+      LastWithdrawalNoticeId = nil
+      LastLiquidationNoticeId = nil
+      LastSwapNoticeId = nil
+      LastLiquidationError = nil
+      LastSwapError = nil
+      LastWithdrawalError = nil
+    end
+
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "agent.swaps" ] = function( ... ) local arg = _G.arg;
-local response = require "utils.response"
+  local _ENV = _ENV
+  package.preload["agent.status"] = function(...)
+    local arg = _G.arg;
+    local json = require "json"
+    local response = require "utils.response"
 
-SwapIntervalValue = SwapIntervalValue or nil
-SwapIntervalUnit = SwapIntervalUnit or nil
-SwapInAmount = SwapInAmount or nil
-SlippageTolerance = SlippageTolerance or nil           -- percentage value (22.33 for 22.33%)
+    local mod = {}
 
-SwapExpectedOutput = SwapExpectedOutput or nil         -- used to perform swaps, requested before any particular swap
-SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+    mod.getStatus = function(msg)
+      if not Initialized then
+        response.dataReply("GetStatus", json.encode({ initialized = false }))(msg)
+        return
+      end
 
-local mod = {}
+      -- is initialized => reply with complete config
+      local config = json.encode({
+        initialized = true,
+        agentName = AgentName,
+        retired = Retired,
+        paused = Paused,
+        baseToken = BaseToken,
+        quoteToken = QuoteToken,
+        baseTokenTicker = BaseTokenTicker,
+        quoteTokenTicker = QuoteTokenTicker,
+        swapInAmount = SwapInAmount,
+        swapIntervalValue = SwapIntervalValue,
+        swapIntervalUnit = SwapIntervalUnit,
+        baseTokenBalance = LatestBaseTokenBal,
+        quoteTokenBalance = LatestQuoteTokenBal,
+        swapExpectedOutput = SwapExpectedOutput,
+        swapBackExpectedOutput = SwapBackExpectedOutput,
+        slippageTolerance = SlippageTolerance,
+        pool = Pool,
+        dex = Dex,
 
-mod.init = function()
-  ao.send({
-    Target = Pool,
-    Action = "Get-Price",
-    Token = BaseToken,
-    Quantity = SwapInAmount
-  })
-end
+        isSwapping = IsSwapping,
+        isDepositing = IsDepositing,
+        isWithdrawing = IsWithdrawing,
+        isLiquidating = IsLiquidating,
 
--- SWAP
+        lastDepositNoticeId = LastDepositNoticeId,
+        lastWithdrawalNoticeId = LastWithdrawalNoticeId,
+        lastLiquidationNoticeId = LastLiquidationNoticeId,
+        lastSwapNoticeId = LastSwapNoticeId,
 
-mod.triggerSwap = function()
-  assert(not Paused, 'Process is paused')
-  IsSwapping = true
-  -- request expected swap output
-  ao.send({
-    Target = Pool,
-    Action = "Get-Price",
-    Token = QuoteToken,
-    Quantity = SwapInAmount
-  })
-end
+        LastWithdrawalError = LastWithdrawalError,
+        LastLiquidationError = LastLiquidationError,
+        LastSwapError = LastSwapError
+      })
+      response.dataReply("GetStatus", config)(msg)
+    end
 
-mod.swapExec = function(msg)
-  SwapExpectedOutput = msg.Tags.Price
-  ao.send({
-    Target = QuoteToken,
-    Action = "Transfer",
-    Recipient = Pool,
-    Quantity = SwapInAmount,
-    ["X-Action"] = "Swap",
-    ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
-    ["X-Expected-Output"] = SwapExpectedOutput,
-  })
-end
+    mod.checkNotBusy = function()
+      local flags = json.encode({
+        IsSwapping = IsSwapping,
+        IsDepositing = IsDepositing,
+        IsWithdrawing = IsWithdrawing,
+        IsLiquidating = IsLiquidating
+      })
+      -- LOG
+      ao.send({
+        Target = ao.id,
+        Data = "Checking if busy..." .. flags
+      })
+      if IsDepositing or IsWithdrawing or IsLiquidating or IsSwapping then
+        response.errorMessage(
+          "error - process is busy with another action on funds" .. flags
+        )()
+      end
+    end
 
-mod.concludeSwap = function(msg)
-  if (msg.Tags["From-Token"] ~= QuoteToken) then return end
-  ao.send({
-    Target = Backend,
-    Action = "Swap",
-    ExpectedOutput = SwapExpectedOutput,
-    InputAmount = msg.Tags["From-Quantity"],
-    ActualOutput = msg.Tags["To-Quantity"],
-    ConfirmedAt = tostring(msg.Timestamp)
-  })
-  SwapExpectedOutput = nil
-end
-
-mod.finalizeDCASwap = function(msg)
-  if msg.From ~= BaseToken then return end
-  if msg.Sender ~= Pool then return end
-
-  IsSwapping = false
-end
-
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "agent.withdrawals" ] = function( ... ) local arg = _G.arg;
-local mod = {}
-
-mod.withdrawQuoteToken = function(msg)
-  IsWithdrawing = true
-  ao.send({
-    Target = QuoteToken,
-    Action = "Transfer",
-    Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
-    Recipient = Owner
-  })
-end
-
-mod.withdrawBaseToken = function(msg)
-  IsWithdrawing = true
-  ao.send({
-    Target = BaseToken,
-    Action = "Transfer",
-    Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
-    Recipient = Owner
-  })
-end
-
-mod.isWithdrawalDebitNotice = function(msg)
-  local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
-  local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
-  return isQuoteWithdrawal or isBaseWithdrawal
-end
-
-return mod
-end
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "permissions.permissions" ] = function( ... ) local arg = _G.arg;
-local mod = {}
+  local _ENV = _ENV
+  package.preload["agent.swaps"] = function(...)
+    local arg = _G.arg;
+    local response = require "utils.response"
 
---[[
+    SwapIntervalValue = SwapIntervalValue or nil
+    SwapIntervalUnit = SwapIntervalUnit or nil
+    SwapInAmount = SwapInAmount or nil
+    SlippageTolerance = SlippageTolerance or nil       -- percentage value (22.33 for 22.33%)
+
+    SwapExpectedOutput = SwapExpectedOutput or nil     -- used to perform swaps, requested before any particular swap
+    SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps, requested before any particular swap
+
+    local mod = {}
+
+    mod.init = function()
+      ao.send({
+        Target = Pool,
+        Action = "Get-Price",
+        Token = BaseToken,
+        Quantity = SwapInAmount
+      })
+    end
+
+    -- SWAP
+
+    mod.triggerSwap = function()
+      assert(not Paused, 'Process is paused')
+      IsSwapping = true
+      LastSwapNoticeId = nil
+      LastSwapError = nil
+      -- request expected swap output
+      ao.send({
+        Target = Pool,
+        Action = "Get-Price",
+        Token = QuoteToken,
+        Quantity = SwapInAmount
+      })
+    end
+
+    mod.swapExec = function(msg)
+      SwapExpectedOutput = msg.Tags.Price
+      ao.send({
+        Target = QuoteToken,
+        Action = "Transfer",
+        Recipient = Pool,
+        Quantity = SwapInAmount,
+        ["X-Action"] = "Swap",
+        ["X-Slippage-Tolerance"] = SlippageTolerance or "1",
+        ["X-Expected-Output"] = SwapExpectedOutput,
+      })
+    end
+
+    mod.concludeSwap = function(msg)
+      if (msg.Tags["From-Token"] ~= QuoteToken) then return end
+      ao.send({
+        Target = Backend,
+        Action = "Swap",
+        ExpectedOutput = SwapExpectedOutput,
+        InputAmount = msg.Tags["From-Quantity"],
+        ActualOutput = msg.Tags["To-Quantity"],
+        ConfirmedAt = tostring(msg.Timestamp)
+      })
+      SwapExpectedOutput = nil
+    end
+
+    mod.finalizeDCASwap = function(msg)
+      if msg.From ~= BaseToken then return end
+      if msg.Sender ~= Pool then return end
+
+      IsSwapping = false
+      LastSwapNoticeId = msg.Id
+    end
+
+    return mod
+  end
+end
+
+do
+  local _ENV = _ENV
+  package.preload["agent.withdrawals"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
+
+    mod.withdrawQuoteToken = function(msg)
+      IsWithdrawing = true
+      LastWithdrawalNoticeId = nil
+      LastWithdrawalError = nil
+      ao.send({
+        Target = QuoteToken,
+        Action = "Transfer",
+        Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
+        Recipient = Owner
+      })
+    end
+
+    mod.withdrawBaseToken = function(msg)
+      IsWithdrawing = true
+      LastWithdrawalNoticeId = nil
+      LastWithdrawalError = nil
+      ao.send({
+        Target = BaseToken,
+        Action = "Transfer",
+        Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
+        Recipient = Owner
+      })
+    end
+
+    mod.isWithdrawalDebitNotice = function(msg)
+      local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
+      local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
+      return isQuoteWithdrawal or isBaseWithdrawal
+    end
+
+    return mod
+  end
+end
+
+do
+  local _ENV = _ENV
+  package.preload["permissions.permissions"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
+
+    --[[
   Shorthand for readability - use in a handler to ensure the message was sent by the process owner
 ]]
----@param msg Message
-mod.onlyOwner = function(msg)
-  assert(msg.From == Owner, "Only the owner is allowed")
-end
+    ---@param msg Message
+    mod.onlyOwner = function(msg)
+      assert(msg.From == Owner, "Only the owner is allowed")
+    end
 
---[[
+    --[[
   Shorthand for readability - use in a handler to ensure the message was sent by a registered agent
 ]]
----@param msg Message
-mod.onlyAgent = function(msg)
-  assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
-end
-return mod
-end
-end
-
-do
-local _ENV = _ENV
-package.preload[ "utils.patterns" ] = function( ... ) local arg = _G.arg;
-local mod = {}
-
--- This function allows the wrapped pattern function
--- to continue the execution after the handler
----@param fn fun(msg: Message): boolean|number|string
----@return PatternFunction
-function mod.continue(fn)
-  return function(msg)
-    local patternResult = fn(msg)
-
-    if not patternResult or patternResult == 0 or patternResult == "skip" then
-      return patternResult
+    ---@param msg Message
+    mod.onlyAgent = function(msg)
+      assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
     end
-    return 1
+    return mod
   end
 end
 
-return mod
-end
+do
+  local _ENV = _ENV
+  package.preload["utils.patterns"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
+
+    -- This function allows the wrapped pattern function
+    -- to continue the execution after the handler
+    ---@param fn fun(msg: Message): boolean|number|string
+    ---@return PatternFunction
+    function mod.continue(fn)
+      return function(msg)
+        local patternResult = fn(msg)
+
+        if not patternResult or patternResult == 0 or patternResult == "skip" then
+          return patternResult
+        end
+        return 1
+      end
+    end
+
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "utils.response" ] = function( ... ) local arg = _G.arg;
-local mod = {}
+  local _ENV = _ENV
+  package.preload["utils.response"] = function(...)
+    local arg = _G.arg;
+    local mod = {}
 
---[[
+    --[[
   Using this rather than Handlers.utils.reply() in order to have
   the root-level "Data" set to the provided data (as opposed to a "Data" tag)
 ]]
----@param tag string Tag name
----@param data any Data to be sent back
-function mod.dataReply(tag, data)
-  return function(msg)
-    ao.send({
-      Target = msg.From,
-      ["Response-For"] = tag,
-      Data = data
-    })
-  end
-end
+    ---@param tag string Tag name
+    ---@param data any Data to be sent back
+    function mod.dataReply(tag, data)
+      return function(msg)
+        ao.send({
+          Target = msg.From,
+          ["Response-For"] = tag,
+          Data = data
+        })
+      end
+    end
 
---[[
+    --[[
   Variant of dataReply that is only sent out for trivial confirmations
   after updates etc.
   Only sends out if global Verbose is set to true.
 ]]
----@param tag string Tag name
-function mod.success(tag)
-  return function(msg)
-    if not Verbose then return end
-    ao.send({
-      Target = msg.From,
-      ["Response-For"] = tag,
-      Data = "Success"
-    })
-  end
-end
+    ---@param tag string Tag name
+    function mod.success(tag)
+      return function(msg)
+        if not Verbose then return end
+        ao.send({
+          Target = msg.From,
+          ["Response-For"] = tag,
+          Data = "Success"
+        })
+      end
+    end
 
-function mod.errorMessage(text)
-  return function()
-    error({
-      message = text
-    })
-  end
-end
+    function mod.errorMessage(text)
+      return function()
+        error({
+          message = text
+        })
+      end
+    end
 
-return mod
-end
+    return mod
+  end
 end
 
 do
-local _ENV = _ENV
-package.preload[ "validations.validations" ] = function( ... ) local arg = _G.arg;
-local bint = require('.bint')(256)
+  local _ENV = _ENV
+  package.preload["validations.validations"] = function(...)
+    local arg = _G.arg;
+    local bint = require('.bint')(256)
 
-local mod = {}
+    local mod = {}
 
-mod.quantity = function(msg)
-  assert(type(msg.Quantity) == 'string', 'Quantity is required!')
-  local qty = bint(msg.Quantity)
-  assert(qty > 0, 'Quantity must be positive')
-end
+    mod.quantity = function(msg)
+      assert(type(msg.Quantity) == 'string', 'Quantity is required!')
+      local qty = bint(msg.Quantity)
+      assert(qty > 0, 'Quantity must be positive')
+    end
 
 
-mod.optionalQuantity = function(msg)
-  if msg.Quantity == nil then return end
+    mod.optionalQuantity = function(msg)
+      if msg.Quantity == nil then return end
 
-  mod.quantity(msg)
-end
+      mod.quantity(msg)
+    end
 
-return mod
-end
+    return mod
+  end
 end
 
 local json = require "json"
@@ -625,9 +657,15 @@ IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
 IsLiquidating = IsLiquidating or false
+
 LastWithdrawalNoticeId = LastWithdrawalNoticeId or nil
 LastDepositNoticeId = LastDepositNoticeId or nil
 LastLiquidationNoticeId = LastLiquidationNoticeId or nil
+LastSwapNoticeId = LastSwapNoticeId or nil
+
+LastWithdrawalError = LastWithdrawalError or nil
+LastLiquidationError = LastLiquidationError or nil
+LastSwapError = LastSwapError or nil
 
 -- LIFE CYCLE & CONFIG
 
@@ -833,6 +871,7 @@ Handlers.add(
   end),
   function(msg)
     IsSwapping = false
+    LastSwapError = msg.Tags.Error
   end
 )
 
@@ -848,6 +887,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(msg) })
     IsSwapping = false
+    LastSwapError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. QuoteTokenTicker
   end
 )
 
@@ -889,6 +929,7 @@ Handlers.add(
   end),
   function(msg)
     IsLiquidating = false
+    LastLiquidationError = msg.Tags.Error
   end
 )
 
@@ -904,6 +945,7 @@ Handlers.add(
   function(msg)
     ao.send({ Target = ao.id, Data = "Refund after failed swap back: " .. json.encode(msg) })
     IsLiquidating = false
+    LastLiquidationError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. BaseTokenTicker
   end
 )
 
@@ -931,6 +973,7 @@ Handlers.add(
   end),
   function(msg)
     IsWithdrawing = false
+    LastWithdrawalError = msg.Tags.Error
   end
 )
 

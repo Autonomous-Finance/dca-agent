@@ -30,6 +30,9 @@ mod.resetProgressFlags = function(msg)
   LastWithdrawalNoticeId = nil
   LastLiquidationNoticeId = nil
   LastSwapNoticeId = nil
+  LastLiquidationError = nil
+  LastSwapError = nil
+  LastWithdrawalError = nil
 end
 
 return mod

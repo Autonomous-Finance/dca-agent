@@ -2,6 +2,8 @@ local mod = {}
 
 mod.withdrawQuoteToken = function(msg)
   IsWithdrawing = true
+  LastWithdrawalNoticeId = nil
+  LastWithdrawalError = nil
   ao.send({
     Target = QuoteToken,
     Action = "Transfer",
@@ -12,6 +14,8 @@ end
 
 mod.withdrawBaseToken = function(msg)
   IsWithdrawing = true
+  LastWithdrawalNoticeId = nil
+  LastWithdrawalError = nil
   ao.send({
     Target = BaseToken,
     Action = "Transfer",
