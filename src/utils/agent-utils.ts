@@ -138,7 +138,7 @@ export const getCurrentSwapOutput = async (pool: string, quoteToken: string, swa
     console.log("Get Current Swap Price Result: ", res)
 
     if (res.Error) {
-      console.error('Error on swap price query', res)
+      console.error('Error on swap price query', JSON.stringify(res.Error))
     }
 
     return res.Messages[0].Tags.find((tag: any) => tag.name === 'Price')?.value
@@ -169,7 +169,7 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
     console.log("Get Current Swap Back Price Result: ", res)
 
     if (res.Error) {
-      console.error('Error on swap back price query', res)
+      console.error('Error on swap back price query', JSON.stringify(res.Error))
     }
 
     return res.Messages[0].Tags.find((tag: any) => tag.name === 'Price')?.value
@@ -191,7 +191,7 @@ export const getLatestAgent = async () => {
     })
 
     if (res.Error) {
-      console.error('Error on dry-run for latest agent query', res)
+      console.error('Error on dry-run for latest agent query', JSON.stringify(res.Error))
       return {
         type: "Failure",
         result: null
@@ -275,7 +275,7 @@ export const getOneRegisteredAgent = async (agentId: string) => {
     })
 
     if (res.Error) {
-      console.error('Error on dry-run for one agent query', res)
+      console.error('Error on dry-run for one agent query', JSON.stringify(res.Error))
       return {
         type: "Failure",
         result: null
@@ -307,7 +307,7 @@ export const getAllAgents = async () => {
     })
     
     if (res.Error) {
-      console.error('Error on dry-run for latest agent query', res)
+      console.error('Error on dry-run for latest agent query', JSON.stringify(res.Error))
       return {
         type: "Failure",
         result: null
@@ -379,7 +379,7 @@ export const depositToAgent = async (agent: string, tokenProcess: string, amount
     if (prepRes.Error) {
       return {
         type: "Failure",
-        result: prepRes.Error
+        result: JSON.stringify(prepRes.Error)
       }
     }
     
@@ -404,7 +404,7 @@ export const depositToAgent = async (agent: string, tokenProcess: string, amount
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     } else if (res.Messages.length) {
       const errorMessage = res.Messages.find(
@@ -466,7 +466,7 @@ export const withdrawAsset = async (agent: string, amount: string, tokenType: 'q
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     } else if (res.Messages.length) {
       // // message from agent to token process
@@ -542,7 +542,7 @@ export const liquidate = async (agent: string): Promise<Receipt<string>> => {
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     }
 
@@ -583,7 +583,7 @@ export const transferOwnership = async (agent: string, newOwnerId: string): Prom
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     }
 
@@ -623,7 +623,7 @@ export const pauseAgent = async (agent: string): Promise<Receipt<string>> => {
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     }
 
@@ -663,7 +663,7 @@ export const retireAgent = async (agent: string): Promise<Receipt<string>> => {
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     }
 
@@ -704,7 +704,7 @@ export const wipeBackend = async () => {
     if (res.Error) {
       return {
         type: "Failure",
-        result: res.Error
+        result: JSON.stringify(res.Error)
       }
     }
   } catch (e) {

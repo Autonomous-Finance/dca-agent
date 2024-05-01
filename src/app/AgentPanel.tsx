@@ -97,6 +97,7 @@ export function AgentPanel() {
       const msgId = depositResult.result
       addToLog({ text: 'Deposit initiated. MessageID', hasLink: true, linkId: msgId, isMessage: true})
     } else {
+      setLoadingTopUp(false)
       addToLog({text: `Failed to deposit ${AO_CRED_SYMBOL}. Please try again.`, hasLink: false, isError: true}, depositResult.result)
     }
   }
@@ -110,6 +111,7 @@ export function AgentPanel() {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal initiated. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
+      setLoadingWithdrawQuote(false)
       addToLog({ text: `Failed to withdraw ${AO_CRED_SYMBOL}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
   }
@@ -124,6 +126,7 @@ export function AgentPanel() {
       const msgId = withdrawResult.result
       addToLog({ text: 'Withdrawal successful. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
+      setLoadingWithdrawBase(false)
       addToLog({ text: `Failed to withdraw ${status.baseTokenTicker}. Please try again.`, isError: true, hasLink: false}, withdrawResult.result)
     }
   }
@@ -138,7 +141,8 @@ export function AgentPanel() {
       const msgId = liquidationResult.result
       addToLog({ text: 'Liquidation initiated. Please wait a few seconds for completion. MessageID', linkId: msgId, isMessage: true, hasLink: true})
     } else {
-      addToLog({ text: `Failed to liquidate. Please try again.`, isError: true, hasLink: false}, liquidationResult.result)
+    setLoadingLiquidate(false)
+    addToLog({ text: `Failed to liquidate. Please try again.`, isError: true, hasLink: false}, liquidationResult.result)
     }
   }
 
