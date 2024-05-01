@@ -6,12 +6,7 @@ mod.start = function(msg)
   IsLiquidating = true
   ao.send({
     Target = ao.id,
-    Data = "Liquidating. Swapping back..." .. json.encode({
-      IsSwapping = IsSwapping,
-      IsWithdrawing = IsWithdrawing,
-      IsDepositing = IsDepositing,
-      IsLiquidating = IsLiquidating
-    })
+    Data = "Liquidating. Swapping back..."
   })
 
   --[[
