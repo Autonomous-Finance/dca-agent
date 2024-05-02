@@ -338,9 +338,6 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                             DEXI <Stack py={'1px'} px={'2px'} bgcolor={'#000'} justifyContent={'center'} alignItems={'center'}><Image alt="icon" width={26} height={26} src={'/dexi.svg'} /></Stack>
                         </Link>
                       </Typography>
-                      {/* <Typography variant="body1" color="text.secondary" display={'flex'} alignItems={'center'} gap={1}>
-                        powered by <Link href='https://dexscreener.arweave.dev/' display={'flex'} alignItems={'center'}><img alt="icon" height={'30px'} src={'/dexi.png'} /></Link>
-                      </Typography> */}
                     </Stack>
                     <FormControl fullWidth>
                       <InputLabel id="token-pair-label">Token Pair (Base / Quote)</InputLabel>

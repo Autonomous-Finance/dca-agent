@@ -4,7 +4,7 @@ import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import Image from 'next/image'
 import React from 'react'
 
-function LoadingEmptyState({texts}: {texts?: string[]}) {
+function LoadingEmptyState({texts, post}: {texts?: string[], post?: React.ReactNode}) {
   return (
     <Box position={'relative'} height={400} display={'flex'} gap={4}
       alignItems={'center'} justifyContent={'center'} flexDirection={'column'}
@@ -15,10 +15,11 @@ function LoadingEmptyState({texts}: {texts?: string[]}) {
         >
         <Image alt="icon" width={600} height={600} src={'/ao.svg'} />
       </Box>
-      <Stack gap={1}>
+      <Stack gap={2} alignItems={'center'}>
         {texts?.map((text) => (
           <Typography key={text} textAlign={'center'} variant={'h5'}>{text}</Typography>
         ))}       
+        {post}
       </Stack>
       <CircularProgress size={64} />
     </Box>
