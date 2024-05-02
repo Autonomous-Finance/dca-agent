@@ -1,5 +1,3 @@
-local response = require "utils.response"
-
 SwapIntervalValue = SwapIntervalValue or nil
 SwapIntervalUnit = SwapIntervalUnit or nil
 SwapInAmount = SwapInAmount or nil
@@ -10,7 +8,7 @@ SwapBackExpectedOutput = SwapBackExpectedOutput or nil -- used to perform swaps,
 
 local mod = {}
 
-mod.init = function()
+mod.initWithPrice = function()
   ao.send({
     Target = Pool,
     Action = "Get-Price",
@@ -19,9 +17,33 @@ mod.init = function()
   })
 end
 
--- SWAP
+-- MATCH
 
-mod.triggerSwap = function()
+mod.isSwapPriceResponse = function(msg)
+  return msg.From == Pool
+      and msg.Tags.Price ~= nil
+      and IsSwapping -- would rather use msg.Tags.Token == QuoteToken but AMM does not provide it when responding to Get-Price
+end
+
+mod.isDCASwapSuccessCreditNotice = function(msg)
+  return msg.From == BaseToken and msg.Sender == Pool
+end
+
+mod.isSwapErrorByToken = function(msg)
+  return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
+      and msg.From == QuoteToken
+      and IsSwapping
+end
+
+mod.isSwapErrorByRefundCreditNotice = function(msg)
+  return msg.From == QuoteToken
+      and msg.Sender == Pool
+      and msg.Tags["X-Refunded-Transfer"] ~= nil
+end
+
+-- EXECUTE
+
+mod.begin = function()
   assert(not Paused, 'Process is paused')
   IsSwapping = true
   LastSwapNoticeId = nil
@@ -34,6 +56,7 @@ mod.triggerSwap = function()
     Quantity = SwapInAmount
   })
 end
+
 
 mod.swapExec = function(msg)
   SwapExpectedOutput = msg.Tags.Price
@@ -48,7 +71,7 @@ mod.swapExec = function(msg)
   })
 end
 
-mod.concludeSwap = function(msg)
+mod.persistSwap = function(msg)
   if (msg.Tags["From-Token"] ~= QuoteToken) then return end
   ao.send({
     Target = Backend,
@@ -59,14 +82,6 @@ mod.concludeSwap = function(msg)
     ConfirmedAt = tostring(msg.Timestamp)
   })
   SwapExpectedOutput = nil
-end
-
-mod.finalizeDCASwap = function(msg)
-  if msg.From ~= BaseToken then return end
-  if msg.Sender ~= Pool then return end
-
-  IsSwapping = false
-  LastSwapNoticeId = msg.Id
 end
 
 return mod

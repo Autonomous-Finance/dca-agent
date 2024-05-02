@@ -1,12 +1,48 @@
-local json = require "json"
 local mod = {}
 
-local json = require "json"
 
-mod.start = function(msg)
-  IsLiquidating = true
-  LastLiquidationNoticeId = nil
-  LastLiquidationError = nil
+-- MATCH
+
+mod.isSwapBackPriceResponse = function(msg)
+  return msg.From == Pool
+      and msg.Tags.Price ~= nil
+      and
+      IsLiquidating -- would rather use msg.Tags.Token == BaseToken but AMM does not provide it when responding to Get-Price
+end
+
+mod.isSwapBackSuccessCreditNotice = function(msg)
+  return msg.From == QuoteToken
+      and msg.Sender == Pool
+      and LiquidationAmountQuote ~= nil
+  --[[
+        Pool sends us QuoteToken => this credit-notice is from
+          A. a pool payout after swap back (within a liquidation)
+          OR
+          B. refund after failed dca swap
+
+          The presence of LiquidationAmountQuote indicates A.
+      --]]
+end
+
+mod.isLiquidationDebitNotice = function(msg)
+  return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+end
+
+mod.isSwapBackErrorByToken = function(msg)
+  return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
+      and msg.From == BaseToken
+      and IsLiquidating
+end
+
+mod.isSwapBackErrorByRefundCreditNotice = function(msg)
+  return msg.From == BaseToken
+      and msg.Sender == Pool
+      and msg.Tags["X-Refunded-Transfer"] ~= nil
+end
+
+-- EXECUTE
+
+mod.begin = function(msg)
   ao.send({
     Target = ao.id,
     Data = "Liquidating. Swapping back..."
@@ -41,7 +77,7 @@ mod.swapBackExec = function(msg)
   })
 end
 
-mod.concludeSwapBack = function(msg)
+mod.persistSwapBack = function(msg)
   if (msg.Tags["From-Token"] ~= BaseToken) then return end
   ao.send({
     Target = Backend,
@@ -54,36 +90,15 @@ mod.concludeSwapBack = function(msg)
   SwapBackExpectedOutput = nil
 end
 
-mod.finalizeLiquidation = function(msg)
-  if msg.From ~= QuoteToken then return end
-  if msg.Sender ~= Pool then return end
-  --[[
-    Sender == Pool indicates this credit-notice is from either
-      A. a pool payout after swap back (last step of the liquidation process)
-      OR
-      B. refund after failed dca swap
-  --]]
-  if LiquidationAmountQuote == nil then
-    -- this is B. a refund, handled elsewhere
-    return
-  else
-    -- this is A. a payout after swap back
-    LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
+mod.transferQuoteToOwner = function(msg)
+  LiquidationAmountBaseToQuote = msg.Tags["Quantity"]
 
-    ao.send({
-      Target = QuoteToken,
-      Action = "Transfer",
-      Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
-      Recipient = Owner
-    })
-    LiquidationAmountQuote = nil
-    LiquidationAmountBaseToQuote = nil
-    IsLiquidating = false
-  end
-end
-
-mod.isLiquidationDebitNotice = function(msg)
-  return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
+  ao.send({
+    Target = QuoteToken,
+    Action = "Transfer",
+    Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
+    Recipient = Owner
+  })
 end
 
 return mod

@@ -179,6 +179,18 @@ Handlers.add(
 
 -- PROGRESS FLAGS
 
+-- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
+-- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
+Handlers.add(
+  'resetProgressFlags',
+  Handlers.utils.hasMatchingTag('Action', 'ResetProgressFlags'),
+  progress.resetProgressFlags
+)
+
+-- --------------------------------------
+
+-- DEPOSITS
+
 Handlers.add(
   "startDepositing",
   Handlers.utils.hasMatchingTag("Action", "StartDepositing"),
@@ -194,36 +206,11 @@ Handlers.add(
   progress.concludeDeposit
 )
 
-Handlers.add(
-  "concludeWithdraw",
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
-        and withdrawals.isWithdrawalDebitNotice(msg)
-  end),
-  progress.concludeWithdraw
-)
-
-Handlers.add(
-  "concludeLiquidation",
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
-        and liquidation.isLiquidationDebitNotice(msg)
-  end),
-  progress.concludeLiquidation
-)
-
--- Optionally on initial load of the Agent Display, to ensure we don't have residual loading states
--- from unssuccessful processes (e.g. a failed liquidation could still be concluded with withdrawals)
-Handlers.add(
-  'resetProgressFlags',
-  Handlers.utils.hasMatchingTag('Action', 'ResetProgressFlags'),
-  progress.resetProgressFlags
-)
-
 -- --------------------------------------
 
 -- SWAP (DCA)
 
+-- Swap (DCA): begin
 Handlers.add(
   "triggerSwap",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
@@ -232,135 +219,49 @@ Handlers.add(
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
     status.checkNotBusy()
-    swaps.triggerSwap()
+    swaps.begin()
   end
 )
 
--- response to the price request
+-- Swap (DCA): execute on response to the price request
 Handlers.add(
   'swapExecOnGetPriceResponse',
-  function(msg)
-    return msg.From == Pool
-        and msg.Tags.Price ~= nil
-        and IsSwapping -- would rather use msg.Tags.Token == QuoteToken but AMM does not provide it when responding to Get-Price
-  end,
+  swaps.isSwapPriceResponse,
   swaps.swapExec
 )
 
--- token could not transfer to pool (insufficient balance)
+-- Swap (DCA): confirmation of to successful swap
 Handlers.add(
-  'swapErrorByToken',
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
-        and msg.From == QuoteToken
-        and IsSwapping
-  end),
-  function(msg)
-    IsSwapping = false
-    LastSwapError = msg.Tags.Error
-  end
+  'orderConfirmation',
+  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
+  swaps.persistSwap
 )
 
--- pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
+-- Swap (DCA): last step of the dca swap process
+Handlers.add(
+  "finalizeSwap",
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")
+        and swaps.isDCASwapSuccessCreditNotice(msg)
+  end),
+  progress.concludeDCASwapOnSuccess
+)
+
+-- Swap (DCA): token could not transfer to pool (insufficient balance)
+Handlers.add(
+  'swapErrorByToken',
+  swaps.isSwapErrorByToken,
+  progress.concludeDCASwapOnErrorByToken
+)
+
+-- Swap (DCA): pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
 Handlers.add(
   'swapErrorByPool',
   patterns.continue(function(msg)
     return Handlers.utils.hasMatchingTag('Action', 'Credit-Notice')(msg)
-        and msg.From == QuoteToken
-        and msg.Sender == Pool
-        and msg.Tags["X-Refunded-Transfer"] ~= nil
+        and swaps.isSwapErrorByRefundCreditNotice(msg)
   end),
-  function(msg)
-    ao.send({ Target = ao.id, Data = "Refund after failed DCA swap : " .. json.encode(msg) })
-    IsSwapping = false
-    LastSwapError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. QuoteTokenTicker
-  end
-)
-
--- response to successful swap
-Handlers.add(
-  'orderConfirmation',
-  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
-  swaps.concludeSwap
-)
-
--- last step of the dca swap process
-Handlers.add(
-  "finalizeSwap",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  swaps.finalizeDCASwap
-)
-
--- SWAP BACK (in order to LIQUIDATE)
-
--- response to the price request for SWAP BACK
-Handlers.add(
-  'swapBackExecOnGetPriceResponse',
-  function(msg)
-    return msg.From == Pool
-        and msg.Tags.Price ~= nil
-        and
-        IsLiquidating -- would rather use msg.Tags.Token == BaseToken but AMM does not provide it when responding to Get-Price
-  end,
-  liquidation.swapBackExec
-)
-
--- token could not transfer to pool (insufficient balance)
-Handlers.add(
-  'swapBackErrorByToken',
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
-        and msg.From == BaseToken
-        and IsLiquidating
-  end),
-  function(msg)
-    IsLiquidating = false
-    LastLiquidationError = msg.Tags.Error
-  end
-)
-
--- pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
-Handlers.add(
-  'swapBackErrorByPool',
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag('Action', 'Credit-Notice')(msg)
-        and msg.From == BaseToken
-        and msg.Sender == Pool
-        and msg.Tags["X-Refunded-Transfer"] ~= nil
-  end),
-  function(msg)
-    ao.send({ Target = ao.id, Data = "Refund after failed swap back: " .. json.encode(msg) })
-    IsLiquidating = false
-    LastLiquidationError = "Refunded " .. msg.Tags.Quantity .. ' of ' .. BaseTokenTicker
-  end
-)
-
--- response to successful SWAP BACK
-Handlers.add(
-  'orderConfirmationSwapBack',
-  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
-  liquidation.concludeSwapBack
-)
-
--- last step of the liquidation process
-Handlers.add(
-  "withdrawAfterSwapBack",
-  patterns.continue(Handlers.utils.hasMatchingTag("Action", "Credit-Notice")),
-  liquidation.finalizeLiquidation
-)
-
--- token could not transfer to agent owner (insufficient balance)
-Handlers.add(
-  'withdrawError',
-  patterns.continue(function(msg)
-    return Handlers.utils.hasMatchingTag('Action', 'Transfer-Error')(msg)
-        and (msg.From == QuoteToken or msg.From == BaseToken)
-        and IsWithdrawing
-  end),
-  function(msg)
-    IsWithdrawing = false
-    LastWithdrawalError = msg.Tags.Error
-  end
+  progress.concludeDCASwapOnErrorByRefundCreditNotice
 )
 
 -- WITHDRAW
@@ -371,6 +272,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
+    progress.initWithdrawal(msg)
     withdrawals.withdrawQuoteToken(msg)
   end
 )
@@ -381,20 +283,90 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
+    progress.initWithdrawal(msg)
     withdrawals.withdrawBaseToken(msg)
   end
 )
 
+Handlers.add(
+  "concludeWithdraw",
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and withdrawals.isWithdrawalDebitNotice(msg)
+  end),
+  progress.concludeWithdrawalOnSucces
+)
+
+-- token could not transfer to agent owner (insufficient balance)
+Handlers.add(
+  'withdrawError',
+  withdrawals.isWithdrawError,
+  progress.concludeWithdrawalOnError
+)
+
 -- LIQUIDATION
 
+-- Liquidation: start
 Handlers.add(
   "liquidate",
   Handlers.utils.hasMatchingTag("Action", "Liquidate"),
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    liquidation.start(msg)
+    progress.initLiquidation(msg)
+    liquidation.begin(msg)
   end
+)
+
+-- Liquidation: response to the price request for SWAP BACK
+Handlers.add(
+  'swapBackExecOnGetPriceResponse',
+  liquidation.isSwapBackPriceResponse,
+  liquidation.swapBackExec
+)
+
+-- Liquidation: response to successful SWAP BACK
+Handlers.add(
+  'orderConfirmationSwapBack',
+  patterns.continue(Handlers.utils.hasMatchingTag('Action', 'Order-Confirmation')),
+  liquidation.persistSwapBack
+)
+
+-- Liquidation: send all quote token to owner
+Handlers.add(
+  "withdrawAfterSwapBack",
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
+        and liquidation.isSwapBackSuccessCreditNotice(msg)
+  end),
+  liquidation.transferQuoteToOwner
+)
+
+-- Liquidation: conclude
+Handlers.add(
+  "concludeLiquidation",
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag("Action", "Debit-Notice")(msg)
+        and liquidation.isLiquidationDebitNotice(msg)
+  end),
+  progress.concludeLiquidationOnSuccess
+)
+
+-- Liquidation: token could not transfer to pool (insufficient balance)
+Handlers.add(
+  'swapBackErrorByToken',
+  liquidation.isSwapBackErrorByToken,
+  progress.concludeLiquidationOnErrorByToken
+)
+
+-- Liquidation: pool could not fulfill the swap (misc errors possible - REFUND TRANSFER)
+Handlers.add(
+  'swapBackErrorByPool',
+  patterns.continue(function(msg)
+    return Handlers.utils.hasMatchingTag('Action', 'Credit-Notice')(msg)
+        and liquidation.isSwapBackErrorByRefundCreditNotice(msg)
+  end),
+  progress.concludeLiquidationOnErrorByRefundCreditNotice
 )
 
 -- MISC CONFIGURATION
@@ -417,7 +389,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    swaps.triggerSwap()
+    swaps.begin()
   end
 )
 

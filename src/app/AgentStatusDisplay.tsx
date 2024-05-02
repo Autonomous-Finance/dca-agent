@@ -1,6 +1,6 @@
 "use client"
 
-import { Box, Divider, Link, Stack, Tooltip, Typography, Zoom } from "@mui/material"
+import { Box, Button, CircularProgress, Divider, Link, Stack, Tooltip, Typography, Zoom } from "@mui/material"
 import React, { ReactNode } from "react"
 import { enhanceAgentStatus, enhanceRegisteredAgentInfo, getTotalValue } from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
@@ -13,10 +13,11 @@ import SwapDebug from "@/components/SwapDebug";
 import { useAgentPerformance } from "@/hooks/useAgentPerformance";
 import { displayableCurrency, truncateId } from "@/utils/data-utils";
 import ResetProgress from "@/components/ResetProgress";
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
-const HELP_TEXT_TOTAL_DEPOSITED = 'Total amount of quote tokens deposited to the agent.'
+const HELP_TEXT_TOTAL_DEPOSITED = 'Total amount of quote tokens deposited to the agent throughout its lifecycle.'
 const HELP_AVG_SWAP_PRICE = 'Your historical average swap price (base token for quote token).'
 const HELP_CURRENT_SWAP_PRICE = 'Current price for a swap (base token for quote token) with your configured quote token amount.'
 
@@ -142,12 +143,22 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
             suffix={currentValue ? status.quoteTokenTicker : ''}
             soft={!currentValue}
           />
-          <Stack direction={'row'} sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto', position: 'relative', left: '-360px', top: '-32px'}}>
-            <SwapDebug />
-            <Box sx={{position: 'relative', left: '-50%', bottom: 'calc(-1 * 100% - 16px)'}}>
-              <ResetProgress />
-            </Box>
-          </Stack>
+          <Box sx={{marginTop: 'auto', marginRight: 'auto', marginLeft: 'auto', position: 'relative', width: '100%'}}>
+            <Typography color='var(--mui-palette-success-main)' width={'100%'} 
+              sx={{userSelect: 'none', opacity: status?.isSwapping ? 1 : 0}}
+              display={'flex'} alignItems={'center'} justifyContent={'center'} gap={1}
+            >
+              <SwapHorizIcon/>{" "}
+              Performing DCA Swap{" "}
+              <CircularProgress size={14} sx={{color: 'var(--mui-palette-success-main)'}}/>
+            </Typography>
+            <Stack direction={'row'} sx={{top: '0', left: '0', position: 'absolute', transform: `translate(-260px)`}}>
+              <SwapDebug />
+              <Box sx={{position: 'relative', transform: `translate(-100%, -48px)`}}>
+                <ResetProgress />
+              </Box>
+            </Stack>
+          </Box>
         </Stack>
 
         <Box px={2}>

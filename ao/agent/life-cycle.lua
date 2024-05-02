@@ -3,16 +3,21 @@ local response = require "utils.response"
 local mod = {}
 
 local validateInitData = function(msg)
-  assert(type(msg.Tags.BaseToken) == 'string', 'Base Token is required!')
-  assert(type(msg.Tags.QuoteToken) == 'string', 'Quote Token is required!')
-  assert(type(msg.Tags.BaseTokenTicker) == 'string', 'Base Token Ticker is required!')
-  assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'Quote Token Ticker is required!')
-  assert(type(msg.Tags.Pool) == 'string', 'Pool is required!')
-  assert(type(msg.Tags.Dex) == 'string', 'Dex is required!')
-  assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
-  assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
-  assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
-  assert(type(msg.Tags.Slippage) == 'string', 'Slippage is required!')
+  local fields = {
+    'BaseToken',
+    'QuoteToken',
+    'BaseTokenTicker',
+    'QuoteTokenTicker',
+    'Pool',
+    'Dex',
+    'SwapInAmount',
+    'SwapIntervalValue',
+    'SwapIntervalUnit',
+    'Slippage'
+  }
+  for _, field in ipairs(fields) do
+    assert(type(msg.Tags[field]) == 'string', field .. ' is required as a string!')
+  end
 end
 
 mod.initialize = function(msg)

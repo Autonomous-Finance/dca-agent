@@ -191,9 +191,6 @@ do
 local _ENV = _ENV
 package.preload[ "backend.registration" ] = function( ... ) local arg = _G.arg;
 local response = require "utils.response"
-local assertions = require "utils.assertions"
-local Type = require "utils.type"
-
 
 local mod = {}
 
@@ -208,14 +205,17 @@ local mod = {}
 ---@param msg Message
 mod.registerAgent = function(msg)
   local agent = msg.Tags.Agent
-  assertions.Address:assert(agent)
-  -- Type:string("is required"):assert(msg.Tags.AgentName)
-  assert(type(msg.Tags.AgentName) == 'string', 'AgentName is required!')
-  assert(type(msg.Tags.SwapInAmount) == 'string', 'SwapInAmount is required!')
-  assert(type(msg.Tags.SwapIntervalValue) == 'string', 'SwapIntervalValue is required!')
-  assert(type(msg.Tags.SwapIntervalUnit) == 'string', 'SwapIntervalUnit is required!')
-  assert(type(msg.Tags.QuoteTokenTicker) == 'string', 'QuoteTokenTicker is required!')
-  assert(type(msg.Tags.BaseTokenTicker) == 'string', 'BaseTokenTicker is required!')
+  local fields = {
+    "AgentName",
+    "SwapInAmount",
+    "SwapIntervalValue",
+    "SwapIntervalUnit",
+    "QuoteTokenTicker",
+    "BaseTokenTicker"
+  }
+  for _, field in ipairs(fields) do
+    assert(type(msg.Tags[field]) == 'string', field .. ' is required as a string!')
+  end
 
   local sender = msg.From
 
