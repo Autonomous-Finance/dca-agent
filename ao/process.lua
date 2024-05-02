@@ -201,7 +201,10 @@ Handlers.add(
     return Handlers.utils.hasMatchingTag("Action", "Credit-Notice")(msg)
         and deposits.isDepositNotice(msg)
   end),
-  progress.concludeDeposit
+  function(msg)
+    progress.concludeDeposit(msg)
+    deposits.persistDeposit(msg)
+  end
 )
 
 -- --------------------------------------
