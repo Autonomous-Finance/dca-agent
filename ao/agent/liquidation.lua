@@ -42,7 +42,7 @@ end
 
 -- EXECUTE
 
-mod.begin = function(msg)
+mod.requestOutput = function(msg)
   ao.send({
     Target = ao.id,
     Data = "Liquidating. Swapping back..."

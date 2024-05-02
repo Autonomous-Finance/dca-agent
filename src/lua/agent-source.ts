@@ -179,7 +179,7 @@ end
 
 -- EXECUTE
 
-mod.begin = function(msg)
+mod.requestOutput = function(msg)
   ao.send({
     Target = ao.id,
     Data = "Liquidating. Swapping back..."
@@ -281,6 +281,12 @@ end
 
 -- SWAPS (DCA)
 
+mod.startDCASwap = function(msg)
+  IsSwapping = true
+  LastSwapNoticeId = nil
+  LastSwapError = nil
+end
+
 mod.concludeDCASwapOnSuccess = function(msg)
   IsSwapping = false
   LastSwapNoticeId = msg.Id
@@ -299,7 +305,7 @@ end
 
 -- WITHDRAWALS
 
-mod.initWithdrawal = function(msg)
+mod.startWithdrawal = function(msg)
   IsWithdrawing = true
   LastWithdrawalNoticeId = nil
   LastWithdrawalError = nil
@@ -484,11 +490,8 @@ end
 
 -- EXECUTE
 
-mod.begin = function()
+mod.requestOutput = function()
   assert(not Paused, 'Process is paused')
-  IsSwapping = true
-  LastSwapNoticeId = nil
-  LastSwapError = nil
   -- request expected swap output
   ao.send({
     Target = Pool,
@@ -709,7 +712,7 @@ LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
 Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
--- flags for helping the frontend properly display the process status
+-- flags for isolating processes
 IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
@@ -740,7 +743,7 @@ Handlers.add(
   status.getStatus
 )
 
--- msg to be sent by end user
+-- msg to be sent by end user or another process
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
@@ -890,7 +893,8 @@ Handlers.add(
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
     status.checkNotBusy()
-    swaps.begin()
+    progress.startDCASwap(msg)
+    swaps.requestOutput()
   end
 )
 
@@ -943,7 +947,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    progress.initWithdrawal(msg)
+    progress.startWithdrawal(msg)
     withdrawals.withdrawQuoteToken(msg)
   end
 )
@@ -954,7 +958,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    progress.initWithdrawal(msg)
+    progress.startWithdrawal(msg)
     withdrawals.withdrawBaseToken(msg)
   end
 )
@@ -985,7 +989,7 @@ Handlers.add(
     permissions.onlyOwner(msg)
     status.checkNotBusy()
     progress.initLiquidation(msg)
-    liquidation.begin(msg)
+    liquidation.requestOutput(msg)
   end
 )
 
@@ -1060,7 +1064,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    swaps.begin()
+    swaps.requestOutput()
   end
 )
 

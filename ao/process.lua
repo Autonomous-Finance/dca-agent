@@ -36,7 +36,7 @@ LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
 Backend = Backend or '3rWCe61sRNSUVpBIPzVcedE0uOaoff0cPN9dnewbPwc' -- hardcoded for mvp, universal for all users
 
--- flags for helping the frontend properly display the process status
+-- flags for isolating processes
 IsSwapping = IsSwapping or false
 IsWithdrawing = IsWithdrawing or false
 IsDepositing = IsDepositing or false
@@ -67,7 +67,7 @@ Handlers.add(
   status.getStatus
 )
 
--- msg to be sent by end user
+-- msg to be sent by end user or another process
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
@@ -217,7 +217,8 @@ Handlers.add(
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
     status.checkNotBusy()
-    swaps.begin()
+    progress.startDCASwap(msg)
+    swaps.requestOutput()
   end
 )
 
@@ -270,7 +271,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    progress.initWithdrawal(msg)
+    progress.startWithdrawal(msg)
     withdrawals.withdrawQuoteToken(msg)
   end
 )
@@ -281,7 +282,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    progress.initWithdrawal(msg)
+    progress.startWithdrawal(msg)
     withdrawals.withdrawBaseToken(msg)
   end
 )
@@ -312,7 +313,7 @@ Handlers.add(
     permissions.onlyOwner(msg)
     status.checkNotBusy()
     progress.initLiquidation(msg)
-    liquidation.begin(msg)
+    liquidation.requestOutput(msg)
   end
 )
 
@@ -387,7 +388,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     status.checkNotBusy()
-    swaps.begin()
+    swaps.requestOutput()
   end
 )
 

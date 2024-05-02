@@ -43,11 +43,8 @@ end
 
 -- EXECUTE
 
-mod.begin = function()
+mod.requestOutput = function()
   assert(not Paused, 'Process is paused')
-  IsSwapping = true
-  LastSwapNoticeId = nil
-  LastSwapError = nil
   -- request expected swap output
   ao.send({
     Target = Pool,

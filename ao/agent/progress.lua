@@ -15,6 +15,12 @@ end
 
 -- SWAPS (DCA)
 
+mod.startDCASwap = function(msg)
+  IsSwapping = true
+  LastSwapNoticeId = nil
+  LastSwapError = nil
+end
+
 mod.concludeDCASwapOnSuccess = function(msg)
   IsSwapping = false
   LastSwapNoticeId = msg.Id
@@ -33,7 +39,7 @@ end
 
 -- WITHDRAWALS
 
-mod.initWithdrawal = function(msg)
+mod.startWithdrawal = function(msg)
   IsWithdrawing = true
   LastWithdrawalNoticeId = nil
   LastWithdrawalError = nil
