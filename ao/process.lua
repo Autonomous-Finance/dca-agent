@@ -31,6 +31,9 @@ Dex = Dex or ""
 
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
+LatestBaseTokenBalTimestamp = LatestBaseTokenBalTimestamp or 0
+LatestQuoteTokenBalTimestamp = LatestQuoteTokenBalTimestamp or 0
+
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 

@@ -36,13 +36,21 @@ mod.balanceUpdateDebitBaseToken = function()
 end
 
 mod.latestBalanceUpdateQuoteToken = function(msg)
-  LatestQuoteTokenBal = msg.Balance
-  ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
+  -- balance responses may come in any order, so we disregard delayed ones (possibly stale values)
+  if (msg.Timestamp > LatestQuoteTokenBalTimestamp) then
+    LatestQuoteTokenBal = msg.Balance
+    LatestQuoteTokenBalTimestamp = msg.Timestamp
+    ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
+  end
 end
 
 mod.latestBalanceUpdateBaseToken = function(msg)
-  LatestBaseTokenBal = msg.Balance
-  ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
+  -- balance responses may come in any order, so we disregard delayed ones (possibly stale values)
+  if (msg.Timestamp > LatestBaseTokenBalTimestamp) then
+    LatestBaseTokenBal = msg.Balance
+    LatestBaseTokenBalTimestamp = msg.Timestamp
+    ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
+  end
 end
 
 return mod
@@ -714,6 +722,9 @@ Dex = Dex or ""
 
 LatestBaseTokenBal = LatestBaseTokenBal or "0"
 LatestQuoteTokenBal = LatestQuoteTokenBal or "0"
+LatestBaseTokenBalTimestamp = LatestBaseTokenBalTimestamp or 0
+LatestQuoteTokenBalTimestamp = LatestQuoteTokenBalTimestamp or 0
+
 LiquidationAmountQuote = LiquidationAmountQuote or nil
 LiquidationAmountBaseToQuote = LiquidationAmountBaseToQuote or nil
 
