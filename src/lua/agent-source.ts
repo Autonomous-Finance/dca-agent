@@ -671,30 +671,6 @@ return mod
 end
 end
 
-do
-local _ENV = _ENV
-package.preload[ "validations.validations" ] = function( ... ) local arg = _G.arg;
-local bint = require('.bint')(256)
-
-local mod = {}
-
-mod.quantity = function(msg)
-  assert(type(msg.Quantity) == 'string', 'Quantity is required!')
-  local qty = bint(msg.Quantity)
-  assert(qty > 0, 'Quantity must be positive')
-end
-
-
-mod.optionalQuantity = function(msg)
-  if msg.Quantity == nil then return end
-
-  mod.quantity(msg)
-end
-
-return mod
-end
-end
-
 local json = require "json"
 
 local permissions = require "permissions.permissions"
@@ -709,8 +685,6 @@ local progress = require "agent.progress"
 local ownership = require "agent.ownership"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
-
-local json = require "json"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true

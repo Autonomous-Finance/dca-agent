@@ -23,14 +23,15 @@ TODO:
 - quote token can't be configured
 
 
-# Agent Deployment
+# Agent & Agent Backend Deployment
 
 ## Prepare Lua code
 Put all lua code into a single file using amalg - builds a single amalgamation file.
 https://luarocks.org/modules/siffiejoe/amalg
 
 To build on osx:
-`/opt/homebrew/bin/amalg.lua -s process.lua -o build/output.lua ownership.ownership bot.bot validations.validations`
+`npm run build-lua-agent`
+`npm run build-lua-backend`
 
 ## In App
 *swuw* == "signed with user wallet"
