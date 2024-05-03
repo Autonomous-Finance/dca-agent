@@ -206,7 +206,7 @@ Handlers.add(
   end),
   function(msg)
     progress.concludeDeposit(msg)
-    deposits.persistDeposit(msg)
+    deposits.recordDeposit(msg)
   end
 )
 
