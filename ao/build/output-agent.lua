@@ -911,8 +911,10 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
+    local skip = LatestQuoteTokenBal < SwapInAmount
     -- LOG
-    ao.send({ Target = ao.id, Action = "Log-TriggerSwap" })
+    ao.send({ Target = ao.id, Action = "Log-TriggerSwap", Data = skip and "Skipping swap" or "Triggering swap" })
+    if skip then return end
     status.checkNotBusy()
     progress.startDCASwap(msg)
     swaps.requestOutput()
