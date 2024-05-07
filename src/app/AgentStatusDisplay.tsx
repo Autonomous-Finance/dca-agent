@@ -1,6 +1,6 @@
 "use client"
 
-import { Box, Button, CircularProgress, Divider, Link, Stack, Tooltip, Typography, Zoom } from "@mui/material"
+import { Box, CircularProgress, Divider, Link, Stack, Typography } from "@mui/material"
 import React, { ReactNode } from "react"
 import { enhanceAgentStatus, enhanceRegisteredAgentInfo, getTotalValue } from "@/utils/agent-utils";
 import { usePolledAgentStatusContext } from "@/components/PolledAgentStatusProvider";
@@ -14,6 +14,7 @@ import { useAgentPerformance } from "@/hooks/useAgentPerformance";
 import { displayableCurrency, truncateId } from "@/utils/data-utils";
 import ResetProgress from "@/components/ResetProgress";
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { useSearchParams } from "next/navigation";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
@@ -22,6 +23,9 @@ const HELP_AVG_SWAP_PRICE = 'Your historical average swap price (base token for 
 const HELP_CURRENT_SWAP_PRICE = 'Current price for a swap (base token for quote token) with your configured quote token amount.'
 
 export function AgentStatusDisplay({loading} : {loading: boolean}) {
+  const params = useSearchParams()
+  const isDevMode = params.get("dev") === "1"
+
   const agent = usePolledAgentStatusContext()
 
   const agentPerformance = useAgentPerformance({agentStatus: agent?.status || null});
@@ -152,12 +156,14 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
               Performing DCA Swap{" "}
               <CircularProgress size={14} sx={{color: 'var(--mui-palette-success-main)'}}/>
             </Typography>
-            <Stack direction={'row'} sx={{top: '0', left: '0', position: 'absolute', transform: `translate(-260px)`}}>
-              <SwapDebug />
-              <Box sx={{position: 'relative', transform: `translate(-100%, -48px)`}}>
-                <ResetProgress />
-              </Box>
-            </Stack>
+            {isDevMode && (
+              <Stack direction={'row'} sx={{top: '0', left: '0', position: 'absolute', transform: `translate(-260px)`}}>
+                <SwapDebug />
+                <Box sx={{position: 'relative', transform: `translate(-100%, -48px)`}}>
+                  <ResetProgress />
+                </Box>
+              </Stack>
+            )}
           </Box>
         </Stack>
 

@@ -154,12 +154,34 @@ Handlers.add(
   end
 )
 
--- DEV / DEBUGGING
+-- DEV / ADMIN
+
+Handlers.add(
+  "addAdmin",
+  Handlers.utils.hasMatchingTag("Action", "AddAdmin"),
+  function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.addAdmin(msg)
+    response.success("AddAdmin")(msg)
+  end
+)
+
+Handlers.add(
+  "removeAdmin",
+  Handlers.utils.hasMatchingTag("Action", "RemoveAdmin"),
+  function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.removeAdmin(msg)
+    response.success("RemoveAdmin")(msg)
+  end
+)
 
 Handlers.add(
   'wipe',
   Handlers.utils.hasMatchingTag('Action', 'Wipe'),
   function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.onlyOwner(msg)
     AgentsPerUser = {}
     AgentInfosPerUser = {}
     RegisteredAgents = {}

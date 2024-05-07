@@ -273,6 +273,44 @@ end
 mod.onlyAgent = function(msg)
   assert(RegisteredAgents[msg.From] ~= nil, "Only a registered agent is allowed")
 end
+
+-- ADMIN WHITELIST
+
+-- Whitelist of allowed accounts to admin the backend
+AdminWhitelist = AdminWhitelist or {
+  'P6i7xXWuZtuKJVJYNwEqduj0s8R_G4wZJ38TB5Knpy4',
+  'LhsI9POghJ_4WyHGRIzCoRAVFwGdnV8gGPPZyQa5OoE',
+  'yqRGaljOLb2IvKkYVa87Wdcc8m_4w6FI58Gej05gorA',
+  '4E2br9g8TpsM0YRqUuJlypZ5siradI6m1fTFi-a3mTU'
+}
+
+--[[
+  Shorthand for readability - use in a handler to ensure the message was sent by a whitelisted account
+]]
+mod.onlyAdmin = function(msg)
+  local isWhitelisted = false
+  for _, v in ipairs(AdminWhitelist) do
+    if v == msg.From then
+      isWhitelisted = true
+      break
+    end
+  end
+  assert(isWhitelisted, "Only whitelisted accounts are allowed")
+end
+
+mod.addAdmin = function(msg)
+  table.insert(AdminWhitelist, msg.Tags.Account)
+end
+
+mod.removeAdmin = function(msg)
+  for i, v in ipairs(AdminWhitelist) do
+    if v == msg.Tags.Account then
+      table.remove(AdminWhitelist, i)
+      break
+    end
+  end
+end
+
 return mod
 end
 end
@@ -483,12 +521,34 @@ Handlers.add(
   end
 )
 
--- DEV / DEBUGGING
+-- DEV / ADMIN
+
+Handlers.add(
+  "addAdmin",
+  Handlers.utils.hasMatchingTag("Action", "AddAdmin"),
+  function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.addAdmin(msg)
+    response.success("AddAdmin")(msg)
+  end
+)
+
+Handlers.add(
+  "removeAdmin",
+  Handlers.utils.hasMatchingTag("Action", "RemoveAdmin"),
+  function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.removeAdmin(msg)
+    response.success("RemoveAdmin")(msg)
+  end
+)
 
 Handlers.add(
   'wipe',
   Handlers.utils.hasMatchingTag('Action', 'Wipe'),
   function(msg)
+    -- permissions.onlyAdmin(msg)
+    permissions.onlyOwner(msg)
     AgentsPerUser = {}
     AgentInfosPerUser = {}
     RegisteredAgents = {}
