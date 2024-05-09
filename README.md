@@ -1,126 +1,72 @@
-# Simple DCA Agent on AO
+# DCA Agent on AO
 
-A DCA agent that swaps QuoteToken for BaseToken at regular intervals. 
+This project contains a DCA agent that periodically swaps QuoteToken for BaseToken. The agent facilitates direct interaction with the associated pool without needing a routing layer.
 
+## Key Features
 
-TODO:
-- cover edge case where withdrawal / liquidation & auto swap occur at the same time (flags not used properly)
+- **Direct Pool Interaction**: Operates directly with the pool, bypassing routers.
+- **Ownership**: Initially owned by the deployment signer, ownership can be transferred.
+- **Currency Pair**: Manages a single currency pair.
+- **User Control**: Designed to be owned/controlled by a user possessing an Arweave wallet rather than by another automated agent.
 
-## Features
+## Operations
 
-- direct interaction with pool, no router
-- single owner (initially the deployment signer, but can be changed),
-- single currency pair
-- agent is supposed to be owned / controlled by user with an arweave wallet, not by another Agent (msg.From vs. Owner)
+- **Token Loading**: Supports loading with QuoteToken.
+- **Withdrawals**: Permits the withdrawal of either Base or QuoteToken.
+- **Liquidation**: Allows complete liquidation, returning assets in QuoteToken.
 
-### Operate
-- allows loading up with quote token
-- allows withdrawals of base or quote token
-- allows for total liquidation (return all in quote token)
+## Configuration
+- **Initial Setup**: BaseToken, slippage, and swapAmount are set during initialization.
+- **Fixed Quote Token**: The QuoteToken configuration is static and cannot be changed after initialization.
 
-### Configure
-- base token, slippage, swapAmount are configured only once @ initialization
-- quote token can't be configured
+## Deployment
 
+### Agent & Backend Deployment
 
-# Agent & Agent Backend Deployment
+#### Lua Preparation
+Combine all Lua scripts into a single file for deployment:
+- Use Amalg from LuaRocks: [Amalg](https://luarocks.org/modules/siffiejoe/amalg)
+- Build commands for OSX:
+  ```bash
+  npm run build-lua-agent
+  npm run build-lua-backend
 
-## Prepare Lua code
-Put all lua code into a single file using amalg - builds a single amalgamation file.
-https://luarocks.org/modules/siffiejoe/amalg
-
-To build on osx:
-`npm run build-lua-agent`
-`npm run build-lua-backend`
-
-## In App
-*swuw* == "signed with user wallet"
-
-1. user configures the agent with base token, slippage, swap amount
-2. user confirms deployment
-   1. create main agent process (*swuw*)
-   2. upon deployment confirmation, load `process.lua` 
-   3. upon eval confirmation, `"Initialize"` (*swuw*)
-   4. upon initialization confirmation, spawn cron proxy processes
-      1. spawn process A, load `trigger-price–update.lua`, `"Initialize"` (*swuw*)
-      2. spawn process B, load `trigger-swap.lua`, `"Initialize"` (*swuw*)
+#### In-App Process
+- **Configuration**: The user sets up the agent specifying base token, slippage, and swap amount.
+- **Deployment**: User confirms deployment, which triggers:
+1. the main agent process is created and signed with the user's wallet.
+2. Loading of `process.lua` upon deployment confirmation.
+3. Initialization and spawning of cron proxy processes post-initialization:
+   - Process A: Loads `trigger-price-update.lua` and initializes.
+   - Process B: Loads `trigger-swap.lua` and initializes.
 
 
-# TODO Requirements
+## TODO Requirements
 
-Clarify: what constitutes a agent status ?
-  - agent process state 
-  - cron proxy processes state
-  - peripheral info additional storage on arweave
+Clarification needed on:
+- Agent process state.
+- Cron proxy processes state.
+- Additional storage of peripheral information on Arweave.
 
+## Development Plan
 
-# Dev Plan
+### Iterative Development
 
-Create working version for each iteration
+1. **Basic Life Cycle Management**:
+ - Implement life cycle management, including initialization, access control, top-up, withdrawal, and retirement for the agent.
+ - Track and manage multiple agents, including those transferred to new owners.
 
-1. Complete life cycle management for a simple process that has initialization, access control, top up and withdrawal, as well as retirement. Agent can only be configured in terms of currency. Should list past processes in the table.
-   1. store latest agent id in localstorage
-   2. query historic data and latest agent owned by current user - use backend process (deploy once per app, no access control for registration)
-   3. check that changing the owner works
-   4. support managing multiple agents at once (including transferred ones)
+2. **Advanced DCA Agent**:
+ - Implement full automation and display the state of the active agent.
+ - Add performance metrics and enhance the user interface for better usability and aesthetics.
 
+### User Experience Enhancements
 
+- Improve the UI to be responsive and aesthetically pleasing.
+- Implement convenient user interactions like maximum balance input and balance sliders.
+- Enhance in-app messaging and logs for better user tracking.
+- Display deployment progress visually and support pagination for process management.
 
-2. Fully fledged dca agent with automation, includes state display of the active agent.
-3. Add metrics for agent performance
-4. Finesse for UX
-   1. Prettify UI
-   2. responsive to suit smaller devices
-   3. display relevant info (my current balance) / make available actions more convenient
-      1. click max available to input amount
-      2. slider for 0% - 100% of available balance to input amount etc.
-      3. Assist user in keeping track of all messages sent within the app (wallet doesn't help with that - central place for in-app logs)
-   4. add animated stepper for deployment progress display
-   5. Support pagination for my processes
-5. Reconsider agent design for blueprint-grade code quality (especially names & convenience functions, as well as req-response pattern)
+## Technical Debt
 
-6. Implement access control on backend process (frontend should deploy it per user, so that user is the owner of the backend) 
-
-
-## Tech Debt
-- perform the reverse of agents and agentInfos retrieved from backend already on AO, not on frontend
-
-
-
-
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- Address the retrieval and management of agent information, ensuring processes are handled optimally on the backend.
