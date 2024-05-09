@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build-lua-backend": "chmod +x lua-backend-source.sh && ./lua-backend-source.sh", 
+    "build-lua-backend": "chmod +x lua-backend-source.sh && ./lua-backend-source.sh",
     "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh"
   },
   "dependencies": {
@@ -20,6 +20,8 @@
     "arweave-wallet-kit": "^1.0.4",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
+    "fontsource-dm-sans": "^4.0.0",
+    "fontsource-space-mono": "^4.0.0",
     "next": "14.1.4",
     "react": "^18",
     "react-dom": "^18",

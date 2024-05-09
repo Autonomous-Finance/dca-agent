@@ -1,17 +1,11 @@
-import { DM_Sans, Space_Mono } from "next/font/google"
+// import "fontsource-dm-sans/latin-300.css" // doesn't exist
+import "fontsource-dm-sans/latin-400.css"
+import "fontsource-dm-sans/latin-500.css"
+import "fontsource-dm-sans/latin-700.css"
+import "fontsource-space-mono/latin-400.css"
+import "fontsource-space-mono/latin-700.css"
 
-const SpaceMono = Space_Mono({
-  display: "block",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-})
-
-const DmSans = DM_Sans({
-  display: "block",
-  weight: ["300", "400", "500", "700"],
-  subsets: ["latin"],
-})
-
-export const MainFontFF = DmSans.style.fontFamily
-export const MonoFontFF = SpaceMono.style.fontFamily
-export const TitleFontFF = SpaceMono.style.fontFamily
+// Font family constants
+export const MainFontFF = '"DM Sans", sans-serif'
+export const MonoFontFF = '"Space Mono", monospace'
+export const TitleFontFF = '"Space Mono", monospace'
