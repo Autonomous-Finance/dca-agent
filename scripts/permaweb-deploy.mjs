@@ -8,6 +8,7 @@ import { defaultCacheOptions, WarpFactory } from "warp-contracts"
 
 import { readdir, stat } from "fs/promises"
 import { join } from "path"
+import { readFileSync } from "fs"
 
 config()
 const DEPLOY_FOLDER = "./dist"
@@ -82,19 +83,38 @@ async function deploy() {
     indexFile: "index.html",
     keepDeleted: false, // Whether to keep now deleted items from previous uploads
   })
+  console.log("📜 LOG > deploy > txResult:", txResult);
 
   await new Promise((r) => setTimeout(r, 1000))
+
+  const m = JSON.parse(readFileSync("./dist-manifest.json", "utf-8"))
+  
+  m.paths = {
+    ...m.paths,
+    "404": m.paths["404.html"],
+    "my-agents": m.paths["my-agents.html"],
+    "single-agent": m.paths["single-agent.html"],
+    "create-agent": m.paths["create-agent.html"],
+  } 
+  
+	const tags = [
+		{ name: "Type", value: "manifest" },
+		{ name: "Content-Type", value: "application/x.arweave-manifest+json" },
+	];
+	const manifestReceipt = await irys.upload(JSON.stringify(m), { tags });
+	console.log("📜 LOG > deploy > receipt:", manifestReceipt);
+
   await warpContract.writeInteraction(
     {
       function: "setRecord",
-      subDomain: "@",
-      transactionId: txResult.id,
+      subDomain: "dca", // !IMPORTANT
+      transactionId: manifestReceipt.id,
       ttlSeconds: 3600,
     },
     { disableBundling: true },
   )
 
-  console.log(`📜 LOG > Deployed [${txResult.id}] to [${contractState.name}]`)
+  console.log(`📜 LOG > Deployed [${manifestReceipt.id}] to [${contractState.name}]`)
 }
 
 deploy().then()
