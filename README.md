@@ -40,6 +40,7 @@ Combine all Lua scripts into a single file for deployment:
    - Process A: Loads `trigger-price-update.lua` and initializes.
    - Process B: Loads `trigger-swap.lua` and initializes.
 
+## Introduction
 
 ## TODO Requirements
 
