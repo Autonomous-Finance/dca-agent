@@ -35,3 +35,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+cache/warp
+
+dist-errors.txt
+dist-id.txt
+dist-manifest.csv
+dist-manifest.json
