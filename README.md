@@ -70,3 +70,7 @@ Clarification needed on:
 ## Technical Debt
 
 - Address the retrieval and management of agent information, ensuring processes are handled optimally on the backend.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
