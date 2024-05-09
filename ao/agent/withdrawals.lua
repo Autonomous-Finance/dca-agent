@@ -30,7 +30,7 @@ mod.withdrawBaseToken = function(msg)
   ao.send({
     Target = BaseToken,
     Action = "Transfer",
-    Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
+    Quantity = msg.Tags.Quantity or LatestBaseTokenBal,
     Recipient = Owner
   })
 end
