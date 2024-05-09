@@ -1,6 +1,34 @@
-# DCA Agent on AO
+# Autonomous DCA Agent on AO
 
-This project contains a DCA agent that periodically swaps QuoteToken for BaseToken. The agent facilitates direct interaction with the associated pool without needing a routing layer.
+<img src="logo.webp" width="150" height="150" alt="DCA Agent Logo">
+
+This Autonomous Investment Agent (AIA) executes a dynamic dollar-cost-average (DCA) investment strategy across various liquidity pools within the AO ecosystem. It **automatically buys** a base token at predetermined, user-configurable intervals using a consistent amount of a quote token for each transaction.
+
+The agent has **functional autonomy** and operates independently on the AO platform, requiring no off-chain signals or human intervention.
+
+The management interface is hosted on Arweave's **Permaweb**, ensuring operation without the need for trusted intermediaries.
+
+## Try It Out Live
+
+Experience the DCA Agent live on the [permaweb](https://dca_agent.arweave.dev).
+
+For more details on capabilities and a technical deep-dive, refer to our [Research Article](https://www.autonomous.finance/research/dca-agent).
+
+## Run Locally
+
+To run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Key Features
 
@@ -27,9 +55,11 @@ This project contains a DCA agent that periodically swaps QuoteToken for BaseTok
 Combine all Lua scripts into a single file for deployment:
 - Use Amalg from LuaRocks: [Amalg](https://luarocks.org/modules/siffiejoe/amalg)
 - Build commands for OSX:
-  ```bash
+
+```bash
   npm run build-lua-agent
   npm run build-lua-backend
+```
 
 #### In-App Process
 - **Configuration**: The user sets up the agent specifying base token, slippage, and swap amount.
@@ -44,36 +74,7 @@ Combine all Lua scripts into a single file for deployment:
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-------------------
 
 
-# Autonomous DCA Agent on AO
-
-## An agent that autonomously executes a DCA strategy on the AO platform
-
-This Autonomous Investment Agent (AIA) executes dynamic dollar-cost-average (DCA) investment strategy across various liquidity pools within the AO ecosystem. It **automatically buys** a base token at predetermined, user-configurable intervals using a consistent amount of a quote token for each transaction.
-
-The agent has **functional autonomy**. Once initiated, it runs on the AO platform without the need for off-chain signals or human intervention. 
-
-The management interface of the DCA agent is facilitated through a frontend hosted on the Arweave's **Permaweb** and operates without the need for trusted intermediaries.
-
-## Try it out live on the [permaweb](https://dca_agent.arweave.dev)
-
-For details on the DCA Agent capabilities and a technical deep-dive, please refer to our [research article](TODO_LINK).
 
 
-## Run Locally
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
