@@ -40,38 +40,40 @@ Combine all Lua scripts into a single file for deployment:
    - Process A: Loads `trigger-price-update.lua` and initializes.
    - Process B: Loads `trigger-swap.lua` and initializes.
 
-## Introduction
-
-## TODO Requirements
-
-Clarification needed on:
-- Agent process state.
-- Cron proxy processes state.
-- Additional storage of peripheral information on Arweave.
-
-## Development Plan
-
-### Iterative Development
-
-1. **Basic Life Cycle Management**:
- - Implement life cycle management, including initialization, access control, top-up, withdrawal, and retirement for the agent.
- - Track and manage multiple agents, including those transferred to new owners.
-
-2. **Advanced DCA Agent**:
- - Implement full automation and display the state of the active agent.
- - Add performance metrics and enhance the user interface for better usability and aesthetics.
-
-### User Experience Enhancements
-
-- Improve the UI to be responsive and aesthetically pleasing.
-- Implement convenient user interactions like maximum balance input and balance sliders.
-- Enhance in-app messaging and logs for better user tracking.
-- Display deployment progress visually and support pagination for process management.
-
-## Technical Debt
-
-- Address the retrieval and management of agent information, ensuring processes are handled optimally on the backend.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+------------------
+
+
+# Autonomous DCA Agent on AO
+
+## An agent that autonomously executes a DCA strategy on the AO platform
+
+This Autonomous Investment Agent (AIA) executes dynamic dollar-cost-average (DCA) investment strategy across various liquidity pools within the AO ecosystem. It **automatically buys** a base token at predetermined, user-configurable intervals using a consistent amount of a quote token for each transaction.
+
+The agent has **functional autonomy**. Once initiated, it runs on the AO platform without the need for off-chain signals or human intervention. 
+
+The management interface of the DCA agent is facilitated through a frontend hosted on the Arweave's **Permaweb** and operates without the need for trusted intermediaries.
+
+## Try it out live on the [permaweb](https://dca_agent.arweave.dev)
+
+For details on the DCA Agent capabilities and a technical deep-dive, please refer to our [research article](TODO_LINK).
+
+
+## Run Locally
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
