@@ -2,13 +2,16 @@
   "name": "dca-bot-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "yarn build-lua-agent",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "build-lua-backend": "chmod +x lua-backend-source.sh && ./lua-backend-source.sh",
-    "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh"
+    "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh",
+    "deploy": "rm -rf ./dist-* && yarn build && node scripts/permaweb-deploy || cat dist-errors.txt"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -29,15 +32,19 @@
     "urql": "^4.0.7"
   },
   "devDependencies": {
+    "@irys/sdk": "^0.1.24",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "daisyui": "^4.9.0",
+    "dotenv": "^16.4.5",
     "eslint": "^8",
     "eslint-config-next": "14.1.4",
     "postcss": "^8",
+    "string-width": "4.1.0",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "warp-contracts": "^1.4.43"
   }
 }
