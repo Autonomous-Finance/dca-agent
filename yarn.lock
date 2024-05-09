@@ -4198,12 +4198,12 @@ follow-redirects@^1.15.4:
 
 fontsource-dm-sans@^4.0.0:
   version "4.0.0"
-  resolved "https://registry.yarnpkg.com/fontsource-dm-sans/-/fontsource-dm-sans-4.0.0.tgz#09b359aba137201d9599f335f18b05244e2f52c4"
+  resolved "https://registry.npmjs.org/fontsource-dm-sans/-/fontsource-dm-sans-4.0.0.tgz"
   integrity sha512-WzzLma3uSnCeFNg8Pz87FaJuuHzHdSdzADI/kIj5r1K7otHYQV/p9RUhLteykvJY2JIgOEbLCVPTyqteBNvOqg==
 
 fontsource-space-mono@^4.0.0:
   version "4.0.0"
-  resolved "https://registry.yarnpkg.com/fontsource-space-mono/-/fontsource-space-mono-4.0.0.tgz#e19c02096bd8abcdbaf4e196b84c421025dba1a7"
+  resolved "https://registry.npmjs.org/fontsource-space-mono/-/fontsource-space-mono-4.0.0.tgz"
   integrity sha512-Y1hOmBHKO9gtXUMiXbn2zVmwp+Y+Grom/KJ4t4zKjSf0M1QzswjlijpxCNhy3Jsb6S2l8bEzod9oCgXWx88pDQ==
 
 for-each@^0.3.3:
@@ -6301,7 +6301,6 @@ streamsearch@^1.1.0:
   integrity sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==
 
 "string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0:
-  name string-width-cjs
   version "4.2.3"
   resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
