@@ -10,6 +10,7 @@ import { Box, CircularProgress, InputAdornment, Stack, Typography } from '@mui/m
 import RemoveIcon from '@mui/icons-material/Remove';
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
 import { displayableCurrency, submittableCurrency } from '@/utils/data-utils';
+import { useDenomination } from '@/hooks/useDenomination';
 
 
 export default function WithdrawDialog(props: {
@@ -27,6 +28,9 @@ export default function WithdrawDialog(props: {
   const [error, setError] = React.useState("");
   
   const agent = usePolledAgentStatusContext();
+
+  const baseDenomination = useDenomination(agent?.status?.baseToken)
+  const denomination = type === 'base' ? baseDenomination : 3
 
   if (!agent) return <></>
 
@@ -50,7 +54,7 @@ export default function WithdrawDialog(props: {
 
   const handleCloseWithAction = () => {
     try {
-      const conv = submittableCurrency(amount)
+      const conv = submittableCurrency(amount, denomination)
       if (Number.parseInt(conv) < 10) {
         throw new Error()
       }
@@ -120,7 +124,7 @@ export default function WithdrawDialog(props: {
             display={'flex'} justifyContent={'space-between'}>
             Agent Balance: {" "}
             <Typography component='span'>
-              <Typography component='span' fontWeight={'bold'} color="text.primary">{displayableCurrency(tokenBalance)}</Typography>
+              <Typography component='span' fontWeight={'bold'} color="text.primary">{displayableCurrency(tokenBalance, denomination)}</Typography>
               <Typography component='span' variant="body1" color="text.secondary">{" "}{tokenSymbol}</Typography>
             </Typography>
           </Typography>

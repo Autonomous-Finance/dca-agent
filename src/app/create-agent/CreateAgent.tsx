@@ -23,7 +23,7 @@ import {
 import React from "react"
 
 
-import { IntervalUnit, INTERVAL_UNITS, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, LiquidityPool, TYPE_ICON_MAP, AO_CRED_SYMBOL, cronDuration, submittableCurrency } from '@/utils/data-utils';
+import { IntervalUnit, INTERVAL_UNITS, LIQUIDITY_POOLS, LIQUIDITY_POOL_MAP, LiquidityPool, TYPE_ICON_MAP, AO_CRED_SYMBOL, cronDuration, submittableCurrency, AFT_PROCESS_ID } from '@/utils/data-utils';
 import AgentCodeModalButton from "@/components/AgentCodeModalButton"
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -47,6 +47,7 @@ import { Pool } from "@/hooks/usePools";
 import { ArrowRightAlt } from "@mui/icons-material";
 
 export default function CreateAgent({pools}: {pools: Pool[]}) {
+  console.log(pools)
   const [loading, setLoading] = React.useState(false)
   const [deployed, setDeployed] = React.useState("")
 
@@ -54,7 +55,13 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
 
   const defaultAgentName = `MrSmith_${Math.ceil(10000 * Math.random())}`
 
-  const [poolId, setPoolId] = React.useState<string>(pools.length ? pools[0].id : '')
+  let defaultPoolIdx = 0
+  if (pools.length > 0) {
+    defaultPoolIdx = pools.findIndex((pool) => pool.baseToken !== AFT_PROCESS_ID)
+  }
+  const defaultPool = pools.length ? pools[defaultPoolIdx].id : ''
+
+  const [poolId, setPoolId] = React.useState<string>(defaultPool)
   const [agentName, setAgentName] = React.useState(defaultAgentName)
   const [swapInAmount, setSwapInAmount] = React.useState("0.1")
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Minutes")
@@ -351,7 +358,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                         onChange={(e) => setPoolId(e.target.value)}
                       >
                         {pools.map((pool: Pool) => (
-                          <MenuItem key={pool.id} value={pool.id}>
+                          <MenuItem key={pool.id} value={pool.id} disabled={pool.baseToken === AFT_PROCESS_ID}>
                             <Stack direction={'row'} justifyContent={'space-between'} width="100%">
                               <Typography fontSize={'1.125rem'}>
                                 {pool.baseTokenInfo?.ticker}/{pool.quoteTokenInfo?.ticker}
@@ -389,7 +396,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                               <Stack direction={'row'} justifyContent={'space-between'} width="100%">
                                 <Typography fontSize={'1.125rem'}>{pool}</Typography>
                                 <Typography fontFamily={'Courier New'} fontSize={'1.125rem'}>
-                                  {shortenId(LIQUIDITY_POOL_MAP[pool].processId)}
+                                  {shortenId(pool === 'Bark' ? poolId : LIQUIDITY_POOL_MAP[pool].processId)}
                                 </Typography>
                               </Stack>
                               <CheckIcon color="info" sx={{marginLeft: '0.25rem', opacity : selectedPools.includes(pool) ? 1 : 0}}/>

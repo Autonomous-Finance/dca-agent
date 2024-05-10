@@ -16,6 +16,7 @@ import LiquidateDialog from "@/components/LiquidateDialog"
 import { AO_CRED_SYMBOL, displayableCurrency } from "@/utils/data-utils"
 import PauseDialog from "@/components/PauseDialog"
 import { AGENT_STATUS_POLL_INTERVAL } from "@/hooks/usePolledAgentStatus"
+import { useDenomination } from "@/hooks/useDenomination"
 
 export function AgentPanel() {
   const [actionLog, setActionLog] = React.useState<LogEntry[]>([])
@@ -34,6 +35,8 @@ export function AgentPanel() {
   const agent = usePolledAgentStatusContext();
 
   const { isWithdrawing, isDepositing, isLiquidating } = agent?.status ?? {} 
+
+  const denomination = useDenomination(agent?.status?.baseToken)
 
   React.useEffect(() => {
     if (!agent?.status?.Agent) return
@@ -124,8 +127,8 @@ export function AgentPanel() {
   const handleWithdrawBase = async (amount: string) => {
     // TODO
     setLoadingWithdrawBase(true)
-    setExecutionMessage(`Withdrawing ${displayableCurrency(amount)} ${status.baseTokenTicker} from agent...`)
-    addToLog({ text: `Withdrawing ${displayableCurrency(amount)} ${status.baseTokenTicker} from agent...`, hasLink: false})
+    setExecutionMessage(`Withdrawing ${displayableCurrency(amount, denomination)} ${status.baseTokenTicker} from agent...`)
+    addToLog({ text: `Withdrawing ${displayableCurrency(amount, denomination)} ${status.baseTokenTicker} from agent...`, hasLink: false})
     const withdrawResult = await withdrawBase(agent.agentId, amount, status.baseToken)
     if (withdrawResult?.type === "Success") {
       const msgId = withdrawResult.result

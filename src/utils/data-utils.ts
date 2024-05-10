@@ -1,4 +1,5 @@
 export const AO_CRED_SYMBOL = "AO" as const
+export const AFT_PROCESS_ID = "SpzpFLkqPGvr5ZFZPbvyAtizthmrJ13lL4VBQIBL0dg"
 
 export const truncateId = (text: string) => {
   if (!text || text.length <= 16) return text
@@ -15,14 +16,15 @@ export function hashString(str: string) {
   return hash
 }
 
-// ! assumes 3 decimals (token denomination == 3)
-export function displayableCurrency(amount: string) {
-  return (Number.parseFloat(amount) / 1000).toFixed(3)
+export function displayableCurrency(amount: string, denomination: number = 3) {
+  const asString = (Number.parseFloat(amount) / 10 ** denomination).toString();
+  const [whole, decimal] = asString.split(".")
+  return decimal ? `${whole}.${decimal.slice(0,3)}` : whole
 }
 
 
-export function submittableCurrency(amount: string) {
-  return (Number.parseFloat(amount) * 1000).toFixed(0)
+export function submittableCurrency(amount: string, denomination: number = 3) {
+  return (Number.parseFloat(amount) * 10 ** denomination).toFixed(0)
 }
 
 export function cronDuration(unit: IntervalUnit, value: number ) {

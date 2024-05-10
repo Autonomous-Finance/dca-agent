@@ -15,6 +15,7 @@ import { displayableCurrency, truncateId } from "@/utils/data-utils";
 import ResetProgress from "@/components/ResetProgress";
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { useSearchParams } from "next/navigation";
+import { useDenomination } from "@/hooks/useDenomination";
 
 
 const HELP_TEXT_SPR = 'Strategy Performance Ratio (SPR) reflects the performance of the agent. Calculated as the inverse ratio between the hypothetical costs of buying the same amount of base tokens right now and the effective historical costs of buying them via DCA.'
@@ -29,6 +30,8 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
   const agent = usePolledAgentStatusContext()
 
   const agentPerformance = useAgentPerformance({agentStatus: agent?.status || null});
+
+  const denomination = useDenomination(agent?.status?.baseToken)
 
   if (!agent) return <></>
 
@@ -135,7 +138,7 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
           <Typography display={'flex'} fontWeight={'bold'}>
             ASSETS
           </Typography>
-          <InfoLine label={'Base Balance'} value={`${displayableCurrency(status.baseTokenBalance)}`} suffix={status.baseTokenTicker}
+          <InfoLine label={'Base Balance'} value={`${displayableCurrency(status.baseTokenBalance, denomination)}`} suffix={status.baseTokenTicker}
             />
           <InfoLine label={'Quote Balance'} 
             value={`${displayableCurrency(status.quoteTokenBalance)}`} 
