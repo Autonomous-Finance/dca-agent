@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "build-lua-backend": "chmod +x lua-backend-source.sh && ./lua-backend-source.sh",
+    "build-lua-test-load": "chmod +x lua-test-load-source.sh && ./lua-test-load-source.sh",
     "build-lua-agent": "chmod +x lua-agent-source.sh && ./lua-agent-source.sh",
     "deploy": "rm -rf ./dist-* && yarn build && node scripts/permaweb-deploy.mjs || cat dist-errors.txt"
   },
