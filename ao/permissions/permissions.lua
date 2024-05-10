@@ -29,7 +29,9 @@ AdminWhitelist = AdminWhitelist or {
 --[[
   Shorthand for readability - use in a handler to ensure the message was sent by a whitelisted account
 ]]
-mod.onlyAdmin = function(msg)
+mod.onlyAdminOrSelf = function(msg)
+  if (msg.From == ao.id) then return end
+
   local isWhitelisted = false
   for _, v in ipairs(AdminWhitelist) do
     if v == msg.From then

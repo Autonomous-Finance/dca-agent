@@ -291,7 +291,9 @@ AdminWhitelist = AdminWhitelist or {
 --[[
   Shorthand for readability - use in a handler to ensure the message was sent by a whitelisted account
 ]]
-mod.onlyAdmin = function(msg)
+mod.onlyAdminOrSelf = function(msg)
+  if (msg.From == ao.id) then return end
+
   local isWhitelisted = false
   for _, v in ipairs(AdminWhitelist) do
     if v == msg.From then
@@ -531,7 +533,7 @@ Handlers.add(
   "addAdmin",
   Handlers.utils.hasMatchingTag("Action", "AddAdmin"),
   function(msg)
-    permissions.onlyAdmin(msg)
+    permissions.onlyAdminOrSelf(msg)
     permissions.addAdmin(msg)
     response.success("AddAdmin")(msg)
   end
@@ -541,7 +543,7 @@ Handlers.add(
   "removeAdmin",
   Handlers.utils.hasMatchingTag("Action", "RemoveAdmin"),
   function(msg)
-    permissions.onlyAdmin(msg)
+    permissions.onlyAdminOrSelf(msg)
     permissions.removeAdmin(msg)
     response.success("RemoveAdmin")(msg)
   end
@@ -551,7 +553,7 @@ Handlers.add(
   'wipe',
   Handlers.utils.hasMatchingTag('Action', 'Wipe'),
   function(msg)
-    permissions.onlyAdmin(msg)
+    permissions.onlyAdminOrSelf(msg)
     AgentsPerUser = {}
     AgentInfosPerUser = {}
     RegisteredAgents = {}
