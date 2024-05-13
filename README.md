@@ -64,11 +64,11 @@ Combine all Lua scripts into a single file for deployment:
 #### In-App Process
 - **Configuration**: The user sets up the agent specifying base token, slippage, and swap amount.
 - **Deployment**: User confirms deployment, which triggers:
-1. the main agent process is created and signed with the user's wallet.
+1. the main agent process is created as a cron process and signed with the user's wallet.
 2. Loading of `process.lua` upon deployment confirmation.
-3. Initialization and spawning of cron proxy processes post-initialization:
-   - Process A: Loads `trigger-price-update.lua` and initializes.
-   - Process B: Loads `trigger-swap.lua` and initializes.
+3. Initialization of the agent with its configuration and proper owner
+4. Start Monitoring the agent as a cron process
+5. Registration of the agent with the DCA backend process on AO
 
 ## License
 
