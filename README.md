@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - **Direct Pool Interaction**: Operates directly with the pool, bypassing routers.
 - **Ownership**: Initially owned by the deployment signer, ownership can be transferred.
 - **Currency Pair**: Manages a single currency pair.
-- **User Control**: Designed to be owned/controlled by a user possessing an Arweave wallet rather than by another automated agent.
+- **Composability**: Designed to be owned/controlled by a user possessing an Arweave wallet or by another automated agent.
 
 ## Operations
 
@@ -45,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Configuration
 - **Initial Setup**: BaseToken, slippage, and swapAmount are set during initialization.
-- **Fixed Quote Token**: The QuoteToken configuration is static and cannot be changed after initialization.
+- **Fixed BaseToken**: The BaseToken configuration is static and cannot be changed after initialization.
 
 ## Deployment
 
