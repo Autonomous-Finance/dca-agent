@@ -13,6 +13,8 @@ package.loaded["utils.response"] = nil
 do
 local _ENV = _ENV
 package.preload[ "agent.balances" ] = function( ... ) local arg = _G.arg;
+local dexi = require "agent.dexi-agent-marketplace"
+
 local mod = {}
 
 -- MATCH
@@ -53,6 +55,7 @@ mod.latestBalanceUpdateQuoteToken = function(msg)
     LatestQuoteTokenBal = msg.Balance
     LatestQuoteTokenBalTimestamp = msg.Timestamp
     ao.send({ Target = Backend, Action = "UpdateQuoteTokenBalance", Balance = msg.Balance })
+    dexi.reportOverviewToAgentMarketplace()
   end
 end
 
@@ -62,6 +65,7 @@ mod.latestBalanceUpdateBaseToken = function(msg)
     LatestBaseTokenBal = msg.Balance
     LatestBaseTokenBalTimestamp = msg.Timestamp
     ao.send({ Target = Backend, Action = "UpdateBaseTokenBalance", Balance = msg.Balance })
+    dexi.reportOverviewToAgentMarketplace()
   end
 end
 
@@ -72,6 +76,8 @@ end
 do
 local _ENV = _ENV
 package.preload[ "agent.deposits" ] = function( ... ) local arg = _G.arg;
+local dexi = require "agent.dexi-agent-marketplace"
+
 local mod = {}
 
 mod.isDepositNotice = function(msg)
@@ -87,6 +93,48 @@ mod.recordDeposit = function(msg)
     Action = "Deposit",
     Sender = msg.Tags.Sender,
     Quantity = msg.Quantity
+  })
+  TotalDeposited = tostring(tonumber(TotalDeposited) + tonumber(msg.Quantity))
+  dexi.reportOverviewToAgentMarketplace()
+end
+
+return mod
+end
+end
+
+do
+local _ENV = _ENV
+package.preload[ "agent.dexi-agent-marketplace" ] = function( ... ) local arg = _G.arg;
+local mod = {}
+
+mod.computeOverviewState = function()
+  return {
+    initialized = Initialized,
+    initializedAt = InitializedAt,
+    name = AgentName,
+    retired = Retired,
+    retiredAt = RetiredAt,
+    holdings = {
+      { token = BaseToken,  amount = LatestBaseTokenBal },
+      { token = QuoteToken, amount = LatestQuoteTokenBal }
+    },
+    deposits = {
+      { token = QuoteToken, amount = TotalDeposited }
+    },
+    fees = {
+      { token = QuoteToken, amount = Fees }
+    }
+  }
+end
+
+mod.reportOverviewToAgentMarketplace = function()
+  if not ao.env.Process.Tags['Agent-Marketplace'] then return end
+
+  local overview = mod.computeOverviewState()
+  ao.send({
+    Target = ao.env.Process.Tags['Agent-Marketplace'],
+    Action = "Update-Agent",
+    Data = json.encode(overview)
   })
 end
 
@@ -112,6 +160,7 @@ local validateInitData = function(msg)
     'SwapInAmount',
     'SwapIntervalValue',
     'SwapIntervalUnit',
+    'Cron-Interval',
     'Slippage'
   }
   for _, field in ipairs(fields) do
@@ -137,6 +186,13 @@ mod.initialize = function(msg)
   SwapIntervalValue = msg.Tags.SwapIntervalValue
   SwapIntervalUnit = msg.Tags.SwapIntervalUnit
   SlippageTolerance = msg.Tags.Slippage
+  InitializedAt = msg.Timestamp
+
+  ao.spawn('SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk', {
+    ["Cron-Interval"] = msg.Tags["Cron-Interval"],
+    ["Cron-Tag-Action"] = "TriggerSwap",
+    ['Owner'] = ao.id
+  })
 
   response.success("Initialize")(msg)
 end
@@ -151,6 +207,7 @@ mod.retire = function(msg)
   assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
   assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
   Retired = true
+  RetiredAt = msg.Timestamp
   ao.send({ Target = Backend, Action = "RetireAgent" })
   response.success("Retire")(msg)
 end
@@ -411,6 +468,7 @@ mod.getStatus = function(msg)
   -- is initialized => reply with complete config
   local config = json.encode({
     initialized = true,
+    cronId = CronId,
     agentName = AgentName,
     retired = Retired,
     paused = Paused,
@@ -755,10 +813,10 @@ local progress = require "agent.progress"
 local ownership = require "agent.ownership"
 local patterns = require "utils.patterns"
 local response = require "utils.response"
+local dexi = require "agent.dexi-agent-marketplace"
 
 -- set to false in order to disable sending out success confirmation messages
 Verbose = Verbose or true
-Owner = Owner or ao.env.Process.Owner
 CronId = CronId or ""
 
 Initialized = Initialized or false
@@ -823,7 +881,10 @@ Handlers.add(
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
-  lifeCycle.initialize
+  function(msg)
+    lifeCycle.initialize(msg)
+    dexi.reportOverviewToAgentMarketplace()
+  end
 )
 
 -- ! every handler below is gated on Initialized == true
@@ -859,6 +920,7 @@ Handlers.add(
   function(msg)
     permissions.onlyOwner(msg)
     lifeCycle.retire(msg)
+    dexi.reportOverviewToAgentMarketplace()
   end
 )
 
@@ -968,7 +1030,7 @@ Handlers.add(
   "triggerSwap",
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
-    if not msg.Cron then return end
+    if msg.From ~= CronId then return end
     local skip = LatestQuoteTokenBal < SwapInAmount
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap", Data = skip and "Skipping swap" or "Triggering swap" })
@@ -1172,5 +1234,36 @@ Handlers.add(
       IsDepositing = IsDepositing,
       IsLiquidating = IsLiquidating
     }))(msg)
+  end
+)
+
+Handlers.add(
+  "Get-Overview",
+  Handlers.utils.hasMatchingTag("Action", "Get-Overview"),
+  function(msg)
+    local overview = json.encode(dexi.computeOverviewState())
+    response.dataReply("Get-Overview", overview)(msg)
+  end
+)
+
+Handlers.add(
+  "spawned",
+  Handlers.utils.hasMatchingTag("Action", "Spawned"),
+  function(msg)
+    CronId = msg.Tags['AO-Spawn-Success']
+    -- Warn: Messages sent from here are not picked up by the MU
+  end
+)
+
+Handlers.add(
+  "startCron",
+  Handlers.utils.hasMatchingTag("Action", "Start-Cron"),
+  function()
+    ao.send({
+      Target = CronId,
+      Action = "Eval",
+      Data =
+      'Handlers.add("triggerSwap", Handlers.utils.hasMatchingTag("Action", "TriggerSwap"), function(msg) if not msg.Cron then return end ao.send({ Target = ao.env.Process.Tags["Owner"], Action = "TriggerSwap" }) end )'
+    })
   end
 )
