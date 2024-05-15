@@ -1,3 +1,5 @@
+local json = require "json"
+
 local mod = {}
 
 mod.computeOverviewState = function()

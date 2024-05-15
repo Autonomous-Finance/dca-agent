@@ -105,6 +105,8 @@ end
 do
 local _ENV = _ENV
 package.preload[ "agent.dexi-agent-marketplace" ] = function( ... ) local arg = _G.arg;
+local json = require "json"
+
 local mod = {}
 
 mod.computeOverviewState = function()
