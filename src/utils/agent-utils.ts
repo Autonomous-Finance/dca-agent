@@ -3,7 +3,7 @@ export const AGENT_BACKEND = 'gqCm_H8eYO7ipXd6oVKfyCm46hejmKtMUfOVUGM5yo4'
 
 
 const {dryrun} = ao.connect({
-  CU_URL: "https://cu49.ao-testnet.xyz"
+  CU_URL: "https://cu.ao-testnet.xyz"
 })
 
 
