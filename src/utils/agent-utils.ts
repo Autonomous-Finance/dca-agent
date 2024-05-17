@@ -80,7 +80,7 @@ export type RegisteredAgent = {
   FromTransfer:  boolean,
   TransferredAt?:  number,
   // -- added on frontend
-  statusX?: AgentStatusX, 
+  statusXTable?: AgentStatusX, 
   ownedSince?: string, // date string
   provenance?: string, // 'Owned' or 'Transferred'
   averagePrice?: string,
@@ -221,13 +221,13 @@ export const getLatestAgent = async () => {
 
 export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
   if (agentInfo.Retired) {
-    agentInfo.statusX = 'Retired'
+    agentInfo.statusXTable = 'Retired'
   } else if (agentInfo.Paused) {
-    agentInfo.statusX = 'Paused'
+    agentInfo.statusXTable = 'Paused'
   } else if (Number.parseInt(agentInfo.QuoteTokenBalance) < Number.parseInt(agentInfo.SwapInAmount)) {
-    agentInfo.statusX = 'No Funds'
+    agentInfo.statusXTable = 'No Funds'
   } else {
-    agentInfo.statusX = 'Active'
+    agentInfo.statusXTable = 'Active'
   }
 
   agentInfo.ownedSince = (new Date(agentInfo.TransferredAt ?? agentInfo.CreatedAt).toLocaleString())
@@ -242,7 +242,6 @@ export const enhanceRegisteredAgentInfo = (agentInfo: RegisteredAgent) => {
 
 export const enhanceAgentStatus = (agentStatus: AgentStatus) => {
   const hasFunds = Number.parseInt(agentStatus.quoteTokenBalance) >= Number.parseInt(agentStatus.swapInAmount)
-
   if (agentStatus.retired) {
     agentStatus.statusX = 'Retired'
   } else if (agentStatus.paused) {

@@ -114,7 +114,7 @@ export default function AgentsTable() {
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.ownedSince}</StyledTableCell>
                   <StyledTableCell align="right">
-                    {agentInfo.statusX ? <AgentStatusChip statusX={agentInfo.statusX} noIcon/> : '- -'}
+                    {agentInfo.statusXTable ? <AgentStatusChip statusX={agentInfo.statusXTable} noIcon/> : '- -'}
                   </StyledTableCell>
                   <StyledTableCell align="right">{agentInfo.provenance}</StyledTableCell>
                 </StyledTableRow>
