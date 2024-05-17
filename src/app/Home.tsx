@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic"
 import { Box, Button, Stack, Typography } from "@mui/material"
 
 import { AgentPanel } from "./AgentPanel"
-import React from "react"
+import React, { useEffect } from "react"
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import LoadingEmptyState from "@/components/LoadingEmptyState"
 import { useLatestRegisteredAgent } from "@/hooks/useLatestRegisteredAgent"
@@ -15,7 +15,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewAgent from "@/components/ViewAgent"
 import { wipeBackend } from "@/utils/agent-utils"
 import WipeDebug from "@/components/WipeDebug"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function Home() {
   const latestAgentFromBackend = useLatestRegisteredAgent();
@@ -34,6 +34,15 @@ export default function Home() {
     await wipeBackend();
     window.location.reload();
   }
+
+  const router = useRouter()
+  const inspectId = params.get("agentId")
+
+  useEffect(() => {
+    if(inspectId) {
+      router.replace(`/single-agent?id=${inspectId}&noback=1`)
+    }
+  }, [inspectId, router])
 
   if (wiping) return (
     <Box margin={'8rem auto 0'}>

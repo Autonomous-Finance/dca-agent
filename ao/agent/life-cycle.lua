@@ -13,6 +13,7 @@ local validateInitData = function(msg)
     'SwapInAmount',
     'SwapIntervalValue',
     'SwapIntervalUnit',
+    'Cron-Interval',
     'Slippage'
   }
   for _, field in ipairs(fields) do
@@ -38,6 +39,13 @@ mod.initialize = function(msg)
   SwapIntervalValue = msg.Tags.SwapIntervalValue
   SwapIntervalUnit = msg.Tags.SwapIntervalUnit
   SlippageTolerance = msg.Tags.Slippage
+  InitializedAt = msg.Timestamp
+
+  ao.spawn('SBNb1qPQ1TDwpD_mboxm2YllmMLXpWw4U8P9Ff8W9vk', {
+    ["Cron-Interval"] = msg.Tags["Cron-Interval"],
+    ["Cron-Tag-Action"] = "TriggerSwap",
+    ['Owner'] = ao.id
+  })
 
   response.success("Initialize")(msg)
 end
@@ -52,6 +60,7 @@ mod.retire = function(msg)
   assert(LatestQuoteTokenBal == "0", 'Quote Token balance must be 0 to retire')
   assert(LatestBaseTokenBal == "0", 'Base Token balance must be 0 to retire')
   Retired = true
+  RetiredAt = msg.Timestamp
   ao.send({ Target = Backend, Action = "RetireAgent" })
   response.success("Retire")(msg)
 end

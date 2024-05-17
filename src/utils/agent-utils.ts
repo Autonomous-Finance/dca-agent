@@ -42,6 +42,7 @@ export type AgentStatus = {
   lastWithdrawalError: string
   lastLiquidationError: string
   lastSwapError: string
+  cronId: string
 
   // added on Frontend
   statusX?: AgentStatusX
@@ -284,6 +285,15 @@ export const getOneRegisteredAgent = async (agentId: string) => {
 
     if (res.Error) {
       console.error('Error on dry-run for one agent query', JSON.stringify(res.Error))
+
+      const status = await readAgentStatus(agentId)
+      if(status.result?.initialized === false) {
+        return {
+          type: "Failure",
+          result: 'Uninitialized'
+        }
+      }
+
       return {
         type: "Failure",
         result: null

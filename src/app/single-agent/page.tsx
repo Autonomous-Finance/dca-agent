@@ -5,8 +5,6 @@ import SingleAgent from "./SingleAgent";
 
 export default function SingleAgentPage() {
   return (
-    <Suspense>
       <SingleAgent />
-    </Suspense>
   )
 }

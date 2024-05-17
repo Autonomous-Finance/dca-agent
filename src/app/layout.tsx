@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import RootLayoutUI from "../components/RootLayout/RootLayoutUI"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "AF DCA Agent",
@@ -17,7 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <RootLayoutUI>{children}</RootLayoutUI>
+        {/* For pages that need `useSearchParams` */}
+        <Suspense>
+          <RootLayoutUI>{children}</RootLayoutUI>
+        </Suspense>
       </body>
     </html>
   )
