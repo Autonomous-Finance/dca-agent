@@ -87,7 +87,7 @@ export function AgentPanel() {
 
   const executingOnAssets = loadingTopUp || loadingWithdrawQuote || loadingWithdrawBase || loadingLiquidate
   const tempDisablingActions = executingOnAssets || loadingTransferOwnership || loadingPause || loadingRetirement
-  const areActionsDisabled = keepActionsDisabled || tempDisablingActions
+  const areActionsDisabled = keepActionsDisabled || tempDisablingActions || status.isSwapping
 
   const addToLog = (entry: LogEntry, error?: string) => {
     if (error && isLocalDev()) {

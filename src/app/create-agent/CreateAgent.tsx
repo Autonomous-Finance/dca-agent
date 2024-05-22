@@ -65,7 +65,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
   const [agentName, setAgentName] = React.useState(defaultAgentName)
   const [swapInAmount, setSwapInAmount] = React.useState("0.1")
   const [swapIntervalUnit, setSwapIntervalUnit] = React.useState<IntervalUnit>("Minutes")
-  const [swapIntervalValue, setSwapIntervalValue] = React.useState("1")
+  const [swapIntervalValue, setSwapIntervalValue] = React.useState("5")
   const [slippage, setSlippage] = React.useState("1.5")
   const [selectedPools, setSelectedPools] = React.useState<LiquidityPool[]>(["Bark"])
 
