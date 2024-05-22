@@ -1,7 +1,6 @@
+import { getOverview, PoolOverview } from "@/utils/pools-utils"
 import * as ao from "@permaweb/aoconnect/browser"
-import { arweaveNet } from "@/queries/graphqlClient"
 import React from "react"
-import { gql } from "urql"
 
 export type Pool = {
   id: string
@@ -9,8 +8,6 @@ export type Pool = {
   dex: string // name of the exchange, not yet provided by dexi
   baseToken: string
   quoteToken: string
-  tags: Record<string, string>
-  created: number
   baseTokenInfo?: TokenInfo
   quoteTokenInfo?: TokenInfo
 }
@@ -28,63 +25,16 @@ export type Tag = {
   value: string
 }
 
-const PoolsQuery = gql`
-  query {
-    transactions(
-      tags: [
-        { name: "Process-Type", values: ["AMM-Monitor"] }
-      ]
-      sort: HEIGHT_DESC
-      first: 100
-    ) {
-      edges {
-        node {
-          id
-          block {
-            timestamp
-            height
-          }
-          tags {
-            name
-            value
-          }
-        }
-      }
-    }
-  }
-`
-
-function mapEdgeToPool(edge: any): Pool {
-  const node = edge.node
-  const tags = node.tags.reduce((acc: Record<string, string>, tag: any) => {
-    acc[tag.name] = tag.value
-    return acc
-  }, {})
-
-  const name = tags["Name"]
-  const baseToken = tags["Base-Token"]
-  const quoteToken = tags["Quote-Token"]
-  const id = tags["Monitor-For"]
-
-  const created = node.block.timestamp * 1000
-
-  return {
-    id,
-    name,
-    dex: 'Bark',
-    baseToken,
-    quoteToken,
-    tags,
-    created,
-  }
-}
-
 export async function getAllPools(): Promise<Pool[]> {
-  const result = await arweaveNet.query(PoolsQuery, {}).toPromise()
-  const { data, error } = result
-  if (error) console.error(error)
+  const poolsOverview: PoolOverview[] = await getOverview()
 
-  const pools: Pool[] = data.transactions.edges.map(mapEdgeToPool)
+  const pools: Pool[] = poolsOverview.map((x) => ({
+    id: x.poolId,
+    name: `monitor-${x.baseToken}/${x.quoteToken}`,
+    dex: "DEXI",
+    baseToken: x.baseToken,
+    quoteToken: x.quoteToken,
+  }))
 
   const poolTokens = Array.from(new Set(pools.map((x) => x.baseToken).concat(pools.map((x) => x.quoteToken))))
 
@@ -99,11 +49,6 @@ export async function getAllPools(): Promise<Pool[]> {
   })
   
   return pools
-  // .filter(
-  //   (x) =>
-  //     x.quoteToken === nativeTokenInfo.processId &&
-  //     x.id !== "2bKo3vwB1Mo5TItmxuUQzZ11JgKauU_n2IZO1G13AIk",
-  // )
 }
 
 export const NATIVE_TOKEN_INFO: TokenInfo = {

@@ -9,6 +9,7 @@ import Image from 'next/image'
 
 function CreateAgentPage() {
   const { pools, loading } = usePools()
+  debugger
 
   const dexi = (
     <Typography display={'flex'} flexDirection={'row'} gap={1} alignItems={'center'} fontSize={'1.5rem'}>
