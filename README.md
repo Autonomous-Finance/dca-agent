@@ -76,5 +76,30 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 
 
+## Disclaimer
+
+### Important Notice
+
+This software, the Autonomous Investment Agent (AIA), is provided as open-source under the MIT License. While the software has been developed with diligence and care, it is important to understand that its use comes with inherent risks. The technology behind this agent and the AO ecosystem is relatively new and may be subject to unknown vulnerabilities, rapid changes, and evolving standards.
+
+## Use at Your Own Risk
+
+1. **No Warranties**: The AIA software is provided "as is", without any warranties of any kind. This includes, but is not limited to, warranties of merchantability, fitness for a particular purpose, and non-infringement. By using this software, you acknowledge that you do so at your own risk.
+
+2. **Financial Risk**: The AIA employs an autonomous investment strategy. As with any investment, there are financial risks involved, including but not limited to market volatility, loss of investment, and unforeseen changes in the blockchain ecosystem. You are solely responsible for any financial decisions made using this software.
+
+3. **Technological Risk**: Blockchain technology, smart contracts, and decentralized finance (DeFi) protocols are complex and still developing. This software may have bugs, experience failures, or encounter security vulnerabilities that could result in unintended behavior, including financial losses.
+
+4. **Regulatory Risk**: The regulatory environment for blockchain technology and digital assets is uncertain and rapidly evolving. It is your responsibility to ensure compliance with any applicable laws and regulations in your jurisdiction.
+
+5. **No Liability**: In no event shall the authors, developers, or contributors of this software be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+
+## User Responsibility
+
+- **Due Diligence**: Users are encouraged to conduct their own due diligence before engaging in any transactions or relying on the functionality of this software.
+- **Education**: Ensure you have a solid understanding of blockchain technology, the AO ecosystem, and decentralized finance principles before using the AIA software.
+- **Security Practices**: Follow best practices for security, such as safeguarding private keys, using secure devices, and regularly updating software.
+
+By using this software, you agree to this disclaimer and acknowledge that you understand and accept the risks involved.
 
 
