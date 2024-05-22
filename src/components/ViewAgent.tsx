@@ -3,12 +3,14 @@
 import ActiveAgentPanel from '@/components/ActiveAgentPanel'
 import React from 'react'
 import { PolledAgentStatusProvider } from './PolledAgentStatusProvider'
+import Disclaimer from './Disclaimer'
 
 function ViewAgent({agentId}: {agentId: string}) {
   return (
     <PolledAgentStatusProvider agentId={agentId}>
-      <ActiveAgentPanel>
-      </ActiveAgentPanel>
+      <Disclaimer agentId={agentId}>
+        <ActiveAgentPanel />
+      </Disclaimer>
     </PolledAgentStatusProvider>
   )
 }
