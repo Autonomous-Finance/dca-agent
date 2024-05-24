@@ -1,4 +1,5 @@
 import * as ao from "@permaweb/aoconnect/browser"
+import { dryrunDexiCU } from '@/utils/ao-connection';
 export const AGENT_BACKEND = 'gqCm_H8eYO7ipXd6oVKfyCm46hejmKtMUfOVUGM5yo4'
 
 
@@ -190,7 +191,7 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
 
 export const getLatestAgent = async () => {
   try {
-    const res = await dryrun({
+    const res = await dryrunDexiCU({
       process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetLatestAgent" },
@@ -273,7 +274,7 @@ export const createAgentPerformanceInfo = (
 
 export const getOneRegisteredAgent = async (agentId: string) => {
   try {
-    const res = await dryrun({
+    const res = await dryrunDexiCU({
       process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetOneAgent" },
@@ -305,7 +306,7 @@ export const getOneRegisteredAgent = async (agentId: string) => {
 
 export const getAllAgents = async () => {
   try {
-    const res = await dryrun({
+    const res = await dryrunDexiCU({
       process: AGENT_BACKEND,
       tags: [
         { name: "Action", value: "GetAllAgentsPerUser" },

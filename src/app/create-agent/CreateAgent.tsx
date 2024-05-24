@@ -45,6 +45,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import Image from "next/image";
 import { Pool } from "@/hooks/usePools";
 import { ArrowRightAlt } from "@mui/icons-material";
+import { dryrunDexiCU } from "@/utils/ao-connection";
 
 export default function CreateAgent({pools}: {pools: Pool[]}) {
   console.log(pools)
@@ -275,7 +276,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
       })
       console.log("📜 LOG > dryRun Status:", status)
 
-      const allAgents = await dryrun({
+      const allAgents = await dryrunDexiCU({
         process: AGENT_BACKEND,
         data: "",
         tags: [
