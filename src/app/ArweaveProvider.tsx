@@ -25,7 +25,7 @@ export function ArweaveProvider({ children }: { children: React.ReactNode }) {
       }}
       config={{
         appInfo: {
-          name: "Last one stands",
+          name: "AF DCA Agent",
         },
         permissions: ["ACCESS_ADDRESS", "SIGN_TRANSACTION"],
         ensurePermissions: true,
