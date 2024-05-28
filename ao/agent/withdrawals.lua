@@ -9,6 +9,15 @@ mod.isWithdrawError = function(msg)
 end
 
 mod.isWithdrawalDebitNotice = function(msg)
+  if ao.env.Process.Tags['Agent-Marketplace'] then
+    local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == ao.env.Process.Tags['Agent-Marketplace'] and
+        msg.Tags["X-User-Address"] == Owner and not IsLiquidating
+    local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == ao.env.Process.Tags['Agent-Marketplace'] and
+        msg.Tags["X-User-Address"] == Owner
+
+    return isQuoteWithdrawal or isBaseWithdrawal
+  end
+
   local isQuoteWithdrawal = msg.From == QuoteToken and msg.Recipient == Owner and not IsLiquidating
   local isBaseWithdrawal = msg.From == BaseToken and msg.Recipient == Owner
   return isQuoteWithdrawal or isBaseWithdrawal
@@ -22,7 +31,8 @@ mod.withdrawQuoteToken = function(msg)
     Target = QuoteToken,
     Action = "Transfer",
     Quantity = msg.Tags.Quantity or LatestQuoteTokenBal,
-    Recipient = Owner
+    Recipient = ao.env.Process.Tags['Agent-Marketplace'],
+    ["X-User-Address"] = Owner
   })
 end
 
@@ -31,7 +41,8 @@ mod.withdrawBaseToken = function(msg)
     Target = BaseToken,
     Action = "Transfer",
     Quantity = msg.Tags.Quantity or LatestBaseTokenBal,
-    Recipient = Owner
+    Recipient = ao.env.Process.Tags['Agent-Marketplace'],
+    ["X-User-Address"] = Owner
   })
 end
 

@@ -25,6 +25,11 @@ mod.isSwapBackSuccessCreditNotice = function(msg)
 end
 
 mod.isLiquidationDebitNotice = function(msg)
+  if ao.env.Process.Tags['Agent-Marketplace'] then
+    return msg.From == QuoteToken and msg.Recipient == ao.env.Process.Tags['Agent-Marketplace'] and
+        msg.Tags["X-User-Address"] == Owner and IsLiquidating
+  end
+
   return msg.From == QuoteToken and msg.Recipient == Owner and IsLiquidating
 end
 
@@ -97,7 +102,8 @@ mod.transferQuoteToOwner = function(msg)
     Target = QuoteToken,
     Action = "Transfer",
     Quantity = tostring(math.floor(LiquidationAmountQuote + LiquidationAmountBaseToQuote)),
-    Recipient = Owner
+    Recipient = ao.env.Process.Tags['Agent-Marketplace'],
+    ["X-User-Address"] = Owner
   })
 end
 
