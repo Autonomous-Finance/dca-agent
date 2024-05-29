@@ -120,7 +120,6 @@ local validateInitData = function(msg)
 end
 
 mod.initialize = function(msg)
-  Owner = msg.Sender
   assert(not Initialized, 'Process is already initialized')
   Initialized = true
 
@@ -817,7 +816,10 @@ Handlers.add(
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
-  lifeCycle.initialize
+  function(msg)
+    permissions.onlyOwner(msg)
+    lifeCycle.initialize(msg)
+  end
 )
 
 -- ! every handler below is gated on Initialized == true

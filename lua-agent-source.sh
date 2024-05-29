@@ -1,8 +1,14 @@
 #!/bin/bash
 
+if [[ "$(uname)" == "Linux" ]]; then
+    BIN_PATH="$HOME/.luarocks/bin"
+else
+    BIN_PATH="/opt/homebrew/bin"
+fi
+
 cd ao
 
-/opt/homebrew/bin/amalg.lua -s process.lua -o build/output-agent.lua permissions.permissions agent.status agent.life-cycle agent.ownership agent.swaps agent.withdrawals agent.deposits agent.balances agent.progress agent.liquidation utils.patterns utils.response
+$BIN_PATH/amalg.lua -s process.lua -o build/output-agent.lua permissions.permissions agent.status agent.life-cycle agent.ownership agent.swaps agent.withdrawals agent.deposits agent.balances agent.progress agent.liquidation utils.patterns utils.response
 
 # prepend resets to the output file
 cat agent/resets.lua | cat - build/output-agent.lua > temp && mv temp build/output-agent.lua

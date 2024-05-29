@@ -74,7 +74,10 @@ Handlers.add(
 Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
-  lifeCycle.initialize
+  function(msg)
+    permissions.onlyOwner(msg)
+    lifeCycle.initialize(msg)
+  end
 )
 
 -- ! every handler below is gated on Initialized == true
