@@ -171,7 +171,6 @@ local validateInitData = function(msg)
 end
 
 mod.initialize = function(msg)
-  Owner = msg.Sender
   assert(not Initialized, 'Process is already initialized')
   Initialized = true
 
@@ -901,6 +900,7 @@ Handlers.add(
   "initialize",
   Handlers.utils.hasMatchingTag("Action", "Initialize"),
   function(msg)
+    permissions.onlyOwner(msg)
     lifeCycle.initialize(msg)
     dexi.reportOverviewToAgentMarketplace()
   end

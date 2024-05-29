@@ -22,7 +22,6 @@ local validateInitData = function(msg)
 end
 
 mod.initialize = function(msg)
-  Owner = msg.Sender
   assert(not Initialized, 'Process is already initialized')
   Initialized = true
 
