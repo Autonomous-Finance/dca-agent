@@ -361,10 +361,10 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                         {pools.map((pool: Pool) => (
                           <MenuItem key={pool.id} value={pool.id} disabled={pool.baseToken === AFT_PROCESS_ID}>
                             <Stack direction={'row'} justifyContent={'space-between'} width="100%">
-                              <Typography fontSize={'1.125rem'}>
+                              <Typography fontSize={'1rem'}>
                                 {pool.baseTokenInfo?.ticker}/{pool.quoteTokenInfo?.ticker}
                               </Typography>
-                              <Typography fontSize={'1rem'} color="text.secondary" sx={{display: 'flex', alignItems: 'center'}}>
+                              <Typography fontSize={'0.75rem'} color="text.secondary" sx={{display: 'flex', alignItems: 'center'}}>
                                 ({pool.quoteTokenInfo?.ticker} <ArrowRightAlt /> {pool.baseTokenInfo?.ticker})
                               </Typography>
                             </Stack>

@@ -54,9 +54,9 @@ export async function getAllPools(): Promise<Pool[]> {
 export const NATIVE_TOKEN_INFO: TokenInfo = {
   processId: "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc",
   denomination: 3,
-  ticker: "AO",
+  ticker: "AOCRED",
   logo: "eIOOJiqtJucxvB4k8a-sEKcKpKTh9qQgOV3Au7jlGYc",
-  name: "AO-CRED",
+  name: "AOCRED",
 }
 
 const {dryrun} = ao.connect({
@@ -88,7 +88,7 @@ export async function getTokenInfo(tokenId: string): Promise<TokenInfo> {
   return {
     processId: tokenId,
     denomination,
-    ticker: tagMap["Ticker"],
+    ticker: tagMap["Ticker"] === "AO" ? "AOCRED" : tagMap["Ticker"],
     logo: tagMap["Logo"],
     name: tagMap["Name"],
   }
