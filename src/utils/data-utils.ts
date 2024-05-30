@@ -1,4 +1,4 @@
-export const AO_CRED_SYMBOL = "AO" as const
+export const AO_CRED_SYMBOL = "AOCRED" as const
 export const AFT_PROCESS_ID = "SpzpFLkqPGvr5ZFZPbvyAtizthmrJ13lL4VBQIBL0dg"
 
 export const truncateId = (text: string) => {
