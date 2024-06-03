@@ -2,12 +2,13 @@ import { readCredBalance } from "@/utils/ao-utils"
 import { useActiveAddress } from "arweave-wallet-kit"
 import React from "react"
 
-export const POLL_INTERVAL_CRED_BALANCE = 6000
+export const POLL_INTERVAL_CRED_BALANCE = 30000 // twice a minute
 
 const useBalance = () => {
   const address = useActiveAddress()
   const [balance, setBalance] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
+  const [lastUpdate, setLastUpdate] = React.useState(new Date())
 
   React.useEffect(() => {
     if (!address) return
@@ -22,7 +23,10 @@ const useBalance = () => {
       }
       setLoading(false)
       interval = setInterval(() => {
-        readCredBalance(address).then(setBalance)
+        readCredBalance(address).then((bal) => {
+          setBalance(bal)
+          setLastUpdate(new Date())
+        })
       }, POLL_INTERVAL_CRED_BALANCE)
     }
 
@@ -31,10 +35,27 @@ const useBalance = () => {
     return () => clearInterval(interval)
   }, [address])
 
-  return {balance, loading}
+  const triggerUpdate = () => {
+    if (address && !loading && balance !== 0) {
+      setLastUpdate(new Date())
+      readCredBalance(address).then(setBalance)
+    }
+  }
+
+  return {balance, loading, lastUpdate, triggerUpdate}
 }
 
-const AccountBalanceContext = React.createContext<{balance: number, loading: boolean}>({balance: 0, loading: false})
+const AccountBalanceContext = React.createContext<{
+  balance: number, 
+  loading: boolean, 
+  lastUpdate: Date,
+  triggerUpdate: () => void
+}>({
+  balance: 0, 
+  loading: false,
+  lastUpdate: new Date(),
+  triggerUpdate: () => {}
+})
 
 export const AccountBalanceProvider = ({children}: { children: React.ReactNode }) => {
   const accountBalance = useBalance()
