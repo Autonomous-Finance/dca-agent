@@ -437,7 +437,7 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
                           label=""
                           onChange={(e) => setSwapIntervalUnit(e.target.value as IntervalUnit)}
                         >
-                          {INTERVAL_UNITS.map((unit) => (
+                          {INTERVAL_UNITS.filter(unit => unit !== "Seconds").map((unit) => (
                             <MenuItem key={unit} value={unit}>
                               {unit}
                             </MenuItem>
