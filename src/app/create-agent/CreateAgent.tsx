@@ -252,16 +252,17 @@ export default function CreateAgent({pools}: {pools: Pool[]}) {
         ]
       })
       console.log("📜 LOG > registerMsg:", registerMsgId)
-      const res = await result({
-        message: registerMsgId,
-        process: AGENT_BACKEND,
-      })
-      console.log('📜 LOG > Registration result: ', res)
-      if (res.Error) {
-        addToLog({text: "Failed to register with Agent Backend. Please try again.", isError: true, hasLink: false})
-        setLoading(false);
-        return
-      }
+
+      // const res = await result({
+      //   message: registerMsgId,
+      //   process: AGENT_BACKEND,
+      // })
+      // console.log('📜 LOG > Registration result: ', res)
+      // if (res.Error) {
+      //   addToLog({text: "Failed to register with Agent Backend. Please try again.", isError: true, hasLink: false})
+      //   setLoading(false);
+      //   return
+      // }
       addToLog({
         text: 'Registration successful',
         hasLink: true,
