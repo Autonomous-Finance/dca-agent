@@ -1,4 +1,4 @@
-import { Box, Paper, Skeleton, Stack, Typography } from "@mui/material"
+import { Box, CircularProgress, Paper, Skeleton, Stack, Typography } from "@mui/material"
 import { useActiveAddress } from "arweave-wallet-kit"
 import React from "react"
 
@@ -7,7 +7,7 @@ import { Refresh } from "@mui/icons-material"
 
 export function AccBalance() {
   const address = useActiveAddress()
-  const {balance, loading, lastUpdate, triggerUpdate } = useAccountBalance();
+  const {balance, loading, loadingTrigger, lastUpdate, triggerUpdate } = useAccountBalance();
 
   if (!address) return
 
@@ -55,7 +55,9 @@ export function AccBalance() {
               <Typography>
                 {`Last updated ${lastUpdate.toLocaleTimeString()}`}
               </Typography>
-              <Refresh onClick={triggerUpdate}/>
+              {loadingTrigger && <CircularProgress size={14} sx={{color: 'var(--mui-palette-success-main)'}}/>}
+              
+              {!loadingTrigger && <Refresh onClick={triggerUpdate}/>}
             </>
           )}
         </Stack>

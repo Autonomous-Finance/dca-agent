@@ -8,6 +8,7 @@ const useBalance = () => {
   const address = useActiveAddress()
   const [balance, setBalance] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
+  const [loadingTrigger, setLoadingTrigger] = React.useState(false)
   const [lastUpdate, setLastUpdate] = React.useState(new Date())
 
   React.useEffect(() => {
@@ -37,22 +38,28 @@ const useBalance = () => {
 
   const triggerUpdate = () => {
     if (address && !loading && balance !== 0) {
-      setLastUpdate(new Date())
-      readCredBalance(address).then(setBalance)
+      setLoadingTrigger(true)
+      readCredBalance(address).then((result) => {
+        setBalance(result)
+        setLoadingTrigger(false)
+        setLastUpdate(new Date())
+      })
     }
   }
 
-  return {balance, loading, lastUpdate, triggerUpdate}
+  return {balance, loading, loadingTrigger, lastUpdate, triggerUpdate}
 }
 
 const AccountBalanceContext = React.createContext<{
   balance: number, 
   loading: boolean, 
+  loadingTrigger: boolean, 
   lastUpdate: Date,
   triggerUpdate: () => void
 }>({
   balance: 0, 
   loading: false,
+  loadingTrigger: false,
   lastUpdate: new Date(),
   triggerUpdate: () => {}
 })
