@@ -963,7 +963,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwap"),
   function(msg)
     if not msg.Cron then return end
-    local skip = LatestQuoteTokenBal < SwapInAmount
+    local skip = tonumber(LatestQuoteTokenBal) < tonumber(SwapInAmount)
     -- LOG
     ao.send({ Target = ao.id, Action = "Log-TriggerSwap", Data = skip and "Skipping swap" or "Triggering swap" })
     if skip then return end
