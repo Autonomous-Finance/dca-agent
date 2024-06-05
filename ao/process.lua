@@ -395,7 +395,12 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "TriggerSwapDebug"),
   function(msg)
     permissions.onlyOwner(msg)
+    local skip = tonumber(LatestQuoteTokenBal) < tonumber(SwapInAmount)
+    -- LOG
+    ao.send({ Target = ao.id, Action = "Log-TriggerSwap", Data = skip and "Skipping swap" or "Triggering swap" })
+    if skip then return end
     status.checkNotBusy()
+    progress.startDCASwap(msg)
     swaps.requestOutput()
   end
 )
