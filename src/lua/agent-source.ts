@@ -797,6 +797,28 @@ LastWithdrawalError = LastWithdrawalError or nil
 LastLiquidationError = LastLiquidationError or nil
 LastSwapError = LastSwapError or nil
 
+-- QUALIFY MESSAGES
+-- TODO remove when ao upgrade removes the need for it
+
+function Trusted(msg)
+  local mu = "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY"
+  -- return false if trusted
+  if msg.Owner == mu then
+    return false
+  end
+  if msg.From == msg.Owner then
+    return false
+  end
+  return true
+end
+
+Handlers.prepend("qualify message",
+  Trusted,
+  function(msg)
+    print("This Msg is not trusted!")
+  end
+)
+
 -- LIFE CYCLE & CONFIG
 
 Handlers.add(
