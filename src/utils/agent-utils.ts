@@ -129,22 +129,14 @@ const extractResponse = (result: DryRunResult, actionName: string) => {
 
 export const getCurrentSwapOutput = async (pool: string, quoteToken: string, swapInAmount: string) => {
   try {
-    const msgId = await ao.message({
+    const res = await ao.dryrun({
       process: pool,
       tags: [
         { name: "Action", value: "Get-Price" },
         { name: "Token", value: quoteToken},
         { name: "Quantity", value: swapInAmount }
       ],
-      signer: ao.createDataItemSigner(window.arweaveWallet),
     })
-
-    const res = await ao.result({
-      message: msgId,
-      process: pool,
-    })
-
-    console.log("Get Current Swap Price Result: ", res)
 
     if (res.Error) {
       console.error('Error on swap price query', JSON.stringify(res.Error))
@@ -160,7 +152,7 @@ export const getCurrentSwapOutput = async (pool: string, quoteToken: string, swa
 export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, baseTokenBalance: string) => {
   if (baseTokenBalance == '0') return Promise.resolve('0')
   try {
-    const msgId = await ao.message({
+    const res = await ao.dryrun({
       process: pool,
       tags: [
         { name: "Action", value: "Get-Price" },
@@ -169,13 +161,6 @@ export const getCurrentSwapBackOutput = async (pool: string, baseToken: string, 
       ],
       signer: ao.createDataItemSigner(window.arweaveWallet),
     })
-
-    const res = await ao.result({
-      message: msgId,
-      process: pool,
-    })
-
-    console.log("Get Current Swap Back Price Result: ", res)
 
     if (res.Error) {
       console.error('Error on swap back price query', JSON.stringify(res.Error))
