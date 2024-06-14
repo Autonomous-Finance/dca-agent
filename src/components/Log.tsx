@@ -13,7 +13,7 @@ function Log(props: {log: LogEntry[]}) {
   const mode = theme.palette.mode;
 
   const { log } = props
-  const baseLink = (entry: LogEntry) => entry.hasLink && `https://www.ao.link/${entry.isMessage ? 'message' : 'entity'}`;
+  const baseLink = (entry: LogEntry) => entry.hasLink && `https://www.ao.link/#/${entry.isMessage ? 'message' : 'entity'}`;
   const hasError = (entry: LogEntry) => entry.isError;
 
   return (

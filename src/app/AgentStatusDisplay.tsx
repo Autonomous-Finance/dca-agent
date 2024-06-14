@@ -92,7 +92,7 @@ export function AgentStatusDisplay({loading} : {loading: boolean}) {
           <InfoLine
             label={'Process ID'} 
             value={
-              <Link href={`https://www.ao.link/entity/${agent.agentId}`} target="_blank"
+              <Link href={`https://www.ao.link/#/entity/${agent.agentId}`} target="_blank"
                 variant="body1" fontFamily={'Courier New'}
                 color={'text.primary'}
                 sx={(theme) => ({
@@ -273,7 +273,7 @@ const PoolsDetails = ({agent}: {agent: any}) => {
           <InfoLine
             label={`${agent.dex}`} 
             value={
-              <Link href={`https://www.ao.link/entity/${agent.pool}`} target="_blank"
+              <Link href={`https://www.ao.link/#/entity/${agent.pool}`} target="_blank"
                 variant="body1" fontFamily={'Courier New'}
                 color={'text.primary'}
                 sx={(theme) => ({
