@@ -1,7 +1,7 @@
 import LoadingEmptyState from '@/components/LoadingEmptyState';
 import React from 'react'
 import { usePolledAgentStatusContext } from './PolledAgentStatusProvider';
-import { AgentPanel } from '@/app/AgentPanel';
+import { AgentPanel } from '@/app_deprecated/AgentPanel';
 import { usePathname } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 
