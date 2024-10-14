@@ -1,5 +1,15 @@
 # Autonomous DCA Agent on AO
 
+## 🚨 This App was discontinued
+
+Due to this app being some of our early work aimed at exhibiting the capabilities of AO, we're discontinuing it but keep this repo as a public good.
+
+Feel free to explore the code in this repo or read our related [research article](https://www.autonomous.finance/research/dca-agent).
+
+An alternative to DCA on AO is currently available on [Botega](https://botega.arweave.net/).
+
+---
+
 <img src="logo.webp" width="150" height="150" alt="DCA Agent Logo">
 
 This Autonomous Investment Agent (AIA) executes a dynamic dollar-cost-average (DCA) investment strategy across various liquidity pools within the AO ecosystem. It **automatically buys** a base token at predetermined, user-configurable intervals using a consistent amount of a quote token for each transaction.
@@ -102,4 +112,10 @@ This software, the Autonomous Investment Agent (AIA), is provided as open-source
 
 By using this software, you agree to this disclaimer and acknowledge that you understand and accept the risks involved.
 
+
+## TODO
+
+- `.update` backend to latest aos
+- update the AO module to use when spawning
+- refactor agent to use the request-response mechanism (?)
 

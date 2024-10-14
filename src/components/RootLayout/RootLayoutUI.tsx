@@ -4,12 +4,8 @@ import { Container } from "@mui/material"
 import CssBaseline from "@mui/material/CssBaseline"
 import { Experimental_CssVarsProvider as CssVarsProvider } from "@mui/material/styles"
 
-import { ArweaveProvider } from "@/app/ArweaveProvider"
-
 import { theme } from "./theme"
 import Header from "../Header"
-import { AccountBalanceProvider } from "@/hooks/useAccountBalance"
-import { LatestAgentProvider } from "@/hooks/useLatestRegisteredAgent"
 
 export default function RootLayoutUI({
   children,
@@ -20,14 +16,16 @@ export default function RootLayoutUI({
     <>
       <CssVarsProvider theme={theme} defaultMode="light">
         <CssBaseline />
-        <ArweaveProvider>
+        {/* <ArweaveProvider>
           <AccountBalanceProvider>
             <LatestAgentProvider>
               <Header />
               <Container maxWidth="xl">{children}</Container>
             </LatestAgentProvider>
           </AccountBalanceProvider>
-        </ArweaveProvider>
+        </ArweaveProvider> */}
+        <Header />
+        <Container maxWidth="xl">{children}</Container>
       </CssVarsProvider>
     </>
   )

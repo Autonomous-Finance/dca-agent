@@ -62,6 +62,27 @@ const Header = () => {
               </Stack>
             </Button>
             <Stack direction="row" gap={2} alignItems="center">
+              {/* TODO highlight underline for active link */}
+
+              <Button component={Link} href="/" size="large"
+                onClick={refresh}
+                sx={theme => ({
+                  fontSize: '1.25rem', 
+                  color: `var(--mui-customColors-naviLink-${pathname === '/' ? '' : 'in'}active-${theme.palette.mode})`,
+                  textTransform: pathname === '/' ? 'underline uppercase' : 'uppercase'
+                })}>
+                Dashboard
+              </Button>
+              <Button component={Link} href="/my-agents" size="large"
+                sx={theme => ({
+                  fontSize: '1.25rem', 
+                  color: `var(--mui-customColors-naviLink-${pathname === '/my-agents' ? '' : 'in'}active-${theme.palette.mode})`,
+                  textTransform: pathname === '/my-agents' ? 'underline uppercase' : 'uppercase'
+                })}>
+                My Agents
+              </Button>
+            </Stack>
+            <Stack direction="row" gap={2} alignItems="center">
               <IconButton
                 size="medium"
                 onClick={() => {
@@ -75,6 +96,8 @@ const Header = () => {
                   <Sun weight="bold" />
                 )}
               </IconButton>
+              <AccBalance />
+              <ConnectButton />
             </Stack>
           </Stack>
         </Toolbar>

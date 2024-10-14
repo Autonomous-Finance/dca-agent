@@ -8,6 +8,7 @@ const nextConfig = {
       transform: "@mui/icons-material/{{member}}",
     },
   },
+  images: { unoptimized: true },
   output: "export",
   assetPrefix: "./"
 };
