@@ -1,0 +1,19 @@
+jobs:
+          build-linux:
+            runs-on: ubuntu-latest
+            steps:
+              - name: Checkout code
+                uses: actions/checkout@v3
+
+              # ... other steps ...
+
+              - name: Update Conda environment
+                run: conda env update --file environment.yml --name base
+                # If environment.yml is NOT in the root, you might need:
+                # working-directory: ./path/to/your/env/file/directory
+        ```
+
+        If `environment.yml` is in the root, and the `run` command is executed from the root (which is usually the default after `actions/checkout`), then the file is likely missing.
+
+    *   **If `environment.yml` is in a subdirectory (e.g., `config/`):**
+        You need to specify the correct path to the file. Modify the `run` command:
