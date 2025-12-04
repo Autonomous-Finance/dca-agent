@@ -1,8 +1,16 @@
 # Autonomous DCA Agent on AO
 
-## 🚨 This App was discontinued
+> **⚠️ ARCHIVED PROJECT - NO LONGER MAINTAINED**
+> 
+> This project was initially developed by **Autonomous Finance (AF)** and is now archived. It will **not be maintained** going forward. This repository is preserved as open-source for educational and reference purposes only.
+> 
+> **Use at your own risk.** See the [Disclaimer](#disclaimer) section below for important information.
 
-Due to this app being some of our early work aimed at exhibiting the capabilities of AO, we're discontinuing it but keep this repo as a public good.
+## 🚨 Project Status: Discontinued & Archived
+
+This project was initially developed by **Autonomous Finance (AF)** as early work demonstrating the capabilities of the AO ecosystem. The project has been discontinued and is now archived. This repository is maintained as a public good for educational purposes.
+
+**This project is no longer maintained** - no bug fixes, security updates, or feature additions will be provided. Use at your own risk.
 
 Feel free to explore the code in this repo or read our related [research article](https://www.autonomous.finance/research/dca-agent).
 
@@ -80,9 +88,34 @@ Combine all Lua scripts into a single file for deployment:
 4. Start Monitoring the agent as a cron process
 5. Registration of the agent with the DCA backend process on AO
 
+## Security Considerations
+
+⚠️ **Important Security Notes:**
+
+- This project is **archived and unmaintained** - no security patches will be provided
+- Always review code before deploying to production environments
+- Never commit sensitive credentials or private keys to version control
+- Environment variables (`DEPLOY_KEY`, `ANT_CONTRACT`) should be kept secure and never exposed
+- The deployment script (`scripts/permaweb-deploy.mjs`) requires sensitive credentials - ensure proper access controls
+- This codebase interacts with blockchain networks and handles financial transactions - use extreme caution
+
+For more detailed security information, see [SECURITY.md](SECURITY.md).
+
+### Environment Variables
+
+The following environment variables are used in deployment scripts:
+- `DEPLOY_KEY`: Base64-encoded Arweave wallet JSON (keep secure!)
+- `ANT_CONTRACT`: ARNS ANT contract address
+
+**Never commit these values to the repository.** Use environment variables or secure secret management.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## Contributing
+
+⚠️ **This project is archived and not accepting contributions.** This repository is preserved for reference purposes only.
 
 
 
@@ -113,9 +146,40 @@ This software, the Autonomous Investment Agent (AIA), is provided as open-source
 By using this software, you agree to this disclaimer and acknowledge that you understand and accept the risks involved.
 
 
-## TODO
+## Architecture
 
-- `.update` backend to latest aos
-- update the AO module to use when spawning
-- refactor agent to use the request-response mechanism (?)
+### Components
+
+- **Agent Process**: Lua-based autonomous agent running on AO that executes DCA swaps
+- **Backend Process**: Manages agent registration and status tracking
+- **Frontend**: Next.js application deployed on Arweave Permaweb for agent management
+- **Lua Scripts**: Core agent logic organized into modular components (balances, swaps, withdrawals, etc.)
+
+### Technology Stack
+
+- **Frontend**: Next.js 14, React, TypeScript, TailwindCSS, Material-UI
+- **Blockchain**: AO Protocol, Arweave
+- **Agent Logic**: Lua scripts running on AO processes
+- **Deployment**: Permaweb (Arweave), Irys SDK
+
+## Development Notes
+
+### Build Process
+
+The Lua agent and backend scripts are combined using Amalg before deployment:
+- Agent scripts: `ao/agent/*.lua` → `ao/build/output-agent.lua`
+- Backend scripts: `ao/backend/*.lua` → `ao/build/output-backend.lua`
+
+### Known Limitations
+
+- BaseToken configuration is fixed after initialization
+- Single currency pair per agent
+- No automatic updates or maintenance
+
+## Historical TODO (Unimplemented)
+
+The following items were planned but never implemented (project is archived):
+- Update backend to latest AO SDK
+- Update AO module to use when spawning
+- Refactor agent to use request-response mechanism
 
